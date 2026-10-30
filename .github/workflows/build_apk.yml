@@ -29,8 +29,11 @@ jobs:
         run: python scripts/calibrate_threshold.py
       - name: Eval gate
         run: python scripts/evaluate_retrieval.py
+      - uses: gradle/gradle-build-action@v3
+        with:
+          gradle-version: 8.7
       - name: Build
-        run: ./gradlew assembleRelease
+        run: gradle assembleRelease
       - name: Check APK size
         run: |
           APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
