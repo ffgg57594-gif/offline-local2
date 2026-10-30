@@ -12,7 +12,8 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
+      - name: Android SDK (preinstalled)
+        run: echo "ANDROID_HOME=$ANDROID_HOME" && ls $ANDROID_HOME/platforms 2>/dev/null | head
       - name: Free disk
         run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost 2>/dev/null; df -h
       - name: Python
