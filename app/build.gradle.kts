@@ -17,14 +17,6 @@ android {
         ndk { abiFilters += "arm64-v8a" }
     }
 
-    buildTypes {
-        release {
-            isMinifyEnabled = true
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.getByName("release")
-        }
-    }
-
     signingConfigs {
         create("release") {
             val ks = System.getenv("KEYSTORE_PATH")
@@ -34,6 +26,14 @@ android {
                 keyAlias = System.getenv("KEY_ALIAS")
                 keyPassword = System.getenv("KEY_PASSWORD")
             }
+        }
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
@@ -48,7 +48,7 @@ android {
     packaging { jniLibs { useLegacyPackaging = true } }
     androidResources { ignoreAssetsPattern = "!books" }
 
-    aaptOptions { noCompress("gguf", "onnx", "db", "bin", "traineddata") }
+    androidResources { noCompress += listOf("gguf", "onnx", "db", "bin", "traineddata") }
 }
 
 dependencies {
