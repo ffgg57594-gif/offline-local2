@@ -101,6 +101,5 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
-    // Tesseract4Android
-    implementation("cz.adaptech.tesseract4android:tesseract4android:4.7.0")
+    // Tesseract4Android (optional; re-add when available)
 }
