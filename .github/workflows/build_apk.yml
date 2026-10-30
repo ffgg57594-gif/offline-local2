@@ -48,5 +48,6 @@ jobs:
           path: app/build/outputs/apk/release/*.apk
       - name: Release
         uses: softprops/action-gh-release@v2
+        continue-on-error: true
         with:
           files: app/build/outputs/apk/release/*.apk
