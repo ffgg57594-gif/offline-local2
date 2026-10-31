@@ -38,14 +38,12 @@ jobs:
         run: python scripts/make_reference_vectors.py
       - name: Benchmark embedder latency
         run: python scripts/benchmark_embedder.py
-      - name: Evaluate dense vs keyword
-        run: python scripts/evaluate_dense_vs_keyword.py
+      - name: Evaluation audit
+        run: python scripts/evaluate_audit.py
       - name: Keyword query builder
         run: python scripts/keyword_builder.py
       - name: Weighted fusion tuning
         run: python scripts/fusion_tuning.py
-      - name: Failure review
-        run: python scripts/failure_review.py
       - name: Language hygiene check
         run: |
           python3 - <<'PY'
