@@ -140,10 +140,10 @@ def test_answer_terms_match_fts():
     import sqlite3
     conn = sqlite3.connect(":memory:")
     cur = conn.cursor()
-    cur.execute("CREATE TABLE chunks(id INTEGER PRIMARY KEY, text TEXT)")
-    cur.execute("CREATE VIRTUAL TABLE chunks_fts USING fts5(text, content='chunks', content_rowid='id', tokenize='porter unicode61 remove_diacritics 2')")
-    cur.execute("INSERT INTO chunks(id, text) VALUES (1, 'Preeclampsia is hypertension with proteinuria')")
-    cur.execute("INSERT INTO chunks_fts(rowid, text) VALUES (1, 'Preeclampsia is hypertension with proteinuria')")
+    cur.execute("CREATE TABLE chunks(id INTEGER PRIMARY KEY, search_text TEXT)")
+    cur.execute("CREATE VIRTUAL TABLE chunks_fts USING fts5(search_text, content='chunks', content_rowid='id', tokenize='porter unicode61 remove_diacritics 2')")
+    cur.execute("INSERT INTO chunks(id, search_text) VALUES (1, 'Preeclampsia is hypertension with proteinuria')")
+    cur.execute("INSERT INTO chunks_fts(rowid, search_text) VALUES (1, 'Preeclampsia is hypertension with proteinuria')")
     cur.execute("INSERT INTO chunks_fts(chunks_fts) VALUES ('optimize')")
 
     terms = [["preeclampsia", "proteinuria"]]
