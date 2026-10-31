@@ -102,6 +102,9 @@ def load_stopwords():
     }
 
 
+STOPWORDS = load_stopwords()
+
+
 def build_keyword_query(question, stopwords, non_content_words=None, variant_map=None, variant="v2"):
     """Build an FTS5 keyword query from a question string.
 
