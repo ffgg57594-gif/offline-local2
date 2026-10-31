@@ -47,7 +47,7 @@ def test_hit_definition_rank():
     import sqlite3
     conn = sqlite3.connect(":memory:")
     cur = conn.cursor()
-    cur.execute("CREATE TABLE chunks_fts USING fts5(search_text)")
+    cur.execute("CREATE VIRTUAL TABLE chunks_fts USING fts5(search_text)")
     cur.execute("CREATE TABLE chunks(id INTEGER PRIMARY KEY, search_text TEXT)")
     cur.execute("INSERT INTO chunks(id, search_text) VALUES (1, 'preeclampsia proteinuria')")
     cur.execute("INSERT INTO chunks_fts(rowid, search_text) VALUES (1, 'preeclampsia proteinuria')")

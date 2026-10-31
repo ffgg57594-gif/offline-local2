@@ -145,8 +145,10 @@ def build_keyword_query(question, stopwords, non_content_words=None, variant_map
         non_stop = [t for t in tokens if t not in stopwords]
         if non_stop:
             quoted_unigrams = [f'"{max(non_stop, key=len)}"']
+            content_tokens = [max(non_stop, key=len)]
         else:
             quoted_unigrams = [f'"{tokens[0]}"'] if tokens else []
+            content_tokens = [tokens[0]] if tokens else []
 
     query_parts = list(quoted_unigrams)
 
