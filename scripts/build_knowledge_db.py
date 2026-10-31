@@ -276,8 +276,8 @@ def build_db(pdf_paths):
     conn = sqlite3.connect(OUT_DB)
     cur = conn.cursor()
     cur.execute("CREATE TABLE books(id INTEGER PRIMARY KEY, name TEXT, sha256 TEXT, pages INTEGER)")
-    cur.execute("CREATE TABLE chunks(id INTEGER PRIMARY KEY, book_id INTEGER, page INTEGER, section TEXT, text TEXT, word_count INTEGER)")
-    cur.execute("CREATE VIRTUAL TABLE chunks_fts USING fts5(text, content='chunks', content_rowid='id', tokenize='unicode61 remove_diacritics 2')")
+    cur.execute("CREATE TABLE chunks(id INTEGER PRIMARY KEY, book_id INTEGER, page INTEGER, section TEXT, text TEXT, search_text TEXT, word_count INTEGER)")
+    cur.execute("CREATE VIRTUAL TABLE chunks_fts USING fts5(search_text, content='chunks', content_rowid='id', tokenize='porter unicode61 remove_diacritics 2')")
     cur.execute("CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT)")
 
     chunk_id = 1
@@ -377,11 +377,12 @@ def build_db(pdf_paths):
         book_id = cur.lastrowid
 
         for page, section, text, wc in kept_chunks:
+            search_text = normalize_text(text)
             cur.execute(
-                "INSERT INTO chunks(id, book_id, page, section, text, word_count) VALUES (?, ?, ?, ?, ?, ?)",
-                (chunk_id, book_id, page, section, text, wc),
+                "INSERT INTO chunks(id, book_id, page, section, text, search_text, word_count) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (chunk_id, book_id, page, section, text, search_text, wc),
             )
-            cur.execute("INSERT INTO chunks_fts(rowid, text) VALUES (?, ?)", (chunk_id, text))
+            cur.execute("INSERT INTO chunks_fts(rowid, search_text) VALUES (?, ?)", (chunk_id, search_text))
             chunk_id += 1
 
         total_chunks_before_guard += len(book_chunks)
@@ -413,7 +414,7 @@ def build_db(pdf_paths):
     cur.execute("INSERT INTO chunks_fts(chunks_fts) VALUES ('optimize')")
 
     build_time = datetime.now(timezone.utc).isoformat()
-    cur.execute("INSERT INTO meta(key, value) VALUES ('schema_version', '1')")
+    cur.execute("INSERT INTO meta(key, value) VALUES ('schema_version', '2')")
     cur.execute("INSERT INTO meta(key, value) VALUES ('build_time', ?)", (build_time,))
     cur.execute("INSERT INTO meta(key, value) VALUES ('books_count', ?)", (len(books_rows),))
     cur.execute("INSERT INTO meta(key, value) VALUES ('chunks_before_guard', ?)", (total_chunks_before_guard,))

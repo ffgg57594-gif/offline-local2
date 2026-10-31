@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Gate calibration from the golden question set.
+"""DEPRECATED in Stage 3.6a: gate calibration removed; the app no longer ships a threshold.
+Kept in repo for reference only; not run in CI.
 
 For every golden question (in and out of scope) compute:
   - top-1 dense score, top-1 fusion score

@@ -106,13 +106,13 @@ def test_fts5_keyword_query(tmp_path):
     db = ":memory:"
     conn = sqlite3.connect(db)
     cur = conn.cursor()
-    cur.execute("CREATE TABLE chunks(id INTEGER PRIMARY KEY, text TEXT)")
-    cur.execute("CREATE VIRTUAL TABLE chunks_fts USING fts5(text, content='chunks', content_rowid='id', tokenize='unicode61 remove_diacritics 2')")
+    cur.execute("CREATE TABLE chunks(id INTEGER PRIMARY KEY, search_text TEXT)")
+    cur.execute("CREATE VIRTUAL TABLE chunks_fts USING fts5(search_text, content='chunks', content_rowid='id', tokenize='porter unicode61 remove_diacritics 2')")
     for cid, (page, section, text, wc) in enumerate(chunks, start=1):
-        cur.execute("INSERT INTO chunks(id, text) VALUES (?, ?)", (cid, text))
-        cur.execute("INSERT INTO chunks_fts(rowid, text) VALUES (?, ?)", (cid, text))
+        cur.execute("INSERT INTO chunks(id, search_text) VALUES (?, ?)", (cid, text))
+        cur.execute("INSERT INTO chunks_fts(rowid, search_text) VALUES (?, ?)", (cid, text))
     cur.execute("INSERT INTO chunks_fts(chunks_fts) VALUES ('optimize')")
-    cur.execute("SELECT chunks.id, chunks.text FROM chunks_fts JOIN chunks ON chunks.id = chunks_fts.rowid WHERE chunks_fts MATCH 'hypertension' ORDER BY chunks.id LIMIT 1")
+    cur.execute("SELECT chunks.id, chunks.search_text FROM chunks_fts JOIN chunks ON chunks.id = chunks_fts.rowid WHERE chunks_fts MATCH 'hypertension' ORDER BY chunks.id LIMIT 1")
     row = cur.fetchone()
     conn.close()
     assert row is not None
@@ -138,13 +138,13 @@ def test_row_counts_match(tmp_path):
     conn = sqlite3.connect(":memory:")
     cur = conn.cursor()
     cur.execute("CREATE TABLE books(id INTEGER PRIMARY KEY, name TEXT)")
-    cur.execute("CREATE TABLE chunks(id INTEGER PRIMARY KEY, book_id INTEGER, page INTEGER, section TEXT, text TEXT, word_count INTEGER)")
+    cur.execute("CREATE TABLE chunks(id INTEGER PRIMARY KEY, book_id INTEGER, page INTEGER, section TEXT, text TEXT, search_text TEXT, word_count INTEGER)")
     cur.execute("CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT)")
     cur.execute("INSERT INTO books(id, name) VALUES (1, 'sample')")
     for cid, (page, section, text, wc) in enumerate(chunks, start=1):
-        cur.execute("INSERT INTO chunks(id, book_id, page, section, text, word_count) VALUES (?, ?, ?, ?, ?, ?)",
-                    (cid, 1, page, section, text, wc))
-    cur.execute("INSERT INTO meta(key, value) VALUES ('schema_version', '1')")
+        cur.execute("INSERT INTO chunks(id, book_id, page, section, text, search_text, word_count) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (cid, 1, page, section, text, text, wc))
+    cur.execute("INSERT INTO meta(key, value) VALUES ('schema_version', '2')")
     cur.execute("INSERT INTO meta(key, value) VALUES ('books_count', '1')")
     cur.execute("INSERT INTO meta(key, value) VALUES ('chunks_count', ?)", (str(len(chunks)),))
     conn.commit()
@@ -153,11 +153,13 @@ def test_row_counts_match(tmp_path):
     c_count = cur.execute("SELECT COUNT(*) FROM chunks").fetchone()[0]
     meta_chunks = int(cur.execute("SELECT value FROM meta WHERE key='chunks_count'").fetchone()[0])
     meta_books = int(cur.execute("SELECT value FROM meta WHERE key='books_count'").fetchone()[0])
+    schema_version = cur.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()[0]
     conn.close()
     assert b_count == 1
     assert c_count == len(chunks)
     assert meta_chunks == len(chunks)
     assert meta_books == 1
+    assert schema_version == "2"
 
 
 def test_deterministic(tmp_path):

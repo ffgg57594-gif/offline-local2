@@ -28,6 +28,8 @@ jobs:
         run: pytest tests
       - name: Build knowledge DB
         run: python scripts/build_knowledge_db.py
+      - name: Build normalization map
+        run: python scripts/text_normalize.py
       - name: Download embedding model
         run: python scripts/download_models.py
       - name: Build embeddings
@@ -38,10 +40,12 @@ jobs:
         run: python scripts/benchmark_embedder.py
       - name: Evaluate dense vs keyword
         run: python scripts/evaluate_dense_vs_keyword.py
-      - name: Evaluate golden set
-        run: python scripts/evaluate_golden.py
-      - name: Calibrate gate
-        run: python scripts/calibrate_gate.py
+      - name: Keyword query builder
+        run: python scripts/keyword_builder.py
+      - name: Weighted fusion tuning
+        run: python scripts/fusion_tuning.py
+      - name: Failure review
+        run: python scripts/failure_review.py
       - name: Language hygiene check
         run: |
           python3 - <<'PY'
@@ -115,7 +119,7 @@ jobs:
         run: |
           APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
           if unzip -l "$APK" | grep -i '\.pdf$'; then echo "PDF found in APK - FAIL"; exit 1; fi
-          for f in assets/books_knowledge.db assets/embeddings.bin assets/embeddings_meta.json assets/embedder_reference.json assets/models/embedder/model_quantized.onnx assets/models/embedder/tokenizer.json assets/config_calibrated.json assets/medical_aliases.json; do
+          for f in assets/books_knowledge.db assets/embeddings.bin assets/embeddings_meta.json assets/embedder_reference.json assets/models/embedder/model_quantized.onnx assets/models/embedder/tokenizer.json assets/normalize_map.json assets/fusion_config.json; do
             if ! unzip -l "$APK" | grep -q "$f"; then echo "Missing $f in APK - FAIL"; exit 1; fi
           done
           echo "APK contains all required assets and no .pdf - OK"
@@ -127,7 +131,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| File | Size (bytes) |" >> $GITHUB_STEP_SUMMARY
           echo "|---|---|" >> $GITHUB_STEP_SUMMARY
-          for f in assets/books_knowledge.db assets/embeddings.bin assets/embeddings_meta.json assets/embedder_reference.json assets/models/embedder/model_quantized.onnx assets/models/embedder/tokenizer.json assets/config_calibrated.json assets/medical_aliases.json; do
+          for f in assets/books_knowledge.db assets/embeddings.bin assets/embeddings_meta.json assets/embedder_reference.json assets/models/embedder/model_quantized.onnx assets/models/embedder/tokenizer.json assets/normalize_map.json assets/fusion_config.json; do
             SIZE=$(unzip -l "$APK" | awk -v f="$f" '$4 == f {print $3}')
             if [ -z "$SIZE" ]; then SIZE=0; fi
             echo "| $f | $SIZE |" >> $GITHUB_STEP_SUMMARY

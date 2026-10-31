@@ -62,6 +62,9 @@ def main():
     chunk_ids = [r[0] for r in rows]
     texts = [r[1] for r in rows]
 
+    # Compute sha256 over all chunk texts for integrity check.
+    all_texts_sha256 = hashlib.sha256("".join(texts).encode("utf-8")).hexdigest()
+
     # Verify ids are sequential starting at 1.
     expected_ids = list(range(1, chunks_count + 1))
     if chunk_ids != expected_ids:
@@ -127,6 +130,7 @@ def main():
         "query_prefix": "query: ",
         "sha256": sha256_file(OUT_BIN),
         "size_bytes": file_size,
+        "chunk_texts_sha256": all_texts_sha256,
     }
     with open(OUT_META, "w", encoding="utf-8") as f:
         json.dump(meta, f, indent=2, ensure_ascii=False)
