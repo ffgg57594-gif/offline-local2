@@ -103,9 +103,24 @@ def rrf_fuse(dense_results, fts_results, k=RRF_K, top_k=5):
     """Fuse two ranked lists using Reciprocal Rank Fusion.
 
     Score = sum over lists of 1 / (k + rank + 1), where rank is 0-based position.
+    Each list is deduplicated by (book, page) first, keeping only the best rank
+    per key, so multiple chunks on the same page cannot inflate the score.
     Max possible score with 2 lists = 1/(k+1) + 1/(k+1) = 2/(k+1).
     With k=60: max = 2/61 = 0.032786...
     """
+    def dedupe(results):
+        seen = set()
+        out = []
+        for r in results:
+            key = (r[0], r[1])
+            if key not in seen:
+                seen.add(key)
+                out.append(r)
+        return out
+
+    dense_results = dedupe(dense_results)
+    fts_results = dedupe(fts_results)
+
     scores = {}
     dense_keys = [(r[0], r[1]) for r in dense_results]
     fts_keys = [(r[0], r[1]) for r in fts_results]
