@@ -40,7 +40,7 @@ def main():
 
     # 1. List repo files and verify expected names exist.
     try:
-        repo_files = [r.rfilename for r in api.list_repo_files(repo_id=REPO_ID)]
+        repo_files = list(api.list_repo_files(repo_id=REPO_ID))
     except Exception as exc:
         print(f"ERROR: Failed to list files for repo {REPO_ID}: {exc}", file=sys.stderr)
         sys.exit(1)
