@@ -165,7 +165,7 @@ def main():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     chunk_meta = cur.execute(
-        "SELECT id, name, page, text FROM chunks ORDER BY id"
+        "SELECT c.id, b.name, c.page, c.text FROM chunks c JOIN books b ON b.id = c.book_id ORDER BY c.id"
     ).fetchall()
     # Map id -> index (id is sequential from 1).
     id_to_index = {cid: i for i, (cid, _, _, _) in enumerate(chunk_meta)}
