@@ -45,9 +45,7 @@ NON_CONTENT_WORDS = [
     "observe", "observed", "observation", "observations",
     "report", "reported", "reporting", "reports",
     "state", "stated", "stating", "states",
-    "indicate", "indicated", "indicates", "indication",
-    "suggest", "suggested", "suggesting", "suggests",
-    "describe", "described", "describing", "describes",
+    "indicate", "indicated",
 ]
 
 assert len(NON_CONTENT_WORDS) <= 40, f"NON_CONTENT_WORDS exceeds 40: {len(NON_CONTENT_WORDS)}"
