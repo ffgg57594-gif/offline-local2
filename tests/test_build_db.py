@@ -59,7 +59,7 @@ def test_header_removed_and_dehyphenated(tmp_path):
     cleaned = []
     for pl in pages_text:
         cleaned.append([ln for ln in pl if ln not in hf and not bk.is_page_number_line(ln)])
-    chunks = bk.build_chunks_for_book("sample", cleaned, hf)
+    chunks = bk.build_chunks_for_book("sample", cleaned, hf, set())
     joined = " ".join(c[2] for c in chunks)
     assert "CONFIDENTIAL HEADER" not in joined
     assert "diagnosis" in joined
@@ -79,7 +79,7 @@ def test_chunk_page_numbers_and_no_crossing(tmp_path):
     cleaned = []
     for pl in pages_text:
         cleaned.append([ln for ln in pl if ln not in hf and not bk.is_page_number_line(ln)])
-    chunks = bk.build_chunks_for_book("sample", cleaned, hf)
+    chunks = bk.build_chunks_for_book("sample", cleaned, hf, set())
     # Each chunk page must be 1..12 and non-decreasing; no chunk spans pages.
     seen_pages = [c[0] for c in chunks]
     assert seen_pages == sorted(seen_pages)
@@ -100,7 +100,7 @@ def test_fts5_keyword_query(tmp_path):
     cleaned = []
     for pl in pages_text:
         cleaned.append([ln for ln in pl if ln not in hf and not bk.is_page_number_line(ln)])
-    chunks = bk.build_chunks_for_book("sample", cleaned, hf)
+    chunks = bk.build_chunks_for_book("sample", cleaned, hf, set())
 
     import sqlite3
     db = ":memory:"
@@ -132,7 +132,7 @@ def test_row_counts_match(tmp_path):
     cleaned = []
     for pl in pages_text:
         cleaned.append([ln for ln in pl if ln not in hf and not bk.is_page_number_line(ln)])
-    chunks = bk.build_chunks_for_book("sample", cleaned, hf)
+    chunks = bk.build_chunks_for_book("sample", cleaned, hf, set())
 
     import sqlite3
     conn = sqlite3.connect(":memory:")
@@ -173,8 +173,8 @@ def test_deterministic(tmp_path):
     cleaned = []
     for pl in pages_text:
         cleaned.append([ln for ln in pl if ln not in hf and not bk.is_page_number_line(ln)])
-    c1 = bk.build_chunks_for_book("sample", cleaned, hf)
-    c2 = bk.build_chunks_for_book("sample", cleaned, hf)
+    c1 = bk.build_chunks_for_book("sample", cleaned, hf, set())
+    c2 = bk.build_chunks_for_book("sample", cleaned, hf, set())
     assert [(p, s, t, wc) for (p, s, t, wc) in c1] == [(p, s, t, wc) for (p, s, t, wc) in c2]
 
 
