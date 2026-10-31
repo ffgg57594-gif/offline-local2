@@ -112,7 +112,7 @@ def embed_texts(texts: List[str], kind: str) -> np.ndarray:
             {
                 "input_ids": input_ids,
                 "attention_mask": attention_mask,
-                # token_type_ids not used by e5; provide zeros if the model expects it.
+                "token_type_ids": np.zeros_like(input_ids),
             },
         )
         # The model output is typically [batch, seq_len, dim] as the first output.
