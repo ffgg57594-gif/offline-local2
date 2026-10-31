@@ -41,6 +41,7 @@ EMBEDDINGS_META = os.path.join("app", "src", "main", "assets", "embeddings_meta.
 GOLDEN_PATH = os.path.join("eval", "golden_v2.draft.jsonl")
 ALIASES_PATH = os.path.join("app", "src", "main", "assets", "medical_aliases.json")
 FUSION_CONFIG_OUT = os.path.join("app", "src", "main", "assets", "fusion_config.json")
+NORMALIZE_MAP_PATH = os.path.join("app", "src", "main", "assets", "normalize_map.json")
 
 EMBED_DIM = 384
 K_VALUES = [10, 60]
