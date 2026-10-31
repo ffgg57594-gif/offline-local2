@@ -177,21 +177,21 @@ def main():
     # Build queries.
     unperturbed_queries = []
     perturbed_queries = []
-    target_chunk_ids = []  # the chunk each query should retrieve
+    target_pages = []  # (book, page) of the source chunk
     for cid in query_chunk_ids:
         text = chunk_meta[id_to_index[cid]][3]
         words = text.split()
-        if len(words) < 15:
+        if len(words) < 20:
             # Use the whole text.
             query_words = words
         else:
-            start = rng.randint(0, len(words) - 15)
-            query_words = words[start:start + 15]
+            start = rng.randint(0, len(words) - 20)
+            query_words = words[start:start + 20]
         query = " ".join(query_words)
         unperturbed_queries.append(query)
         perturbed = perturb_query(query, rng, variant_swap=(rng.random() < 1 / 3))
         perturbed_queries.append(perturbed)
-        target_chunk_ids.append(cid)
+        target_pages.append((chunk_meta[id_to_index[cid]][1], chunk_meta[id_to_index[cid]][2]))
 
     # Embed all queries and time it.
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -219,12 +219,11 @@ def main():
     all_perturbed_vecs = np.vstack(all_perturbed_vecs)
 
     # Compute recall.
-    def recall_at_k(results_list, target_ids, k):
+    def recall_at_k(results_list, target_pages_list, k):
         hits = 0
-        for results, target in zip(results_list, target_ids):
+        for results, target_page in zip(results_list, target_pages_list):
             top_pages = [(r[0], r[1]) for r in results[:k]]
-            target_page = chunk_meta[id_to_index[target]]
-            if (target_page[1], target_page[2]) in top_pages:
+            if target_page in top_pages:
                 hits += 1
         return hits / len(results_list)
 
@@ -251,7 +250,7 @@ def main():
 
     # Recall table.
     def recall_row(label, results, k_values=(1, 3, 5)):
-        return [recall_at_k(results, target_chunk_ids, k) for k in k_values]
+        return [recall_at_k(results, target_pages, k) for k in k_values]
 
     lines = ["| Method | Queries | R@1 | R@3 | R@5 |", "|---|---|---|---|---|"]
     summary_lines = ["## Dense vs Keyword vs Fusion (sanity check)", "",
@@ -270,7 +269,7 @@ def main():
         summary_lines.append(f"| {label} | {N_QUERIES} | {r1:.3f} | {r3:.3f} | {r5:.3f} |")
 
     # Dense recall@3 unperturbed check.
-    dense_r3_unperturbed = recall_at_k(dense_unperturbed, target_chunk_ids, 3)
+    dense_r3_unperturbed = recall_at_k(dense_unperturbed, target_pages, 3)
     print(f"\nDense recall@3 (unperturbed): {dense_r3_unperturbed:.3f}")
     if dense_r3_unperturbed < 0.90:
         print(f"ERROR: Dense recall@3 on unperturbed queries ({dense_r3_unperturbed:.3f}) < 0.90", file=sys.stderr)
