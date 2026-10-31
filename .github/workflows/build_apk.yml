@@ -64,6 +64,8 @@ jobs:
               for f in p.rglob("*"):
                   if not f.is_file():
                       continue
+                  if "models" in f.parts:
+                      continue
                   if f.suffix not in (".md", ".py", ".yml", ".yaml", ".json", ".kt", ".xml", ".toml", ".properties", ".txt", ".gradle"):
                       continue
                   try:
