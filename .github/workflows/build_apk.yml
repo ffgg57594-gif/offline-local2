@@ -34,8 +34,14 @@ jobs:
         run: python scripts/build_embeddings.py
       - name: Make reference vectors
         run: python scripts/make_reference_vectors.py
+      - name: Benchmark embedder latency
+        run: python scripts/benchmark_embedder.py
       - name: Evaluate dense vs keyword
         run: python scripts/evaluate_dense_vs_keyword.py
+      - name: Evaluate golden set
+        run: python scripts/evaluate_golden.py
+      - name: Calibrate gate
+        run: python scripts/calibrate_gate.py
       - name: Language hygiene check
         run: |
           python3 - <<'PY'
@@ -49,7 +55,7 @@ jobs:
               "Hebrew": r"[\u0590-\u05FF]",
               "Devanagari": r"[\u0900-\u097F]",
           }
-          roots = ["README.md", "scripts", "tests", ".github", "app/src/main/java"]
+          roots = ["README.md", "scripts", "tests", ".github", "app/src/main/java", "eval", "app/src/main/assets"]
           hits = 0
           for root in roots:
               p = pathlib.Path(root)
@@ -57,6 +63,8 @@ jobs:
                   continue
               for f in p.rglob("*"):
                   if not f.is_file():
+                      continue
+                  if f.suffix not in (".md", ".py", ".yml", ".yaml", ".json", ".kt", ".xml", ".toml", ".properties", ".txt", ".gradle"):
                       continue
                   try:
                       text = f.read_text(encoding="utf-8")
@@ -105,7 +113,7 @@ jobs:
         run: |
           APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
           if unzip -l "$APK" | grep -i '\.pdf$'; then echo "PDF found in APK - FAIL"; exit 1; fi
-          for f in assets/books_knowledge.db assets/embeddings.bin assets/embeddings_meta.json assets/embedder_reference.json assets/models/embedder/model_quantized.onnx assets/models/embedder/tokenizer.json; do
+          for f in assets/books_knowledge.db assets/embeddings.bin assets/embeddings_meta.json assets/embedder_reference.json assets/models/embedder/model_quantized.onnx assets/models/embedder/tokenizer.json assets/config_calibrated.json assets/medical_aliases.json; do
             if ! unzip -l "$APK" | grep -q "$f"; then echo "Missing $f in APK - FAIL"; exit 1; fi
           done
           echo "APK contains all required assets and no .pdf - OK"
@@ -117,7 +125,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| File | Size (bytes) |" >> $GITHUB_STEP_SUMMARY
           echo "|---|---|" >> $GITHUB_STEP_SUMMARY
-          for f in assets/books_knowledge.db assets/embeddings.bin assets/embeddings_meta.json assets/embedder_reference.json assets/models/embedder/model_quantized.onnx assets/models/embedder/tokenizer.json; do
+          for f in assets/books_knowledge.db assets/embeddings.bin assets/embeddings_meta.json assets/embedder_reference.json assets/models/embedder/model_quantized.onnx assets/models/embedder/tokenizer.json assets/config_calibrated.json assets/medical_aliases.json; do
             SIZE=$(unzip -l "$APK" | awk -v f="$f" '$4 == f {print $3}')
             if [ -z "$SIZE" ]; then SIZE=0; fi
             echo "| $f | $SIZE |" >> $GITHUB_STEP_SUMMARY

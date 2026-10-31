@@ -1,23 +1,21 @@
 #!/usr/bin/env python3
 """Sanity check: dense vs keyword vs fusion retrieval on built embeddings.
 
-- 300 random chunks (seed 7). Query = 15 consecutive words from the chunk.
-- Perturb: lowercase, drop 2 random words; in 1/3 of queries apply variant swaps:
-  preeclampsia<->pre-eclampsia, labor<->labour, hemorrhage<->haemorrhage, anemia<->anaemia.
+- Random chunks (seed 7). Query = N consecutive words from the chunk (N in {3, 6, 15}).
+- Perturb: drop 30% of words; shuffle word order for half; variant swaps:
+  preeclampsia<->pre-eclampsia, labor<->labour, hemorrhage<->haemorrhage,
+  anemia<->anaemia.
 - Methods: (a) dense dot product with embeddings.bin, (b) FTS5 BM25, (c) RRF fusion (k=60).
-- Reports recall@1/@3/@5 per method, perturbed vs unperturbed.
+- Reports recall@1/@3/@5 per method, per query length, perturbed vs unperturbed.
 - Also runs 12 sample queries (8 English + 4 Arabic) through dense and fusion.
-- FAILS CI only if dense recall@3 on unperturbed queries < 0.90.
-- Prints mean and p95 query-embedding time (CI runner, not a phone).
+- FAILS CI only if dense recall@3 on unperturbed 15-word queries < 0.90.
+- Query-embedding timing moved to scripts/benchmark_embedder.py.
 """
-import hashlib
-import json
 import os
 import random
 import re
 import sqlite3
 import sys
-import time
 
 import numpy as np
 
@@ -26,9 +24,9 @@ EMBEDDINGS_BIN = os.path.join("app", "src", "main", "assets", "embeddings.bin")
 EMBEDDINGS_META = os.path.join("app", "src", "main", "assets", "embeddings_meta.json")
 
 EMBED_DIM = 384
-N_QUERIES = 300
 SEED = 7
 RRF_K = 60
+N_CHUNKS_PER_LENGTH = 100
 
 VARIANT_MAP = {
     "preeclampsia": "pre-eclampsia",
@@ -55,6 +53,7 @@ SAMPLE_QUERIES_AR = [
 
 
 def load_embeddings():
+    import json
     with open(EMBEDDINGS_META, "r", encoding="utf-8") as f:
         meta = json.load(f)
     dim = meta["dim"]
@@ -91,8 +90,7 @@ def fts_search(cur, query, top_k=5):
 
 
 def dense_search(query_vec, embeddings, chunk_meta, top_k=5):
-    """query_vec: [384] float32. embeddings: [N, 384]. chunk_meta: list of (id, name, page, text)."""
-    scores = embeddings @ query_vec  # [N]
+    scores = embeddings @ query_vec
     top_idx = np.argsort(-scores)[:top_k]
     results = []
     for idx in top_idx:
@@ -102,17 +100,19 @@ def dense_search(query_vec, embeddings, chunk_meta, top_k=5):
 
 
 def rrf_fuse(dense_results, fts_results, k=RRF_K, top_k=5):
-    """Fuse two ranked lists using Reciprocal Rank Fusion."""
+    """Fuse two ranked lists using Reciprocal Rank Fusion.
+
+    Score = sum over lists of 1 / (k + rank + 1), where rank is 0-based position.
+    Max possible score with 2 lists = 1/(k+1) + 1/(k+1) = 2/(k+1).
+    With k=60: max = 2/61 = 0.032786...
+    """
     scores = {}
-    # dense_results and fts_results are lists of (name, page, text, score)
     dense_keys = [(r[0], r[1]) for r in dense_results]
     fts_keys = [(r[0], r[1]) for r in fts_results]
-    all_keys = list(dict.fromkeys(dense_keys + fts_keys))  # preserve order, dedupe
     for rank, key in enumerate(dense_keys):
         scores[key] = scores.get(key, 0.0) + 1.0 / (k + rank + 1)
     for rank, key in enumerate(fts_keys):
         scores[key] = scores.get(key, 0.0) + 1.0 / (k + rank + 1)
-    # Build lookup for text.
     text_lookup = {}
     for r in dense_results + fts_results:
         text_lookup[(r[0], r[1])] = r[2]
@@ -120,21 +120,23 @@ def rrf_fuse(dense_results, fts_results, k=RRF_K, top_k=5):
     return [(key[0], key[1], text_lookup.get(key, ""), score) for key, score in sorted_keys]
 
 
-def perturb_query(query, rng, variant_swap):
+def perturb_query(query, rng, drop_frac=0.30, shuffle_half=True, variant_swap=True):
     words = query.split()
-    words = [w.lower() for w in words]
-    # Drop 2 random words.
-    if len(words) > 2:
-        drop_indices = rng.sample(range(len(words)), min(2, len(words)))
+    # Drop drop_frac of words.
+    n_drop = max(1, int(len(words) * drop_frac)) if len(words) > 1 else 0
+    if n_drop > 0:
+        drop_indices = set(rng.sample(range(len(words)), min(n_drop, len(words))))
         words = [w for i, w in enumerate(words) if i not in drop_indices]
+    # Shuffle word order for half.
+    if shuffle_half and len(words) > 1 and rng.random() < 0.5:
+        rng.shuffle(words)
     # Variant swap.
     if variant_swap:
-        words = [VARIANT_MAP.get(w, w) for w in words]
+        words = [VARIANT_MAP.get(w.lower(), w) for w in words]
     return " ".join(words)
 
 
 def centre_snippet(text, query, window=250):
-    """Return a snippet of ~window chars centred on the sentence with most query-word overlap."""
     query_words = set(re.findall(r"\w+", query.lower()))
     sentences = re.split(r"(?<=[.!?؟.])\s+", text)
     best_sent = ""
@@ -153,6 +155,127 @@ def centre_snippet(text, query, window=250):
     return snippet
 
 
+def build_queries(chunk_meta, id_to_index, rng, length):
+    """Build N_CHUNKS_PER_LENGTH queries of the given word length."""
+    total_chunks = len(chunk_meta)
+    query_chunk_ids = rng.sample(range(1, total_chunks + 1), N_CHUNKS_PER_LENGTH)
+    unperturbed = []
+    perturbed = []
+    targets = []
+    for cid in query_chunk_ids:
+        text = chunk_meta[id_to_index[cid]][3]
+        words = text.split()
+        if len(words) <= length:
+            query_words = words
+        else:
+            start = rng.randint(0, len(words) - length)
+            query_words = words[start:start + length]
+        q = " ".join(query_words)
+        unperturbed.append(q)
+        perturbed.append(perturb_query(q, rng))
+        targets.append((chunk_meta[id_to_index[cid]][1], chunk_meta[id_to_index[cid]][2]))
+    return unperturbed, perturbed, targets
+
+
+def run_recall_table(cur, embeddings, chunk_meta, id_to_index, rng):
+    """Run recall for each query length, perturbed and unperturbed."""
+    lengths = [3, 6, 15]
+    results = {}
+    for length in lengths:
+        unpert_q, pert_q, targets = build_queries(chunk_meta, id_to_index, rng, length)
+
+        # Embed all queries.
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from embedding_common import embed_texts  # noqa: E402
+
+        unpert_vecs = np.vstack([embed_texts([q], kind="query")[0] for q in unpert_q])
+        pert_vecs = np.vstack([embed_texts([q], kind="query")[0] for q in pert_q])
+
+        # Dense.
+        dense_unpert = [dense_search(unpert_vecs[i], embeddings, chunk_meta) for i in range(len(unpert_q))]
+        dense_pert = [dense_search(pert_vecs[i], embeddings, chunk_meta) for i in range(len(pert_q))]
+
+        # FTS5.
+        fts_unpert = [fts_search(cur, q) for q in unpert_q]
+        fts_pert = [fts_search(cur, q) for q in pert_q]
+
+        # Fusion.
+        fusion_unpert = [rrf_fuse(dense_unpert[i], fts_unpert[i]) for i in range(len(unpert_q))]
+        fusion_pert = [rrf_fuse(dense_pert[i], fts_pert[i]) for i in range(len(pert_q))]
+
+        def recall(results_list, targets_list, k):
+            hits = 0
+            for res, target in zip(results_list, targets_list):
+                top_pages = [(r[0], r[1]) for r in res[:k]]
+                if target in top_pages:
+                    hits += 1
+            return hits / len(results_list)
+
+        results[length] = {
+            "unperturbed": {
+                "dense": [recall(dense_unpert, targets, k) for k in (1, 3, 5)],
+                "keyword": [recall(fts_unpert, targets, k) for k in (1, 3, 5)],
+                "fusion": [recall(fusion_unpert, targets, k) for k in (1, 3, 5)],
+            },
+            "perturbed": {
+                "dense": [recall(dense_pert, targets, k) for k in (1, 3, 5)],
+                "keyword": [recall(fts_pert, targets, k) for k in (1, 3, 5)],
+                "fusion": [recall(fusion_pert, targets, k) for k in (1, 3, 5)],
+            },
+            "n": len(unpert_q),
+        }
+    return results
+
+
+def print_sanity_table(results):
+    lines = ["| Length | Perturbed | Method | Queries | R@1 | R@3 | R@5 |",
+             "|---|---|---|---|---|---|---|"]
+    summary_lines = ["## Dense vs Keyword vs Fusion (sanity check)", "",
+                     "| Length | Perturbed | Method | Queries | R@1 | R@3 | R@5 |",
+                     "|---|---|---|---|---|---|---|"]
+
+    for length in [3, 6, 15]:
+        for pert_label in ["unperturbed", "perturbed"]:
+            pert_flag = pert_label == "perturbed"
+            n = results[length]["n"]
+            for method in ["dense", "keyword", "fusion"]:
+                r1, r3, r5 = results[length][pert_label][method]
+                lines.append(f"| {length} | {'Yes' if pert_flag else 'No'} | {method} | {n} | {r1:.3f} | {r3:.3f} | {r5:.3f} |")
+                summary_lines.append(f"| {length} | {'Yes' if pert_flag else 'No'} | {method} | {n} | {r1:.3f} | {r3:.3f} | {r5:.3f} |")
+
+    print("\n".join(lines))
+    return "\n".join(summary_lines)
+
+
+def print_sample_queries(cur, embeddings, chunk_meta):
+    """Run 12 sample queries through dense and fusion."""
+    summary_lines = ["",
+                     "## Sample queries: dense + fusion top-3",
+                     "",
+                     "| Query | Method | Rank | Book | Page | Score | Snippet |",
+                     "|---|---|---|---|---|---|---|"]
+
+    print("\n=== Sample queries: dense + fusion top-3 ===")
+    all_sample_queries = [(q, "en") for q in SAMPLE_QUERIES_EN] + [(q, "ar") for q in SAMPLE_QUERIES_AR]
+
+    for q, lang in all_sample_queries:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from embedding_common import embed_texts  # noqa: E402
+
+        q_vec = embed_texts([q], kind="query")[0]
+        dense_res = dense_search(q_vec, embeddings, chunk_meta, top_k=3)
+        fts_res = fts_search(cur, q, top_k=3)
+        fusion_res = rrf_fuse(dense_res, fts_res, top_k=3)
+
+        for method, results in [("dense", dense_res), ("fusion", fusion_res)]:
+            for rank, (name, page, text, score) in enumerate(results, start=1):
+                snippet = centre_snippet(text, q, window=250).replace("|", "\\|")
+                summary_lines.append(f"| {q} | {method} | {rank} | {name} | {page} | {score:.4f} | {snippet} |")
+                print(f"[{q}] {method} rank={rank} book={name} page={page} score={score:.4f} snippet={snippet[:100]}...")
+
+    return "\n".join(summary_lines)
+
+
 def main():
     if not os.path.exists(DB_PATH):
         print(f"ERROR: {DB_PATH} not found.", file=sys.stderr)
@@ -167,157 +290,31 @@ def main():
     chunk_meta = cur.execute(
         "SELECT c.id, b.name, c.page, c.text FROM chunks c JOIN books b ON b.id = c.book_id ORDER BY c.id"
     ).fetchall()
-    # Map id -> index (id is sequential from 1).
     id_to_index = {cid: i for i, (cid, _, _, _) in enumerate(chunk_meta)}
 
     rng = random.Random(SEED)
-    total_chunks = len(chunk_meta)
-    query_chunk_ids = rng.sample(range(1, total_chunks + 1), N_QUERIES)
 
-    # Build queries.
-    unperturbed_queries = []
-    perturbed_queries = []
-    target_pages = []  # (book, page) of the source chunk
-    for cid in query_chunk_ids:
-        text = chunk_meta[id_to_index[cid]][3]
-        words = text.split()
-        if len(words) < 20:
-            # Use the whole text.
-            query_words = words
-        else:
-            start = rng.randint(0, len(words) - 20)
-            query_words = words[start:start + 20]
-        query = " ".join(query_words)
-        unperturbed_queries.append(query)
-        perturbed = perturb_query(query, rng, variant_swap=(rng.random() < 1 / 3))
-        perturbed_queries.append(perturbed)
-        target_pages.append((chunk_meta[id_to_index[cid]][1], chunk_meta[id_to_index[cid]][2]))
+    # Sanity recall table.
+    results = run_recall_table(cur, embeddings, chunk_meta, id_to_index, rng)
+    sanity_summary = print_sanity_table(results)
 
-    # Embed all queries and time it.
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    from embedding_common import embed_texts  # noqa: E402
-
-    timings = []
-    all_unperturbed_vecs = []
-    all_perturbed_vecs = []
-
-    for q in unperturbed_queries:
-        t0 = time.perf_counter()
-        v = embed_texts([q], kind="query")[0]
-        t1 = time.perf_counter()
-        timings.append(t1 - t0)
-        all_unperturbed_vecs.append(v)
-
-    for q in perturbed_queries:
-        t0 = time.perf_counter()
-        v = embed_texts([q], kind="query")[0]
-        t1 = time.perf_counter()
-        timings.append(t1 - t0)
-        all_perturbed_vecs.append(v)
-
-    all_unperturbed_vecs = np.vstack(all_unperturbed_vecs)
-    all_perturbed_vecs = np.vstack(all_perturbed_vecs)
-
-    # Compute recall.
-    def recall_at_k(results_list, target_pages_list, k):
-        hits = 0
-        for results, target_page in zip(results_list, target_pages_list):
-            top_pages = [(r[0], r[1]) for r in results[:k]]
-            if target_page in top_pages:
-                hits += 1
-        return hits / len(results_list)
-
-    # Dense results.
-    dense_unperturbed = []
-    dense_perturbed = []
-    for i in range(N_QUERIES):
-        dense_unperturbed.append(dense_search(all_unperturbed_vecs[i], embeddings, chunk_meta))
-        dense_perturbed.append(dense_search(all_perturbed_vecs[i], embeddings, chunk_meta))
-
-    # FTS5 results.
-    fts_unperturbed = []
-    fts_perturbed = []
-    for i in range(N_QUERIES):
-        fts_unperturbed.append(fts_search(cur, unperturbed_queries[i]))
-        fts_perturbed.append(fts_search(cur, perturbed_queries[i]))
-
-    # Fusion results.
-    fusion_unperturbed = []
-    fusion_perturbed = []
-    for i in range(N_QUERIES):
-        fusion_unperturbed.append(rrf_fuse(dense_unperturbed[i], fts_unperturbed[i]))
-        fusion_perturbed.append(rrf_fuse(dense_perturbed[i], fts_perturbed[i]))
-
-    # Recall table.
-    def recall_row(label, results, k_values=(1, 3, 5)):
-        return [recall_at_k(results, target_pages, k) for k in k_values]
-
-    lines = ["| Method | Queries | R@1 | R@3 | R@5 |", "|---|---|---|---|---|"]
-    summary_lines = ["## Dense vs Keyword vs Fusion (sanity check)", "",
-                     "| Method | Queries | R@1 | R@3 | R@5 |", "|---|---|---|---|---|"]
-
-    for label, results in [
-        ("Dense", dense_unperturbed),
-        ("Keyword (FTS5)", fts_unperturbed),
-        ("Fusion (RRF)", fusion_unperturbed),
-        ("Dense (perturbed)", dense_perturbed),
-        ("Keyword (perturbed)", fts_perturbed),
-        ("Fusion (perturbed)", fusion_perturbed),
-    ]:
-        r1, r3, r5 = recall_row(label, results)
-        lines.append(f"| {label} | {N_QUERIES} | {r1:.3f} | {r3:.3f} | {r5:.3f} |")
-        summary_lines.append(f"| {label} | {N_QUERIES} | {r1:.3f} | {r3:.3f} | {r5:.3f} |")
-
-    # Dense recall@3 unperturbed check.
-    dense_r3_unperturbed = recall_at_k(dense_unperturbed, target_pages, 3)
-    print(f"\nDense recall@3 (unperturbed): {dense_r3_unperturbed:.3f}")
-    if dense_r3_unperturbed < 0.90:
-        print(f"ERROR: Dense recall@3 on unperturbed queries ({dense_r3_unperturbed:.3f}) < 0.90", file=sys.stderr)
+    # Dense recall@3 unperturbed 15-word check (gate).
+    dense_r3_15 = results[15]["unperturbed"]["dense"][1]
+    print(f"\nDense recall@3 (unperturbed, 15 words): {dense_r3_15:.3f}")
+    if dense_r3_15 < 0.90:
+        print(f"ERROR: Dense recall@3 on unperturbed 15-word queries ({dense_r3_15:.3f}) < 0.90", file=sys.stderr)
         sys.exit(1)
 
-    print("\n".join(lines))
+    # Sample queries.
+    sample_summary = print_sample_queries(cur, embeddings, chunk_meta)
 
-    # Sample queries top-3.
-    summary_lines.append("")
-    summary_lines.append("## Sample queries: dense + fusion top-3")
-    summary_lines.append("")
-    summary_lines.append("| Query | Method | Rank | Book | Page | Score | Snippet |")
-    summary_lines.append("|---|---|---|---|---|---|---|")
-
-    print("\n=== Sample queries: dense + fusion top-3 ===")
-    all_sample_queries = [(q, "en") for q in SAMPLE_QUERIES_EN] + [(q, "ar") for q in SAMPLE_QUERIES_AR]
-
-    for q, lang in all_sample_queries:
-        q_vec = embed_texts([q], kind="query")[0]
-        dense_res = dense_search(q_vec, embeddings, chunk_meta, top_k=3)
-        fts_res = fts_search(cur, q, top_k=3)
-        fusion_res = rrf_fuse(dense_res, fts_res, top_k=3)
-
-        for method, results in [("dense", dense_res), ("fusion", fusion_res)]:
-            for rank, (name, page, text, score) in enumerate(results, start=1):
-                snippet = centre_snippet(text, q, window=250).replace("|", "\\|")
-                summary_lines.append(f"| {q} | {method} | {rank} | {name} | {page} | {score:.4f} | {snippet} |")
-                print(f"[{q}] {method} rank={rank} book={name} page={page} score={score:.4f} snippet={snippet[:100]}...")
-
-    summary_lines.append("")
-    print("\n".join(summary_lines))
-
-    # Timing stats.
-    timings_arr = np.array(timings)
-    mean_t = float(np.mean(timings_arr))
-    p95_t = float(np.percentile(timings_arr, 95))
-    print(f"\nQuery embedding time (CI runner): mean={mean_t*1000:.2f} ms, p95={p95_t*1000:.2f} ms")
-    summary_lines.append("")
-    summary_lines.append(f"## Query embedding time (CI runner, not a phone)")
-    summary_lines.append("")
-    summary_lines.append(f"- Mean: {mean_t*1000:.2f} ms")
-    summary_lines.append(f"- p95: {p95_t*1000:.2f} ms")
-    summary_lines.append("")
-
+    # Combine summary.
     step_summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if step_summary:
         with open(step_summary, "a", encoding="utf-8") as f:
-            f.write("\n".join(summary_lines) + "\n")
+            f.write("## Dense vs Keyword vs Fusion (sanity check)\n\n")
+            f.write(sanity_summary + "\n\n")
+            f.write(sample_summary + "\n")
 
     conn.close()
     print("Evaluation complete.")

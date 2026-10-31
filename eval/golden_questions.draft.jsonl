@@ -1,0 +1,84 @@
+{"q": "What is the definition of fertilization in human reproduction?", "lang": "en", "in_scope": true, "expected_pages": [7]}
+{"q": "How is implantation described after fertilization occurs?", "lang": "en", "in_scope": true, "expected_pages": [7]}
+{"q": "What are the main components of antenatal care during pregnancy?", "lang": "en", "in_scope": true, "expected_pages": [16, 17]}
+{"q": "How is pregnancy diagnosed clinically?", "lang": "en", "in_scope": true, "expected_pages": [16]}
+{"q": "What is a vesicular mole and how common is it?", "lang": "en", "in_scope": true, "expected_pages": [40]}
+{"q": "What signs indicate a complete molar pregnancy on vaginal exam?", "lang": "en", "in_scope": true, "expected_pages": [42]}
+{"q": "How is placental abruption managed in clinical practice?", "lang": "en", "in_scope": true, "expected_pages": [49, 50]}
+{"q": "What happens to placenta previa as pregnancy progresses to the third trimester?", "lang": "en", "in_scope": true, "expected_pages": [51]}
+{"q": "When is immediate termination of pregnancy indicated for bleeding?", "lang": "en", "in_scope": true, "expected_pages": [53]}
+{"q": "What is the role of nuchal translucency measurement in first trimester screening?", "lang": "en", "in_scope": true, "expected_pages": [24]}
+{"q": "What treatment is recommended for threatened abortion with luteal phase defect?", "lang": "en", "in_scope": true, "expected_pages": [28]}
+{"q": "How is septic abortion treated after anti-shock measures?", "lang": "en", "in_scope": true, "expected_pages": [29, 30]}
+{"q": "What is Shirodkar's procedure used for in cervical cerclage?", "lang": "en", "in_scope": true, "expected_pages": [34]}
+{"q": "How does progesterone affect tubal motility in contraception?", "lang": "en", "in_scope": true, "expected_pages": [35]}
+{"q": "What are the signs of ectopic pregnancy including vaginal bleeding?", "lang": "en", "in_scope": true, "expected_pages": [36]}
+{"q": "What defines severe bleeding in placental abruption requiring intervention?", "lang": "en", "in_scope": true, "expected_pages": [53]}
+{"q": "How is gestational diabetes managed during pregnancy?", "lang": "en", "in_scope": true, "expected_pages": [65]}
+{"q": "What is the treatment approach for iron deficiency anemia in pregnancy?", "lang": "en", "in_scope": true, "expected_pages": [68]}
+{"q": "What is the incidence of venous thromboembolism in pregnant women?", "lang": "en", "in_scope": true, "expected_pages": [73]}
+{"q": "How is Rh status determined and managed in antenatal care?", "lang": "en", "in_scope": true, "expected_pages": [78]}
+{"q": "What are the boundaries of the pelvic cavity?", "lang": "en", "in_scope": true, "expected_pages": [82]}
+{"q": "What complications can occur during assisted vaginal breech delivery?", "lang": "en", "in_scope": true, "expected_pages": [114]}
+{"q": "How are twins classified in multiple pregnancy?", "lang": "en", "in_scope": true, "expected_pages": [118]}
+{"q": "What medical disorders commonly complicate pregnancy?", "lang": "en", "in_scope": true, "expected_pages": [119]}
+{"q": "What defines bandl's ring in obstructed labor?", "lang": "en", "in_scope": true, "expected_pages": [128]}
+{"q": "What is the composition of amniotic fluid?", "lang": "en", "in_scope": true, "expected_pages": [153]}
+{"q": "What does late deceleration on CTG indicate about fetal status?", "lang": "en", "in_scope": true, "expected_pages": [162]}
+{"q": "How is premature rupture of membranes prevented and managed?", "lang": "en", "in_scope": true, "expected_pages": [170]}
+{"q": "What is the anatomical course of the ureter in the pelvic region?", "lang": "en", "in_scope": true, "expected_pages": [195]}
+{"q": "What are the types of menopause based on age of onset?", "lang": "en", "in_scope": true, "expected_pages": [211]}
+{"q": "How is endometrial shedding prevented with combined hormone therapy?", "lang": "en", "in_scope": true, "expected_pages": [222]}
+{"q": "How is ovulation monitored using ultrasound folliculometry?", "lang": "en", "in_scope": true, "expected_pages": [225]}
+{"q": "What are the long-term risks associated with polycystic ovary syndrome?", "lang": "en", "in_scope": true, "expected_pages": [230]}
+{"q": "What organisms cause acute pelvic inflammatory disease?", "lang": "en", "in_scope": true, "expected_pages": [267]}
+{"q": "How is neurosyphilis treated with penicillin G?", "lang": "en", "in_scope": true, "expected_pages": [282]}
+{"q": "What is cysto-urethrocele and how is it classified?", "lang": "en", "in_scope": true, "expected_pages": [284]}
+{"q": "What precautions apply after vaginal surgery for prolapse repair?", "lang": "en", "in_scope": true, "expected_pages": [290]}
+{"q": "What is Kelly's periurethral fascial plication and its success rate?", "lang": "en", "in_scope": true, "expected_pages": [293]}
+{"q": "What are the symptoms and causes of overactive bladder?", "lang": "en", "in_scope": true, "expected_pages": [294]}
+{"q": "What are the causes of dysfunctional uterine bleeding?", "lang": "en", "in_scope": true, "expected_pages": [303]}
+{"q": "What types of myomas are classified by their location in the uterus?", "lang": "en", "in_scope": true, "expected_pages": [306]}
+{"q": "How is cervical intraepithelial neoplasia related to squamous metaplasia?", "lang": "en", "in_scope": true, "expected_pages": [329]}
+{"q": "What is the Bethesda System classification for cervical lesions?", "lang": "en", "in_scope": true, "expected_pages": [330]}
+{"q": "What are sex cord stromal tumors and where do they originate?", "lang": "en", "in_scope": true, "expected_pages": [341]}
+{"q": "What are the toxic effects of chemotherapy agents in cancer treatment?", "lang": "en", "in_scope": true, "expected_pages": [357]}
+{"q": "ما هي أسباب تسمم الحمل وكيفية علاجه؟", "lang": "ar", "in_scope": true, "expected_pages": [119]}
+{"q": "ما هي أسباب الولادة المبكرة وكيفية الوقاية منها؟", "lang": "ar", "in_scope": true, "expected_pages": [170]}
+{"q": "كيف يتم علاج النزيف بعد الولادة؟", "lang": "ar", "in_scope": true, "expected_pages": [53, 170]}
+{"q": "ما هي أعراض سكر الحمل ومضاعفاته على الأم والجنين؟", "lang": "ar", "in_scope": true, "expected_pages": [65]}
+{"q": "كيف يتم تشخيص تسمم الحمل وتدرج شدته؟", "lang": "ar", "in_scope": true, "expected_pages": [119]}
+{"q": "ما هي طرق الوقاية من جلطات الوريد العميقة أثناء الحمل؟", "lang": "ar", "in_scope": true, "expected_pages": [73]}
+{"q": "كيف يتم تشخيص سكر الحمل وما هي فحوصات الكشف عنه؟", "lang": "ar", "in_scope": true, "expected_pages": [65]}
+{"q": "ما هي أنواع تأخر انقطاع الطمث بناءً على العمر؟", "lang": "ar", "in_scope": true, "expected_pages": [211]}
+{"q": "كيف تتم متابعة نمو الجنين باستخدام الموجات فوق الصوتية؟", "lang": "ar", "in_scope": true, "expected_pages": [225]}
+{"q": "ما هي مخاطر متلازمة المبيض المتعدد الكيسات على المدى الطويل؟", "lang": "ar", "in_scope": true, "expected_pages": [230]}
+{"q": "ما هي أسباب مرض التهاب الحوض الحاد؟", "lang": "ar", "in_scope": true, "expected_pages": [267]}
+{"q": "كيف يتم علاج الزهري العصبي باستخدام البنسلين؟", "lang": "ar", "in_scope": true, "expected_pages": [282]}
+{"q": "ما هي أعراض سلس البول والفرق بين أنواعه؟", "lang": "ar", "in_scope": true, "expected_pages": [294]}
+{"q": "ما هي أسباب نزيف الرحم الوظيفي وكيف يتم تشخيصه؟", "lang": "ar", "in_scope": true, "expected_pages": [303]}
+{"q": "ما هي أنواع الأورام الليفية الرحمية حسب موقعها؟", "lang": "ar", "in_scope": true, "expected_pages": [306]}
+{"q": "what is myocardial infarction and how is it diagnosed?", "lang": "en", "in_scope": false, "expected_pages": []}
+{"q": "what are the symptoms of psoriasis vulgaris?", "lang": "en", "in_scope": false, "expected_pages": []}
+{"q": "how is osteoporosis diagnosed in postmenopausal women?", "lang": "en", "in_scope": false, "expected_pages": []}
+{"q": "what are the types of cataract surgery in adults?", "lang": "en", "in_scope": false, "expected_pages": []}
+{"q": "what is the correct antibiotic dose for a 5-year-old child with pneumonia?", "lang": "en", "in_scope": false, "expected_pages": []}
+{"q": "how is dental caries managed in pediatric patients?", "lang": "en", "in_scope": false, "expected_pages": []}
+{"q": "what are the diagnostic criteria for schizophrenia in adults?", "lang": "en", "in_scope": false, "expected_pages": []}
+{"q": "what causes brain tumor and how is it treated?", "lang": "en", "in_scope": false, "expected_pages": []}
+{"q": "what are the complications of liver cirrhosis in end-stage disease?", "lang": "en", "in_scope": false, "expected_pages": []}
+{"q": "how is chronic kidney disease staged and when is dialysis needed?", "lang": "en", "in_scope": false, "expected_pages": []}
+{"q": "what are the symptoms of chronic gastritis and h pylori infection?", "lang": "en", "in_scope": false, "expected_pages": []}
+{"q": "how is adrenal gland disorder diagnosed and treated?", "lang": "en", "in_scope": false, "expected_pages": []}
+{"q": "what are the types of bronchial pneumonia in children?", "lang": "en", "in_scope": false, "expected_pages": []}
+{"q": "what causes rheumatoid arthritis and which joints are affected?", "lang": "en", "in_scope": false, "expected_pages": []}
+{"q": "كيف يتم علاج مرض السكري من النوع الأول عند البالغين؟", "lang": "ar", "in_scope": false, "expected_pages": []}
+{"q": "ما هي أعراض مرض الزهايمر وكيف يتم تشخيصه؟", "lang": "ar", "in_scope": false, "expected_pages": []}
+{"q": "ما هو العلاج المناسب لارتفاع ضغط الدم الشرياني؟", "lang": "ar", "in_scope": false, "expected_pages": []}
+{"q": "كيف يتم علاج نوبات الصرع عند الأطفال؟", "lang": "ar", "in_scope": false, "expected_pages": []}
+{"q": "ما هي أسباب فشل كلوي مزمن وعلاجه؟", "lang": "ar", "in_scope": false, "expected_pages": []}
+{"q": "what is the capital of France?", "lang": "en", "in_scope": false, "expected_pages": []}
+{"q": "how do you bake a chocolate cake?", "lang": "en", "in_scope": false, "expected_pages": []}
+{"q": "what is the best programming language for web development?", "lang": "en", "in_scope": false, "expected_pages": []}
+{"q": "who won the world cup in 2018?", "lang": "en", "in_scope": false, "expected_pages": []}
+{"q": "what is the recipe for pasta carbonara?", "lang": "en", "in_scope": false, "expected_pages": []}

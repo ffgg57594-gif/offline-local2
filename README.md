@@ -35,3 +35,13 @@ CI downloads the quantized ONNX model `Xenova/multilingual-e5-small` from Huggin
 
 كيف تُبنى التضمينات (Arabic)
 يُحصل CI على نموذج Xenova/multilingual-e5-small المضغوط بصيغة ONNX من منصة Hugging Face إلى `app/src/main/assets/models/embedder/`، ثم يشغل `scripts/build_embeddings.py` لتضمين كل مقطع من `books_knowledge.db` في `assets/embeddings.bin` (مصفوفة float32 [N, 384]، مبرمعة L2، متوسطة التجميع). تُكتب مراجع المتجهات إلى `assets/embedder_reference.json` لاختبارات المطابقة بلغة Kotlin. كل الأصول المولدة غير مراقبة في git ولا تُكرمَّت.
+
+## Retrieval evaluation and threshold calibration (Stage 3.5)
+CI runs `scripts/evaluate_dense_vs_keyword.py` for a dense-vs-keyword-vs-fusion sanity table, `scripts/evaluate_golden.py` for golden-set recall/MRR, and `scripts/calibrate_gate.py` to recommend a strict similarity gate (dense score, dense+keyword, or fusion only) from the draft golden set in `eval/golden_questions.draft.jsonl`. The calibrated gate is written to `assets/config_calibrated.json` (gitignored, never committed).
+
+Arabic query expansion uses `app/src/main/assets/medical_aliases.json` (about 150 OB/GYN terms with Arabic keys and English values). When an Arabic query contains an alias key, the English terms are appended for both dense and keyword search. Alias verification: each English term must have FTS5 hit count > 0 in the built database; otherwise it is dropped.
+
+## كيف تُجرى التقييم والمعايرة (Arabic Stage 3.5)
+يشغل CI `scripts/evaluate_dense_vs_keyword.py` لجدول المقارنة بين البحث الكثيف والكلمات المفتاحية والدمج، و`scripts/evaluate_golden.py` لاستدعاء واسترجاع مجموعة الأسئلة الذهبية، و`scripts/calibrate_gate.py` للمعايرة وتحديد بوابة التشابه الصارمة (النقاط الكثيفة فقط، أو الكثيفة + 키워د، أو الدمج فقط) من مجموعة الأسئلة الذهبية المسودة في `eval/golden_questions.draft.jsonl`. تُكتب البوابة المعايرة إلى `assets/config_calibrated.json` (غير مراقب في git ولا يُكرمَّت).
+
+يتم توسيع الاستعلام العربي باستخدام `app/src/main/assets/medical_aliases.json` (حوالي 150 مصطلح توليد وإنجاب مع مفاتيح عربية وقيم إنجليزية). عندما يحتوي الاستعلام العربي على مفتاح تتبع، تُضاف المصطلحات الإنجليزية لكل من البحث الكثيف وبحث الكلمات المفتاحية. تُتحقق من المستعارات: يجب أن يكون لكل مصطلح إنجليزي عدد نقاط FTS5 أكبر من 0 في قاعدة البيانات المبنية؛ وإلا يُسقط.
