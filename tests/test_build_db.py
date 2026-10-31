@@ -29,6 +29,11 @@ def _make_pdf(tmp_path, name):
     p3 = doc.new_page()
     p3.insert_text((72, 72), "CONFIDENTIAL HEADER")
     p3.insert_text((72, 110), "Short.")
+    # Pages 4-12: repeat header so it exceeds 40% of pages (>= 10 pages total).
+    for pno in range(4, 13):
+        pn = doc.new_page()
+        pn.insert_text((72, 72), "CONFIDENTIAL HEADER")
+        pn.insert_text((72, 110), f"Page {pno} filler content about hypertension management and diagnosis.")
     doc.save(path)
     doc.close()
     return path
@@ -75,11 +80,11 @@ def test_chunk_page_numbers_and_no_crossing(tmp_path):
     for pl in pages_text:
         cleaned.append([ln for ln in pl if ln not in hf and not bk.is_page_number_line(ln)])
     chunks = bk.build_chunks_for_book("sample", cleaned, hf)
-    # Each chunk page must be 1, 2, or 3 and non-decreasing; no chunk spans pages.
+    # Each chunk page must be 1..12 and non-decreasing; no chunk spans pages.
     seen_pages = [c[0] for c in chunks]
     assert seen_pages == sorted(seen_pages)
-    assert all(p in (1, 2, 3) for p in seen_pages)
-    assert len(chunks) >= 3  # at least one per page with text
+    assert all(1 <= p <= 12 for p in seen_pages)
+    assert len(chunks) >= 12  # at least one per page with text
 
 
 def test_fts5_keyword_query(tmp_path):
