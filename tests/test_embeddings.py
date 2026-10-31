@@ -32,7 +32,7 @@ def test_mean_pool_ignores_padding():
 
 
 def test_l2_normalization_gives_norm_1():
-    vectors = np.array([[3.0, 4.0], [0.0, 0.0], [1.0, 1.0, 1.0]], dtype=np.float64)
+    vectors = np.array([[3.0, 4.0], [0.0, 0.0], [1.0, 1.0]], dtype=np.float64)
     normalized = ec._l2_normalize(vectors)
     norms = np.linalg.norm(normalized, axis=1)
     # Zero vector stays zero (avoid div by zero).
