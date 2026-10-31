@@ -40,8 +40,8 @@ ARABIC_QUESTIONS = [
 ]
 
 MIXED_QUESTIONS = [
-    "혈압 monitoring for preeclampsia and gestational hypertension treatment",
-    "ما هو治疗 plan for postpartum hemorrhage with uterine atony?",
+    "Blood pressure monitoring for preeclampsia and gestational hypertension treatment",
+    "ما هو treatment plan for postpartum hemorrhage with uterine atony?",
     "screening لـ gestational diabetes mellitus في الحمل عالي الخطورة",
 ]
 
