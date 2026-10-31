@@ -28,6 +28,8 @@ jobs:
         run: pytest tests
       - name: Build knowledge DB
         run: python scripts/build_knowledge_db.py
+      - name: Sample FTS5 queries
+        run: python scripts/fts5_sample_queries.py
       - name: Gradle cache
         uses: actions/cache@v4
         with:
