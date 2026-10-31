@@ -1,2 +1,6 @@
 PyMuPDF==1.24.9
 pytest==8.3.3
+onnxruntime==1.18.0
+tokenizers==0.20.3
+numpy==1.26.4
+huggingface_hub==0.25.2

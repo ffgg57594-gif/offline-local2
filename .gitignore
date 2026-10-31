@@ -5,3 +5,7 @@ local.properties
 *.iml
 .idea/
 app/src/main/assets/books_knowledge.db
+app/src/main/assets/embeddings.bin
+app/src/main/assets/embeddings_meta.json
+app/src/main/assets/embedder_reference.json
+app/src/main/assets/models/

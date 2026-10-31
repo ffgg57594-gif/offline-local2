@@ -29,3 +29,9 @@ Optional manual skip: `scripts/skip_pages.json` maps book name to page numbers t
 - ينظف العناوين المتكررة، ويصلح الكلمات المنقوطة، ويقسّم إلى مقاطع 100–180 كلمة بدون تجاوز حدود الصفحة.
 - يكتب `app/src/main/assets/books_knowledge.db` (SQLite + FTS5) — هذا الملف غيرمراقب في git ولا يُ커밋.
 - يحتوي APK على `assets/books_knowledge.db` ولا يحتوي على أي `.pdf`.
+
+## How embeddings are built (Stage 3)
+CI downloads the quantized ONNX model `Xenova/multilingual-e5-small` from Hugging Face Hub into `app/src/main/assets/models/embedder/`, then runs `scripts/build_embeddings.py` to embed every chunk from `books_knowledge.db` into `assets/embeddings.bin` (float32 matrix [N, 384], L2-normalized, mean-pooled). Reference vectors are written to `assets/embedder_reference.json` for Kotlin parity tests. All generated assets are gitignored and never committed.
+
+كيف تُبنى التضمينات (Arabic)
+يُحصل CI على نموذج Xenova/multilingual-e5-small المضغوط بصيغة ONNX من منصة Hugging Face إلى `app/src/main/assets/models/embedder/`، ثم يشغل `scripts/build_embeddings.py` لتضمين كل مقطع من `books_knowledge.db` في `assets/embeddings.bin` (مصفوفة float32 [N, 384]، مبرمعة L2، متوسطة التجميع). تُكتب مراجع المتجهات إلى `assets/embedder_reference.json` لاختبارات المطابقة بلغة Kotlin. كل الأصول المولدة غير مراقبة في git ولا تُكرمَّت.

@@ -28,8 +28,50 @@ jobs:
         run: pytest tests
       - name: Build knowledge DB
         run: python scripts/build_knowledge_db.py
-      - name: Sample FTS5 queries
-        run: python scripts/fts5_sample_queries.py
+      - name: Download embedding model
+        run: python scripts/download_models.py
+      - name: Build embeddings
+        run: python scripts/build_embeddings.py
+      - name: Make reference vectors
+        run: python scripts/make_reference_vectors.py
+      - name: Evaluate dense vs keyword
+        run: python scripts/evaluate_dense_vs_keyword.py
+      - name: Language hygiene check
+        run: |
+          python3 - <<'PY'
+          import re, sys, pathlib
+          patterns = {
+              "Hangul": r"[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F]",
+              "Hiragana": r"[\u3040-\u309F]",
+              "Katakana": r"[\u30A0-\u30FF]",
+              "CJK": r"[\u4E00-\u9FFF\u3400-\u4DBF]",
+              "Cyrillic": r"[\u0400-\u04FF]",
+              "Hebrew": r"[\u0590-\u05FF]",
+              "Devanagari": r"[\u0900-\u097F]",
+          }
+          roots = ["README.md", "scripts", "tests", ".github", "app/src/main/java"]
+          hits = 0
+          for root in roots:
+              p = pathlib.Path(root)
+              if not p.exists():
+                  continue
+              for f in p.rglob("*"):
+                  if not f.is_file():
+                      continue
+                  try:
+                      text = f.read_text(encoding="utf-8")
+                  except Exception:
+                      continue
+                  for name, pat in patterns.items():
+                      for i, line in enumerate(text.splitlines(), start=1):
+                          if re.search(pat, line):
+                              print(f"{f}:{i}: {name} character found")
+                              hits += 1
+          if hits > 0:
+              print(f"ERROR: {hits} non-allowed-script character hit(s).", file=sys.stderr)
+              sys.exit(1)
+          print("Language hygiene check: OK")
+          PY
       - name: Gradle cache
         uses: actions/cache@v4
         with:
@@ -63,13 +105,25 @@ jobs:
         run: |
           APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
           if unzip -l "$APK" | grep -i '\.pdf$'; then echo "PDF found in APK - FAIL"; exit 1; fi
-          if ! unzip -l "$APK" | grep -q 'assets/books_knowledge.db'; then echo "books_knowledge.db missing from APK - FAIL"; exit 1; fi
-          echo "APK contains books_knowledge.db and no .pdf - OK"
-      - name: APK size
+          for f in assets/books_knowledge.db assets/embeddings.bin assets/embeddings_meta.json assets/embedder_reference.json assets/models/embedder/model_quantized.onnx assets/models/embedder/tokenizer.json; do
+            if ! unzip -l "$APK" | grep -q "$f"; then echo "Missing $f in APK - FAIL"; exit 1; fi
+          done
+          echo "APK contains all required assets and no .pdf - OK"
+      - name: APK file sizes
         run: |
           APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
-          SIZE=$(stat -c%s "$APK")
-          echo "### APK size: $SIZE bytes" >> $GITHUB_STEP_SUMMARY
+          TOTAL=$(stat -c%s "$APK")
+          echo "### APK contents and sizes" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| File | Size (bytes) |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          for f in assets/books_knowledge.db assets/embeddings.bin assets/embeddings_meta.json assets/embedder_reference.json assets/models/embedder/model_quantized.onnx assets/models/embedder/tokenizer.json; do
+            SIZE=$(unzip -l "$APK" | awk -v f="$f" '$4 == f {print $3}')
+            if [ -z "$SIZE" ]; then SIZE=0; fi
+            echo "| $f | $SIZE |" >> $GITHUB_STEP_SUMMARY
+          done
+          echo "| Total APK | $TOTAL |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
