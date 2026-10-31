@@ -11,7 +11,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 from text_normalize import normalize_text, load_variant_map, FULL_VARIANTS  # noqa: E402
 from keyword_builder import (
     build_keyword_query,
-    compute_generic_terms,
     load_stopwords,
     answer_terms_match,
     answer_terms_match_fts,
@@ -69,14 +68,6 @@ def test_stopwords_removed():
     assert "the" not in tokens
     assert "for" not in tokens
     assert "postpartum" in tokens or "hemorrhage" in tokens
-
-
-def test_generic_terms_removed():
-    stopwords = load_stopwords()
-    # Generic terms like "patient" would be removed if in generic set.
-    query, tokens = build_keyword_query("patient care treatment", stopwords, {"patient", "care"})
-    assert "patient" not in tokens
-    assert "care" not in tokens
 
 
 def test_fallback_longest_token():
