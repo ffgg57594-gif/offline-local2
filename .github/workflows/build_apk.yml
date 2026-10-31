@@ -17,12 +17,23 @@ jobs:
           java-version: '17'
       - name: Android SDK
         run: echo "ANDROID_HOME=$ANDROID_HOME"
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install Python deps
+        run: pip install -r scripts/requirements.txt
+      - name: Run unit tests (Python)
+        run: pytest tests
+      - name: Build knowledge DB
+        run: python scripts/build_knowledge_db.py
       - name: Gradle cache
         uses: actions/cache@v4
         with:
           path: ~/.gradle/caches
           key: gradle-${{ hashFiles('**/*.gradle*', '**/libs.versions.toml') }}
-      - name: Unit tests
+      - name: Unit tests (Android)
         run: ./gradlew testDebugUnitTest
       - name: Assemble release
         run: ./gradlew assembleRelease
@@ -46,11 +57,12 @@ jobs:
           ALIAS=${KEY_ALIAS:-medai}
           KP=${KEY_PASSWORD:-changeit}
           jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore /tmp/keystore.jks -storepass "$KS_PASS" -keypass "$KP" "$APK" "$ALIAS"
-      - name: Verify no PDF in APK
+      - name: Verify APK contents
         run: |
           APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
           if unzip -l "$APK" | grep -i '\.pdf$'; then echo "PDF found in APK - FAIL"; exit 1; fi
-          echo "No PDF in APK - OK"
+          if ! unzip -l "$APK" | grep -q 'assets/books_knowledge.db'; then echo "books_knowledge.db missing from APK - FAIL"; exit 1; fi
+          echo "APK contains books_knowledge.db and no .pdf - OK"
       - name: APK size
         run: |
           APK=$(ls app/build/outputs/apk/release/*.apk | head -1)

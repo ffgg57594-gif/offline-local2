@@ -1,0 +1,7 @@
+*.apk
+.gradle/
+build/
+local.properties
+*.iml
+.idea/
+app/src/main/assets/books_knowledge.db
