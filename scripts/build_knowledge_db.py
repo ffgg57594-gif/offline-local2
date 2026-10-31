@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Stage 2: build-time knowledge DB from PDFs in app/src/main/assets/books/.
-Reads every *.pdf, extracts per-page text, cleans, chunks, and writes
-app/src/main/assets/books_knowledge.db with FTS5. Never packaged in the APK.
+Reads every *.pdf, extracts per-page text, cleans, detects and skips non-content
+pages (TOC / index / manual), chunks remaining pages, applies a chunk quality
+guard, and writes app/src/main/assets/books_knowledge.db with FTS5.
+Never packaged in the APK.
 """
 import hashlib
+import json
 import os
 import re
 import sqlite3
@@ -13,10 +16,15 @@ from datetime import datetime, timezone
 
 BOOKS_DIR = os.path.join("app", "src", "main", "assets", "books")
 OUT_DB = os.path.join("app", "src", "main", "assets", "books_knowledge.db")
+SKIP_FILE = os.path.join("scripts", "skip_pages.json")
 
 ZERO_WIDTH = "\u200b\u200c\u200d\ufeff"
-_HEADING_LINE_RE = re.compile(r"^[A-Za-zÀ-ÖØ-öø-ÿ\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF0-9 ,;:&()\-\"\']{1,80}$")
-_PAGE_NUMBER_RE = re.compile(r"^\s*\d{1,6}\s*$")
+_TOC_LABELS = {"contents", "table of contents", "المحتويات", "الفهرس"}
+_DOT_LEADER = re.compile(r"\.{3,}|\u2026")
+_PAGE_NUMBER_TAIL = re.compile(r".+\s+\d{1,4}\s*$")
+_LINE_ENDING_IN_NUMBER = re.compile(r".*\d\s*$")
+_INDEX_LINE = re.compile(r"^.+,\s*\d+(?:[-–]\d+)?(?:\s*,\s*\d+(?:[-–]\d+)?)*\s*$")
+_SENTENCE_END = re.compile(r"[.!?؟۔]$")
 
 
 def sha256_file(path):
@@ -33,12 +41,8 @@ def normalize_text(text):
     for ch in ZERO_WIDTH:
         text = text.replace(ch, "")
     text = text.replace("\r\n", "\n").replace("\r", "\n")
-    # Collapse horizontal whitespace inside lines, keep newlines as paragraph separators.
     lines = text.split("\n")
-    cleaned_lines = []
-    for line in lines:
-        line = re.sub(r"[ \t]+", " ", line).strip()
-        cleaned_lines.append(line)
+    cleaned_lines = [re.sub(r"[ \t]+", " ", line).strip() for line in lines]
     return "\n".join(cleaned_lines)
 
 
@@ -54,7 +58,7 @@ def split_into_paragraphs(text):
 
 
 def is_page_number_line(line):
-    return bool(_PAGE_NUMBER_RE.match(line.strip()))
+    return bool(re.match(r"^\s*\d{1,6}\s*$", line.strip()))
 
 
 def find_header_footer_lines(pages_text, min_pages=10, threshold=0.4):
@@ -74,10 +78,77 @@ def find_header_footer_lines(pages_text, min_pages=10, threshold=0.4):
     return {line for line, c in counts.items() if c / total > threshold}
 
 
+def letter_ratio(text):
+    """Ratio of letters (Latin or Arabic, any Unicode letter) to total non-space chars."""
+    non_space = [ch for ch in text if not ch.isspace()]
+    if not non_space:
+        return 0.0
+    letters = sum(1 for ch in non_space if unicodedata.category(ch)[0] == "L")
+    return letters / len(non_space)
+
+
+def has_sentence(text):
+    """True if the text contains at least one sentence-ending line."""
+    return bool(_SENTENCE_END.search(text.strip()))
+
+
+def word_count(text):
+    return len(text.split())
+
+
+def is_toc_page(lines):
+    """Table-of-contents page detection."""
+    non_empty = [ln for ln in lines if ln.strip()]
+    if not non_empty:
+        return False
+    # Line equals a TOC label and page has >= 5 lines ending in numbers.
+    first = non_empty[0].strip().lower()
+    if first in _TOC_LABELS:
+        num_ending = sum(1 for ln in non_empty if _LINE_ENDING_IN_NUMBER.match(ln.strip()))
+        if num_ending >= 5:
+            return True
+    # At least 35% of non-empty lines contain a dot leader or end with a page number.
+    leader_or_tail = 0
+    for ln in non_empty:
+        s = ln.strip()
+        if _DOT_LEADER.search(s) or _PAGE_NUMBER_TAIL.match(s):
+            leader_or_tail += 1
+    if leader_or_tail / len(non_empty) >= 0.35:
+        return True
+    return False
+
+
+def is_index_page(lines):
+    """Index page: >= 50% of lines match term, comma-separated page numbers."""
+    non_empty = [ln for ln in lines if ln.strip()]
+    if not non_empty:
+        return False
+    matches = sum(1 for ln in non_empty if _INDEX_LINE.match(ln.strip()))
+    return matches / len(non_empty) >= 0.50
+
+
+def is_short_garbage_page(lines):
+    """Page with fewer than 15 words and no sentence -> likely garbage / section divider."""
+    text = " ".join(lines)
+    return word_count(text) < 15 and not has_sentence(text)
+
+
+def load_skip_pages():
+    """Load manual skip overrides from scripts/skip_pages.json."""
+    if not os.path.exists(SKIP_FILE):
+        return {}
+    try:
+        with open(SKIP_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if not isinstance(data, dict):
+            return {}
+        return {str(k): list(v) for k, v in data.items()}
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
 def split_paragraph_at_sentences(paragraph, max_words=180):
-    """Split a long paragraph at sentence boundaries (. ! ? ؟ ۔ newline)."""
-    # Keep sentence terminators with the preceding text.
-    parts = re.split(r"(?<=[.!?؟۔])\s+|\n", paragraph)
+    parts = re.split(r"(?<=[.!?؟.])\s+|\n", paragraph)
     chunks_out = []
     current = []
     current_words = 0
@@ -98,7 +169,6 @@ def split_paragraph_at_sentences(paragraph, max_words=180):
 
 
 def is_heading_like(line, next_line):
-    """Short line (<12 words), no final period, followed by a longer paragraph."""
     words = line.split()
     if len(words) >= 12:
         return False
@@ -106,46 +176,44 @@ def is_heading_like(line, next_line):
         return False
     if not next_line:
         return False
-    # Heading should be clearly shorter than the following paragraph.
     if len(next_line.split()) <= len(words) + 2:
         return False
-    return bool(_HEADING_LINE_RE.match(line.strip()))
+    return bool(re.compile(r"^[A-Za-zÀ-ÖØ-öø-ÿ\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF0-9 ,;:&()\-\"\']{1,80}$").match(line.strip()))
 
 
-def build_chunks_for_book(book_name, pages_text, header_footer_lines):
-    """Return list of (page, section, text, word_count) in page order."""
+def build_chunks_for_book(book_name, pages_text, header_footer_lines, skip_pages):
+    """Return list of (page, section, text, word_count) in page order, skipping skip_pages."""
     chunks = []
     current_section = ""
+    skip_set = set(skip_pages)
     for page_idx, page_lines in enumerate(pages_text, start=1):
+        if page_idx in skip_set:
+            continue
         page_text = "\n".join(page_lines)
         page_text = dehyphenate(page_text)
         paragraphs = split_into_paragraphs(page_text)
         if not paragraphs:
             continue
-        # Track headings within this page.
         para_texts = [p for p in paragraphs]
         for i, para in enumerate(para_texts):
             first_line = para.split("\n")[0] if "\n" in para else para
             next_para = para_texts[i + 1] if i + 1 < len(para_texts) else ""
             if is_heading_like(first_line, next_para):
                 current_section = first_line.strip()
-        # Chunk paragraphs on this page only (no crossing page boundary).
         page_chunks = chunk_paragraphs(para_texts, current_section, page_idx)
         chunks.extend(page_chunks)
     return chunks
 
 
 def chunk_paragraphs(paragraphs, section, page_idx):
-    """Create chunks of ~100-180 words with 20% overlap, never crossing a page."""
     out = []
     target_min, target_max = 100, 180
-    overlap = int(target_max * 0.20)  # ~36 words overlap
+    overlap = int(target_max * 0.20)
     buffer_words = []
     buffer_text = ""
     for para in paragraphs:
         words = para.split()
         if len(words) < 20:
-            # Very short paragraph: merge into buffer or standalone.
             if buffer_words and len(buffer_words) + len(words) <= target_max:
                 buffer_words.extend(words)
                 buffer_text = (buffer_text + " " + para).strip()
@@ -162,7 +230,6 @@ def chunk_paragraphs(paragraphs, section, page_idx):
                 buffer_text = (buffer_text + " " + para).strip()
                 if len(buffer_words) >= target_min:
                     out.append((page_idx, section, buffer_text, len(buffer_words)))
-                    # Keep overlap words for next chunk.
                     buffer_words = buffer_words[-overlap:] if overlap else []
                     buffer_text = " ".join(buffer_words)
                 continue
@@ -172,7 +239,6 @@ def chunk_paragraphs(paragraphs, section, page_idx):
                 buffer_words = words[:]
                 buffer_text = para
                 continue
-        # Paragraph longer than max: split at sentence boundaries.
         if buffer_words:
             out.append((page_idx, section, buffer_text, len(buffer_words)))
             buffer_words = []
@@ -201,47 +267,23 @@ def build_db(pdf_paths):
         print("ERROR: No PDF files found in " + BOOKS_DIR, file=sys.stderr)
         sys.exit(1)
 
+    manual_skips = load_skip_pages()
+
     os.makedirs(os.path.dirname(OUT_DB), exist_ok=True)
     if os.path.exists(OUT_DB):
         os.remove(OUT_DB)
 
     conn = sqlite3.connect(OUT_DB)
     cur = conn.cursor()
-    cur.execute("""
-        CREATE TABLE books(
-            id INTEGER PRIMARY KEY,
-            name TEXT,
-            sha256 TEXT,
-            pages INTEGER
-        )
-    """)
-    cur.execute("""
-        CREATE TABLE chunks(
-            id INTEGER PRIMARY KEY,
-            book_id INTEGER,
-            page INTEGER,
-            section TEXT,
-            text TEXT,
-            word_count INTEGER
-        )
-    """)
-    cur.execute("""
-        CREATE VIRTUAL TABLE chunks_fts USING fts5(
-            text,
-            content='chunks',
-            content_rowid='id',
-            tokenize='unicode61 remove_diacritics 2'
-        )
-    """)
-    cur.execute("""
-        CREATE TABLE meta(
-            key TEXT PRIMARY KEY,
-            value TEXT
-        )
-    """)
+    cur.execute("CREATE TABLE books(id INTEGER PRIMARY KEY, name TEXT, sha256 TEXT, pages INTEGER)")
+    cur.execute("CREATE TABLE chunks(id INTEGER PRIMARY KEY, book_id INTEGER, page INTEGER, section TEXT, text TEXT, word_count INTEGER)")
+    cur.execute("CREATE VIRTUAL TABLE chunks_fts USING fts5(text, content='chunks', content_rowid='id', tokenize='unicode61 remove_diacritics 2')")
+    cur.execute("CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT)")
 
     chunk_id = 1
-    total_chunks = 0
+    total_chunks_before_guard = 0
+    total_chunks_after_guard = 0
+    total_dropped = 0
     books_rows = []
     summary_rows = []
 
@@ -257,8 +299,7 @@ def build_db(pdf_paths):
         empty_pages = []
 
         for i in range(page_count):
-            page = doc[i]
-            raw = page.get_text("text")
+            raw = doc[i].get_text("text")
             norm = normalize_text(raw)
             lines = [ln for ln in norm.split("\n") if ln.strip()]
             pages_text.append(lines)
@@ -285,8 +326,29 @@ def build_db(pdf_paths):
 
         hf_lines = find_header_footer_lines(pages_text)
 
+        # --- Non-content page detection ---
+        skip_reasons = {}  # page -> reason
+        manual_for_book = set(manual_skips.get(book_name, []))
+        for page_idx, page_lines in enumerate(pages_text, start=1):
+            if page_idx in manual_for_book:
+                skip_reasons[page_idx] = "manual"
+                continue
+            if is_toc_page(page_lines):
+                skip_reasons[page_idx] = "toc"
+                continue
+            if is_index_page(page_lines):
+                skip_reasons[page_idx] = "index"
+                continue
+            if is_short_garbage_page(page_lines):
+                skip_reasons[page_idx] = "short"
+                continue
+
+        # Clean header/footer and page-number lines from remaining pages.
         cleaned_pages = []
-        for page_lines in pages_text:
+        for page_idx, page_lines in enumerate(pages_text, start=1):
+            if page_idx in skip_reasons:
+                cleaned_pages.append([])
+                continue
             cleaned = []
             for line in page_lines:
                 tl = line.strip()
@@ -299,13 +361,22 @@ def build_db(pdf_paths):
                 cleaned.append(tl)
             cleaned_pages.append(cleaned)
 
-        book_chunks = build_chunks_for_book(book_name, cleaned_pages, hf_lines)
+        book_chunks = build_chunks_for_book(book_name, cleaned_pages, hf_lines, set(skip_reasons.keys()))
+
+        # --- Chunk quality guard ---
+        kept_chunks = []
+        dropped = 0
+        for page, section, text, wc in book_chunks:
+            if letter_ratio(text) < 0.6:
+                dropped += 1
+                continue
+            kept_chunks.append((page, section, text, wc))
 
         cur.execute("INSERT INTO books(name, sha256, pages) VALUES (?, ?, ?)",
                     (book_name, file_sha, page_count))
         book_id = cur.lastrowid
 
-        for page, section, text, wc in book_chunks:
+        for page, section, text, wc in kept_chunks:
             cur.execute(
                 "INSERT INTO chunks(id, book_id, page, section, text, word_count) VALUES (?, ?, ?, ?, ?, ?)",
                 (chunk_id, book_id, page, section, text, wc),
@@ -313,9 +384,29 @@ def build_db(pdf_paths):
             cur.execute("INSERT INTO chunks_fts(rowid, text) VALUES (?, ?)", (chunk_id, text))
             chunk_id += 1
 
-        total_chunks += len(book_chunks)
-        avg_wc = (sum(c[3] for c in book_chunks) / len(book_chunks)) if book_chunks else 0.0
-        summary_rows.append((book_name, page_count, pages_with_text, len(book_chunks), round(avg_wc, 1)))
+        total_chunks_before_guard += len(book_chunks)
+        total_chunks_after_guard += len(kept_chunks)
+        total_dropped += dropped
+
+        # Record skipped pages in meta.
+        if skip_reasons:
+            pages_sorted = sorted(skip_reasons.keys())
+            cur.execute(
+                "INSERT INTO meta(key, value) VALUES (?, ?)",
+                (f"skipped_pages_{book_id}", ",".join(str(p) for p in pages_sorted)),
+            )
+            for p, r in skip_reasons.items():
+                cur.execute(
+                    "INSERT INTO meta(key, value) VALUES (?, ?)",
+                    (f"skip_reason_p{book_id}_{p}", r),
+                )
+
+        avg_wc = (sum(c[3] for c in kept_chunks) / len(kept_chunks)) if kept_chunks else 0.0
+        skipped_list = ", ".join(f"{p}({r})" for p, r in sorted(skip_reasons.items())) or "-"
+        summary_rows.append(
+            (book_name, page_count, pages_with_text, len(book_chunks) + dropped, len(kept_chunks),
+             round(avg_wc, 1), dropped, skipped_list)
+        )
         books_rows.append(book_name)
         doc.close()
 
@@ -325,17 +416,19 @@ def build_db(pdf_paths):
     cur.execute("INSERT INTO meta(key, value) VALUES ('schema_version', '1')")
     cur.execute("INSERT INTO meta(key, value) VALUES ('build_time', ?)", (build_time,))
     cur.execute("INSERT INTO meta(key, value) VALUES ('books_count', ?)", (len(books_rows),))
-    cur.execute("INSERT INTO meta(key, value) VALUES ('chunks_count', ?)", (total_chunks,))
+    cur.execute("INSERT INTO meta(key, value) VALUES ('chunks_before_guard', ?)", (total_chunks_before_guard,))
+    cur.execute("INSERT INTO meta(key, value) VALUES ('chunks_after_guard', ?)", (total_chunks_after_guard,))
+    cur.execute("INSERT INTO meta(key, value) VALUES ('chunks_dropped_guard', ?)", (total_dropped,))
 
     conn.commit()
     conn.close()
 
     # Summary table
-    header = f"| Book | Pages | Pages with text | Chunks | Avg words/chunk |"
-    sep = "|" + "|".join("---" for _ in range(6)) + "|"
+    header = "| Book | Pages | Pages w/ text | Chunks before | Chunks after | Avg words/chunk | Dropped guard | Skipped pages |"
+    sep = "|" + "|".join("---" for _ in range(9)) + "|"
     lines = [header, sep]
-    for name, pg, pwt, ch, avg in summary_rows:
-        lines.append(f"| {name} | {pg} | {pwt} | {ch} | {avg} |")
+    for name, pg, pwt, cb, ca, avg, dr, sk in summary_rows:
+        lines.append(f"| {name} | {pg} | {pwt} | {cb} | {ca} | {avg} | {dr} | {sk} |")
     table = "\n".join(lines)
     print(table)
     step_summary = os.environ.get("GITHUB_STEP_SUMMARY")

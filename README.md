@@ -6,11 +6,11 @@ Android app that answers only from medical PDF textbooks baked in at build time.
 Place PDF textbooks in `app/src/main/assets/books/`. They are NOT packaged in the APK (ignored via `ignoreAssetsPattern = "!books"`).
 
 ## How the book database is built
-CI runs `scripts/build_knowledge_db.py` (Python, PyMuPDF) before the Gradle build:
-- Extracts text per page from every `*.pdf` in `app/src/main/assets/books/`.
-- Cleans headers/footers, de-hyphenates, and chunks into 100–180 word windows (never crossing a page boundary).
-- Writes `app/src/main/assets/books_knowledge.db` (SQLite + FTS5) — this file is gitignored and never committed.
-- The APK contains `assets/books_knowledge.db` but no `.pdf`.
+CI runs `scripts/build_knowledge_db.py` (Python, PyMuPDF) before the Gradle build: extracts text per page, cleans headers/footers, de-hyphenates, chunks into 100–180 word windows (never crossing a page boundary), skips TOC/index/short pages and drops low-quality chunks, writes `app/src/main/assets/books_knowledge.db` (SQLite + FTS5) — gitignored, never committed. The APK contains `assets/books_knowledge.db` but no `.pdf`.
+
+Optional manual skip: `scripts/skip_pages.json` maps book name to page numbers to skip, e.g. `{"425_OBG_clean_single_pages": [1, 2]}`. Create it with `{}` and edit as needed.
+
+تجاوز صفحات يدوياً: ملف `scripts/skip_pages.json` يربط اسم الكتاب بأرقام الصفحات للتجاوز، مثلاً `{"425_OBG_clean_single_pages": [1, 2]}`. أنشئه بـ `{}` وعدل حسب الحاجة.
 
 ## Build from a phone
 1. Upload PDFs to `app/src/main/assets/books/` via GitHub web UI.

@@ -199,3 +199,90 @@ def test_arabic_normalization():
     assert "\ufeff" not in s
     # Diacritics: FTS5 tokenizer removes them, but normalization keeps base letters.
     assert "ل" in s
+
+
+def test_toc_page_excluded():
+    lines = [
+        "CONTENTS",
+        "Chapter 1 ........................................ 1",
+        "Chapter 2 ........................................ 5",
+        "Chapter 3 ........................................ 9",
+        "Chapter 4 ........................................ 13",
+        "Chapter 5 ........................................ 17",
+    ]
+    assert bk.is_toc_page(lines) is True
+
+
+def test_toc_page_dot_leaders_excluded():
+    lines = [
+        "Anatomy and Physiology ........................ 1",
+        "Hypertension .................................... 12",
+        "Diabetes Mellitus ............................... 25",
+        "Preterm Labour .................................. 38",
+        "Postpartum Hemorrhage ........................... 52",
+    ]
+    assert bk.is_toc_page(lines) is True
+
+
+def test_index_page_excluded():
+    lines = [
+        "Abortion, 45, 67-70",
+        "Anemia, 12, 34, 89",
+        "Hypertension, 22, 55",
+        "Preterm Labour, 38, 39, 40",
+        "Uterine Fibroids, 101",
+    ]
+    assert bk.is_index_page(lines) is True
+
+
+def test_normal_page_with_numbers_not_excluded():
+    lines = [
+        "Clinical Management of Hypertension",
+        "The patient should be monitored every 4 hours. See page 12 for details.",
+        "Blood pressure targets are below 140/90 mmHg in most adults.",
+    ]
+    assert bk.is_toc_page(lines) is False
+    assert bk.is_index_page(lines) is False
+    assert bk.is_short_garbage_page(lines) is False
+
+
+def test_short_garbage_page_excluded():
+    lines = [
+        "Section 4",
+        "",
+        "12 34 56",
+    ]
+    assert bk.is_short_garbage_page(lines) is True
+
+
+def test_manual_skip_file_works(tmp_path):
+    skip_file = os.path.join(os.path.dirname(__file__), "..", "scripts", "skip_pages.json")
+    with open(skip_file, "r", encoding="utf-8") as f:
+        import json as _json
+        data = _json.load(f)
+    data["sample"] = [1]
+    with open(skip_file, "w", encoding="utf-8") as f:
+        _json.dump(data, f)
+    try:
+        pdf = _make_pdf(tmp_path, "sample.pdf")
+        doc = fitz.open(pdf)
+        pages_text = []
+        for i in range(doc.page_count):
+            raw = doc[i].get_text("text")
+            norm = bk.normalize_text(raw)
+            pages_text.append([ln for ln in norm.split("\n") if ln.strip()])
+        doc.close()
+        manual_skips = bk.load_skip_pages()
+        assert manual_skips.get("sample") == [1]
+        assert 1 in set(manual_skips.get("sample", []))
+    finally:
+        data["sample"] = []
+        with open(skip_file, "w", encoding="utf-8") as f:
+            _json.dump(data, f)
+
+
+def test_quality_guard_drops_garbage_chunk():
+    chunk_text = "12345 67890 12,345.67 90% $$$ ### @@"
+    assert bk.letter_ratio(chunk_text) < 0.6
+    good_text = "This is a normal medical sentence about hypertension treatment."
+    assert bk.letter_ratio(good_text) >= 0.6
