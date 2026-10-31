@@ -215,6 +215,52 @@ def print_removed_terms_list(cur, stopwords):
     return len(sorted_terms), top30
 
 
+def answer_terms_match(chunk_text, answer_terms, variant_map=None):
+    """Check if a chunk text matches any answer_terms group.
+
+    answer_terms is a list of groups; each group is a list of terms.
+    A hit = chunk contains ALL terms of at least one group.
+    Matching uses the same FTS5 tokenizer normalization (via normalize_text).
+    """
+    if not answer_terms:
+        return False
+    norm_text = normalize_text(chunk_text, variant_map)
+    for group in answer_terms:
+        if all(term.lower() in norm_text for term in group):
+            return True
+    return False
+
+
+def answer_terms_match_fts(cur, chunk_id, answer_terms, variant_map=None):
+    """Check answer_terms match using FTS5 MATCH restricted to chunk id.
+
+    Each term in a group must match the chunk via FTS5.
+    A hit = any group has all its terms match the chunk.
+    """
+    if not answer_terms:
+        return False
+    norm_text = None
+    for group in answer_terms:
+        all_match = True
+        for term in group:
+            # Build a phrase query for the term restricted to this chunk.
+            norm_term = normalize_text(term, variant_map)
+            quoted = f'"{norm_term}"'
+            cur.execute(
+                "SELECT COUNT(*) FROM chunks_fts f "
+                "JOIN chunks c ON c.id = f.rowid "
+                "WHERE c.id = ? AND f.search_text MATCH ?",
+                (chunk_id, quoted),
+            )
+            count = cur.fetchone()[0]
+            if count == 0:
+                all_match = False
+                break
+        if all_match:
+            return True
+    return False
+
+
 if __name__ == "__main__":
     # Report keyword-only recall before/after the fix on golden v2.
     print("Keyword query builder module loaded.")
