@@ -64,5 +64,5 @@ def test_gate_acceptance_logic():
     in_accept = sum(1 for r in in_scope if r["dense_top1_score"] >= threshold and r["kw_hits_top3"] >= 1)
     out_reject = sum(1 for r in out_scope if not (r["dense_top1_score"] >= threshold and r["kw_hits_top3"] >= 1))
 
-    assert in_accept == 1  # Only first one passes
+    assert in_accept == 2  # First and third pass (dense>=0.62 AND kw_hits>=1)
     assert out_reject == 3  # All rejected
