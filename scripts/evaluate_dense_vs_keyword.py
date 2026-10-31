@@ -82,7 +82,7 @@ def fts_search(cur, query, top_k=5):
         "FROM chunks_fts f "
         "JOIN chunks c ON c.id = f.rowid "
         "JOIN books b ON b.id = c.book_id "
-        "WHERE f.text MATCH ? "
+        "WHERE f.search_text MATCH ? "
         "ORDER BY rank LIMIT ?",
         (fts_q, top_k),
     )
