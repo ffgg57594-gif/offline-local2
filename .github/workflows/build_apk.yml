@@ -32,6 +32,13 @@ jobs:
         run: python scripts/text_normalize.py
       - name: Keyword debug
         run: python scripts/keyword_debug.py
+      - name: Pick golden chunks
+        run: python scripts/pick_golden_chunks.py
+      - name: Upload chunks_for_golden artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: chunks-for-golden
+          path: eval/chunks_for_golden.jsonl
       - name: Download embedding model
         run: python scripts/download_models.py
       - name: Build embeddings
@@ -40,10 +47,6 @@ jobs:
         run: python scripts/make_reference_vectors.py
       - name: Benchmark embedder latency
         run: python scripts/benchmark_embedder.py
-      - name: Generate golden v3
-        run: python scripts/generate_golden_v3.py
-      - name: Evaluate golden v3
-        run: python scripts/evaluate_golden_v3.py
       - name: Language hygiene check
         run: |
           python3 - <<'PY'

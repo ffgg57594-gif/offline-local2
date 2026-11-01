@@ -168,7 +168,10 @@ def build_keyword_query(question, stopwords, non_content_words=None, variant_map
 
 
 def fts_search(cur, query, top_k=5, use_column_weights=False):
-    """Run an FTS5 search and return (name, page, text, rank) rows.
+    """Run an FTS5 search and return (chunk_id, name, page, text, rank) rows.
+
+    The 5-tuple layout matches dense_search() output so the two lists can be
+    fused by weighted_rrf() and measured by the same hit functions.
 
     If use_column_weights is True and the FTS5 table has a section column,
     weights favour search_text over section. Otherwise standard bm25().
@@ -179,7 +182,7 @@ def fts_search(cur, query, top_k=5, use_column_weights=False):
         # FTS5 column weights: search_text weight 2.0, section weight 1.0.
         # If no section column exists, this falls back to plain bm25().
         cur.execute(
-            "SELECT b.name, c.page, c.text, bm25(chunks_fts, 2.0, 1.0) AS rank "
+            "SELECT c.id, b.name, c.page, c.text, bm25(chunks_fts, 2.0, 1.0) AS rank "
             "FROM chunks_fts f "
             "JOIN chunks c ON c.id = f.rowid "
             "JOIN books b ON b.id = c.book_id "
@@ -189,7 +192,7 @@ def fts_search(cur, query, top_k=5, use_column_weights=False):
         )
     else:
         cur.execute(
-            "SELECT b.name, c.page, c.text, bm25(chunks_fts) AS rank "
+            "SELECT c.id, b.name, c.page, c.text, bm25(chunks_fts) AS rank "
             "FROM chunks_fts f "
             "JOIN chunks c ON c.id = f.rowid "
             "JOIN books b ON b.id = c.book_id "

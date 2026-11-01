@@ -186,27 +186,28 @@ def test_lenient_hit_at_k():
 
 def test_weighted_rrf_exact_scores():
     """Weighted RRF with k=60, w_kw=0: max score = 1/61 = 0.01639... (dense only)."""
-    dense = [("book", 1, "text one", 0.9)]
-    kw = [("book", 2, "text two", 0.8)]
+    dense = [(1, "book", 1, "text one", 0.9)]
+    kw = [(2, "book", 2, "text two", 0.8)]
     fused = fusion_weighted_rrf(dense, kw, w_dense=1.0, w_kw=0.0, k=60, top_k=5)
     # With w_kw=0.0, only dense contributes: score = 1/(60+0+1) = 1/61
     expected_score = 1.0 / 61
     assert abs(fused[0][3] - expected_score) < 1e-6, f"Expected {expected_score}, got {fused[0][3]}"
     assert fused[0][0] == 1  # dense chunk
 
-    # With w_kw=1.0, both contribute equally.
-    fused2 = fusion_weighted_rrf(dense, kw, w_dense=1.0, w_kw=1.0, k=60, top_k=5)
-    # Both chunks at rank 0: score = 1/61 + 1/61 = 2/61
+    # With w_kw=1.0, both contribute equally (same chunk in both lists).
+    dense2 = [(1, "book", 1, "text one", 0.9)]
+    kw2 = [(1, "book", 1, "text one", 0.8)]
+    fused2 = fusion_weighted_rrf(dense2, kw2, w_dense=1.0, w_kw=1.0, k=60, top_k=5)
+    # Same chunk at rank 0 in both lists: score = 1/61 + 1/61 = 2/61
     expected_score2 = 2.0 / 61
-    # Check that both appear (sorted by score).
     scores = [r[3] for r in fused2]
     assert max(scores) == expected_score2, f"Expected max score {expected_score2}, got {max(scores)}"
 
 
 def test_weighted_rrf_page_dedup():
     """Page de-duplication: same (cid, page) appears once per list."""
-    dense = [("book", 7, "text one", 0.9), ("book", 7, "text two", 0.8)]
-    kw = [("book", 7, "text one", 0.7)]
+    dense = [(1, "book", 7, "text one", 0.9), (2, "book", 7, "text two", 0.8)]
+    kw = [(1, "book", 7, "text one", 0.7)]
     fused = fusion_weighted_rrf(dense, kw, w_dense=1.0, w_kw=1.0, k=60, top_k=5)
     # After dedup, dense has 1 entry for (book, 7), kw has 1 entry for (book, 7).
     # They're the same key, so only one entry in scores.

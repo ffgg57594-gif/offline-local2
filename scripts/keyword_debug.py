@@ -107,7 +107,7 @@ def main():
                     (kw_query,),
                 ).fetchone()[0]
                 rows = fts_search(cur, kw_query, top_k=3)
-                top3 = [(r[0], r[1], round(r[3], 2)) for r in rows]
+                top3 = [(r[0], r[2], round(r[4], 2)) for r in rows]
             except Exception as e:
                 match_count = f"ERROR: {e}"
 
