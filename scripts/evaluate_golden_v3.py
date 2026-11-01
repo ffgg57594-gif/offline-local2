@@ -440,18 +440,20 @@ def main():
     print("\n=== Table 2: 5-Fold Cross-Validation (STRICT metric) ===")
     rng = random.Random(SEED)
     indices = list(range(len(questions)))
-    rng.shuffle(indices)
-    fold_size = len(indices) // N_FOLDS
-    folds = [indices[i * fold_size:(i + 1) * fold_size] for i in range(N_FOLDS)]
-    # Distribute any leftover questions into the last fold.
-    if len(indices) % N_FOLDS:
-        folds[-1].extend(indices[N_FOLDS * fold_size:])
-
     cv_lines = [
         "| Config | Fold | Hit@1 | Hit@3 | Hit@5 | MRR@10 |",
         "|---|---|---|---|---|---|",
     ]
     config_fold_results = {}
+    qids = [q["id"] for q in questions]
+    rng = random.Random(SEED)
+    rng.shuffle(qids)
+    fold_size = len(qids) // N_FOLDS
+    folds = [qids[i * fold_size:(i + 1) * fold_size] for i in range(N_FOLDS)]
+    # Distribute any leftover questions into the last fold.
+    if len(qids) % N_FOLDS:
+        folds[-1].extend(qids[N_FOLDS * fold_size:])
+
     for k in K_VALUES:
         for wkw in WKW_VALUES:
             for fold_idx, fold_qids in enumerate(folds):
