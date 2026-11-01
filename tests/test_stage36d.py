@@ -2,9 +2,9 @@
 """Stage 3.6d tests: metric correctness (MRR, hit@k, LENIENT vs STRICT, TARGET-ONLY).
 
 These tests use hand-made rankings (5-tuples: chunk_id, name, page, text, score)
-and would catch regressions in:
-  - MRR (a miss must lower MRR; denominator is ALL questions, misses contribute 0).
-  - hit@k rates.
+and exercise the production metric functions in evaluate_golden_v3.py:
+  - recall_at_k / mrr_at_k: denominator is ALL questions; a miss contributes 0.
+  - MRR: mean over all questions of 1/rank of first hit within top-10.
   - LENIENT >= STRICT, with a case where they differ (adjacent chunk flips a miss).
   - TARGET-ONLY excludes alt_chunk_ids.
 """
@@ -21,13 +21,15 @@ from evaluate_golden_v3 import (  # noqa: E402
     target_only_hit_at_k,
 )
 
+FIXED_TARGET = 1  # same target for every row, so one hit_func serves all rows
 
-def _row(results, target):
-    return {"results": results, "target": target}
+
+def _row(results):
+    return {"results": results}
 
 
 def _hit_func(k):
-    return lambda r, kk=k: strict_hit_at_k(r["results"], r["target"], [], kk)
+    return lambda results, kk=k: strict_hit_at_k(results, FIXED_TARGET, [], kk)
 
 
 # ---------------------------------------------------------------------------
@@ -37,12 +39,12 @@ def _hit_func(k):
 def test_mrr_miss_lowers_mrr():
     """MRR over ALL questions: a miss contributes 0 and lowers the mean."""
     # All 5 hit at rank 1 -> MRR = 1.0.
-    rows_all_hit = [_row([(t, "book", 7, "text", 0.9)], t) for t in range(1, 6)]
+    rows_all_hit = [_row([(FIXED_TARGET, "book", 7, "text", 0.9)]) for _ in range(5)]
     assert abs(mrr_at_k(rows_all_hit, _hit_func(10), 10) - 1.0) < 1e-9
 
     # One question misses -> MRR = 4/5 = 0.8 (miss contributes 0).
-    rows_one_miss = [_row([(t, "book", 7, "text", 0.9)], t) for t in range(1, 5)]
-    rows_one_miss.append(_row([(999, "book", 7, "text", 0.9)], 50))  # misses
+    rows_one_miss = [_row([(FIXED_TARGET, "book", 7, "text", 0.9)]) for _ in range(4)]
+    rows_one_miss.append(_row([(999, "book", 7, "text", 0.9)]))  # target 1 absent
     mrr = mrr_at_k(rows_one_miss, _hit_func(10), 10)
     assert abs(mrr - 0.8) < 1e-9, f"Expected MRR 0.8 with one miss, got {mrr}"
 
@@ -54,11 +56,11 @@ def test_hit_at_k():
     """recall_at_k hit rates over hand-made rankings."""
     # 3 hit at rank 1; 1 hits at rank 2; 1 misses entirely.
     rows = [
-        _row([(1, "book", 7, "t", 0.9)], 1),
-        _row([(2, "book", 7, "t", 0.9)], 2),
-        _row([(3, "book", 7, "t", 0.9)], 3),
-        _row([(4, "book", 7, "t", 0.9)], 4),
-        _row([(999, "book", 7, "t", 0.9)], 90),  # misses
+        _row([(FIXED_TARGET, "book", 7, "t", 0.9)]),
+        _row([(FIXED_TARGET, "book", 7, "t", 0.9)]),
+        _row([(FIXED_TARGET, "book", 7, "t", 0.9)]),
+        _row([(2, "book", 7, "t", 0.9), (FIXED_TARGET, "book", 7, "t2", 0.8)]),
+        _row([(999, "book", 7, "t", 0.9)]),  # misses entirely
     ]
     hit1, n = recall_at_k(rows, _hit_func(1), 1)
     assert n == 5
@@ -66,7 +68,7 @@ def test_hit_at_k():
     hit3, _ = recall_at_k(rows, _hit_func(3), 3)
     assert abs(hit3 - 0.8) < 1e-9  # 4/5 within top-3
     hit5, _ = recall_at_k(rows, _hit_func(5), 5)
-    assert abs(hit5 - 0.8) < 1e-9  # still 4/5 within top-5 (one misses entirely)
+    assert abs(hit5 - 0.8) < 1e-9  # still 4/5 within top-5
 
 
 # ---------------------------------------------------------------------------
@@ -107,11 +109,10 @@ def test_lenient_ge_strict_and_can_differ():
 def test_target_only_excludes_alts():
     """TARGET-ONLY hits the target chunk only, never an alt_chunk_id."""
     results = [(4, "book", 7, "text four", 0.9), (1, "book", 7, "text one", 0.8)]
-    # alt_chunk_ids includes chunk 1; target_only must NOT count it for target 4.
-    assert target_only_hit_at_k(results, 4, [1], 2) == 1  # target chunk 4 at rank 1
-    assert target_only_hit_at_k(results, 1, [4], 2) == 2  # target chunk 1 at rank 2
-    # Target not present, alt present -> TARGET-ONLY misses.
-    assert target_only_hit_at_k(results, 9, [1, 4], 5) is None
+    assert target_only_hit_at_k(results, 4, 2) == 1   # target chunk 4 at rank 1
+    assert target_only_hit_at_k(results, 1, 2) == 2   # target chunk 1 at rank 2
+    # Target not present -> TARGET-ONLY misses even though an alt is present.
+    assert target_only_hit_at_k(results, 9, 5) is None
 
 
 if __name__ == "__main__":
