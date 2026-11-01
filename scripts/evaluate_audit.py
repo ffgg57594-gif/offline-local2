@@ -204,12 +204,12 @@ def main():
 
     # Print audit table to stdout (summary) and full to GITHUB_STEP_SUMMARY.
     summary_lines = ["# Evaluation Audit: Hit Definition Analysis", ""]
-    summary_lines.append("## Hit Definitions", "")
+    summary_lines.append("## Hit Definitions")
     summary_lines.append("- **Answer-term hit**: chunk contains ALL terms of at least one answer_terms group.")
     summary_lines.append("- **Page hit**: chunk page number is in expected_pages.")
     summary_lines.append("- **Weak label**: answer_terms matches more than 15 chunks.")
     summary_lines.append("")
-    summary_lines.append(f"## Chunk-Text SHA256 Check", "")
+    summary_lines.append("## Chunk-Text SHA256 Check")
     summary_lines.append(f"- embeddings.bin sha256: `{bin_sha256}`")
     summary_lines.append(f"- chunk_texts_sha256 from meta: `{chunk_sha256}`")
     summary_lines.append("")
