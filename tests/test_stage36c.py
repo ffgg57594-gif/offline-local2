@@ -30,13 +30,12 @@ from keyword_builder import (  # noqa: E402
     build_keyword_query,
     fts_search,
     load_stopwords,
-    weighted_rrf,
-)  # noqa: E402
+)
+from fusion_tuning import weighted_rrf as fusion_weighted_rrf  # noqa: E402
 from evaluate_golden_v3 import (  # noqa: E402
     strict_hit_at_k,
     lenient_hit_at_k,
 )
-from fusion_tuning import weighted_rrf as fusion_weighted_rrf  # noqa: E402
 
 
 # ---------------------------------------------------------------------------

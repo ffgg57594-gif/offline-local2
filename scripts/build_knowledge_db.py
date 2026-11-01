@@ -36,20 +36,31 @@ def sha256_file(path):
 
 
 def normalize_text(text):
-    """NFKC, strip zero-width chars, lowercase, unify hyphens, collapse whitespace.
+    """NFKC, strip zero-width chars, collapse whitespace.
 
-    Matches text_normalize.normalize_text (without variant map) so that
-    indexing-time and query-time normalization are consistent.
+    Used for page-text cleaning (header/footer detection, chunking).
+    Case is preserved because header/footer detection is case-sensitive.
     """
     text = unicodedata.normalize("NFKC", text)
     for ch in ZERO_WIDTH:
         text = text.replace(ch, "")
-    text = text.lower()
-    text = re.sub(r"[\u2010\u2011\u2012\u2013\u2014\u2212]", "-", text)
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     lines = text.split("\n")
     cleaned_lines = [re.sub(r"[ \t]+", " ", line).strip() for line in lines]
     return "\n".join(cleaned_lines)
+
+
+def normalize_search_text(text):
+    """Normalize text for FTS5 search_text column.
+
+    Lowercases and unifies hyphens so that indexing-time and query-time
+    normalization are consistent with text_normalize.normalize_text
+    (without variant map, which is built later from the corpus).
+    """
+    text = normalize_text(text)
+    text = text.lower()
+    text = re.sub(r"[\u2010\u2011\u2012\u2013\u2014\u2212]", "-", text)
+    return text
 
 
 def dehyphenate(text):
@@ -383,7 +394,7 @@ def build_db(pdf_paths):
         book_id = cur.lastrowid
 
         for page, section, text, wc in kept_chunks:
-            search_text = normalize_text(text)
+            search_text = normalize_search_text(text)
             cur.execute(
                 "INSERT INTO chunks(id, book_id, page, section, text, search_text, word_count) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 (chunk_id, book_id, page, section, text, search_text, wc),
