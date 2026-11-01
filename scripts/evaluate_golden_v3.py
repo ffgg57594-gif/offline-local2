@@ -389,9 +389,9 @@ def main():
             })
 
         r1, r3, r5, mrr, n = eval_method(kw_strict_rows, strict_hit)
-        t1_lines.append(f"| keyword v{variant} | STRICT | {r1:.3f} | {r3:.3f} | {r5:.3f} | {mrr:.3f} | {n} |")
+        t1_lines.append(f"| keyword {variant} | STRICT | {r1:.3f} | {r3:.3f} | {r5:.3f} | {mrr:.3f} | {n} |")
         r1, r3, r5, mrr, n = eval_method(kw_lenient_rows, lenient_hit)
-        t1_lines.append(f"| keyword v{variant} | LENIENT | {r1:.3f} | {r3:.3f} | {r5:.3f} | {mrr:.3f} | {n} |")
+        t1_lines.append(f"| keyword {variant} | LENIENT | {r1:.3f} | {r3:.3f} | {r5:.3f} | {mrr:.3f} | {n} |")
 
     print("\n".join(t1_lines))
 
