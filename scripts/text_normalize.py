@@ -34,8 +34,11 @@ FULL_VARIANTS = {
     "oedema": "edema",
     "foetal": "fetal",
     "foetus": "fetus",
-    "pre-eclampsia": "preeclampsia",
-    "pre eclampsia": "preeclampsia",
+    # NOTE: hyphenated/spaced variants (e.g. "pre-eclampsia" -> "preeclampsia")
+    # are intentionally excluded because indexing and querying both split on
+    # hyphens via \w+ / FTS5 porter tokenizer. Including them here would cause
+    # a mismatch: the index has "pre" + "eclampsia" while the query maps to
+    # "preeclampsia" as a single token.
     "oestrogen": "estrogen",
     "caesarean": "cesarean",
     "paediatric": "pediatric",

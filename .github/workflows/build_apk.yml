@@ -30,6 +30,8 @@ jobs:
         run: python scripts/build_knowledge_db.py
       - name: Build normalization map
         run: python scripts/text_normalize.py
+      - name: Keyword debug
+        run: python scripts/keyword_debug.py
       - name: Download embedding model
         run: python scripts/download_models.py
       - name: Build embeddings
@@ -38,12 +40,10 @@ jobs:
         run: python scripts/make_reference_vectors.py
       - name: Benchmark embedder latency
         run: python scripts/benchmark_embedder.py
-      - name: Evaluation audit
-        run: python scripts/evaluate_audit.py
-      - name: Keyword query builder
-        run: python scripts/keyword_builder.py
-      - name: Weighted fusion tuning
-        run: python scripts/fusion_tuning.py
+      - name: Generate golden v3
+        run: python scripts/generate_golden_v3.py
+      - name: Evaluate golden v3
+        run: python scripts/evaluate_golden_v3.py
       - name: Language hygiene check
         run: |
           python3 - <<'PY'

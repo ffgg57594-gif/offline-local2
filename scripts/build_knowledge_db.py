@@ -36,10 +36,16 @@ def sha256_file(path):
 
 
 def normalize_text(text):
-    """NFKC, strip zero-width chars, collapse whitespace."""
+    """NFKC, strip zero-width chars, lowercase, unify hyphens, collapse whitespace.
+
+    Matches text_normalize.normalize_text (without variant map) so that
+    indexing-time and query-time normalization are consistent.
+    """
     text = unicodedata.normalize("NFKC", text)
     for ch in ZERO_WIDTH:
         text = text.replace(ch, "")
+    text = text.lower()
+    text = re.sub(r"[\u2010\u2011\u2012\u2013\u2014\u2212]", "-", text)
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     lines = text.split("\n")
     cleaned_lines = [re.sub(r"[ \t]+", " ", line).strip() for line in lines]
