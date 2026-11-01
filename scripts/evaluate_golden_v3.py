@@ -336,22 +336,22 @@ def main():
         alt_ids = data["alt_ids"]
         dense_strict_rows.append({
             "results": data["dense"],
-            "hit": lambda r, tid=target_id, aids=alt_ids: strict_hit_at_k(r, tid, aids, 5),
+            "hit": lambda results, k=5, tid=target_id, aids=alt_ids: strict_hit_at_k(results, tid, aids, k),
         })
         dense_lenient_rows.append({
             "results": data["dense"],
-            "hit": lambda r, tid=target_id, aids=alt_ids: lenient_hit_at_k(
-                r, tid, aids, chunk_index_by_id, 5
+            "hit": lambda results, k=5, tid=target_id, aids=alt_ids: lenient_hit_at_k(
+                results, tid, aids, chunk_index_by_id, k
             ),
         })
         dense_to_rows.append({
             "results": data["dense"],
-            "hit": lambda r, tid=target_id: target_only_hit_at_k(r, tid, 5),
+            "hit": lambda results, k=5, tid=target_id: target_only_hit_at_k(results, tid, k),
         })
 
-    r1, r3, r5, mrr, n = eval_method(dense_strict_rows, lambda r: r["hit"](r["results"]))
+    r1, r3, r5, mrr, n = eval_method(dense_strict_rows, lambda r, k: r["hit"](r["results"], k))
     t1_lines.append(f"| dense | STRICT | {r1:.3f} | {r3:.3f} | {r5:.3f} | {mrr:.3f} | {n} |")
-    r1, r3, r5, mrr, n = eval_method(dense_lenient_rows, lambda r: r["hit"](r["results"]))
+    r1, r3, r5, mrr, n = eval_method(dense_lenient_rows, lambda r, k: r["hit"](r["results"], k))
     t1_lines.append(f"| dense | LENIENT | {r1:.3f} | {r3:.3f} | {r5:.3f} | {mrr:.3f} | {n} |")
 
     # Keyword variants.
@@ -364,22 +364,22 @@ def main():
             alt_ids = data["alt_ids"]
             kw_strict_rows.append({
                 "results": data["keyword"][variant],
-                "hit": lambda r, tid=target_id, aids=alt_ids: strict_hit_at_k(r, tid, aids, 5),
+                "hit": lambda results, k=5, tid=target_id, aids=alt_ids: strict_hit_at_k(results, tid, aids, k),
             })
             kw_lenient_rows.append({
                 "results": data["keyword"][variant],
-                "hit": lambda r, tid=target_id, aids=alt_ids: lenient_hit_at_k(
-                    r, tid, aids, chunk_index_by_id, 5
-                ),
+                "hit": lambda results, k=5, tid=target_id, aids=alt_ids: lenient_hit_at_k(
+                results, tid, aids, chunk_index_by_id, k
+            ),
             })
             kw_to_rows.append({
                 "results": data["keyword"][variant],
-                "hit": lambda r, tid=target_id: target_only_hit_at_k(r, tid, 5),
+                "hit": lambda results, k=5, tid=target_id: target_only_hit_at_k(results, tid, k),
             })
 
-        r1, r3, r5, mrr, n = eval_method(kw_strict_rows, lambda r: r["hit"](r["results"]))
+        r1, r3, r5, mrr, n = eval_method(kw_strict_rows, lambda r, k: r["hit"](r["results"], k))
         t1_lines.append(f"| keyword v{variant} | STRICT | {r1:.3f} | {r3:.3f} | {r5:.3f} | {mrr:.3f} | {n} |")
-        r1, r3, r5, mrr, n = eval_method(kw_lenient_rows, lambda r: r["hit"](r["results"]))
+        r1, r3, r5, mrr, n = eval_method(kw_lenient_rows, lambda r, k: r["hit"](r["results"], k))
         t1_lines.append(f"| keyword v{variant} | LENIENT | {r1:.3f} | {r3:.3f} | {r5:.3f} | {mrr:.3f} | {n} |")
 
     print("\n".join(t1_lines))
@@ -400,8 +400,8 @@ def main():
         kw_l = [{"results": d["keyword"][variant], "hit": lambda r, tid=d["target_id"], aids=d["alt_ids"]: lenient_hit_at_k(r, tid, aids, chunk_index_by_id, 5)} for d in question_data.values()]
         _pairs.append((f"keyword v{variant}", kw_s, kw_l))
     for name, s_rows, l_rows in _pairs:
-        sr = _hit_rate(s_rows, lambda r: r["hit"](r["results"]))
-        lr = _hit_rate(l_rows, lambda r: r["hit"](r["results"]))
+        sr = _hit_rate(s_rows, lambda r, k: r["hit"](r["results"], k))
+        lr = _hit_rate(l_rows, lambda r, k: r["hit"](r["results"], k))
         flag = "identical (no adjacent chunk flips a miss on this data)" if sr == lr else "LENIENT > STRICT"
         print(f"STRICT vs LENIENT hit@5 for {name}: {sr:.3f} vs {lr:.3f} -> {flag}")
 
