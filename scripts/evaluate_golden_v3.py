@@ -400,21 +400,41 @@ def main():
     # missed. The adjacency rule is implemented in lenient_hit_at_k and exercised
     # by tests/test_stage36d.py::test_lenient_ge_strict_and_can_differ.
     def _hit_rate(rows, hit_func):
-        hits = sum(1 for r in rows if hit_func(r["results"]) is not None)
+        hits = sum(1 for r in rows if hit_func(r, 5) is not None)
         return hits / len(rows) if rows else 0.0
 
-    _pairs = [
-        ("dense", dense_strict_rows, dense_lenient_rows),
+    def _make_pair(method_results):
+        s_rows = [
+            {"results": r, "target_id": tid, "alt_ids": aids}
+            for r, tid, aids in method_results
+        ]
+        l_rows = [
+            {"results": r, "target_id": tid, "alt_ids": aids}
+            for r, tid, aids in method_results
+        ]
+        return s_rows, l_rows
+
+    # Dense: build lists of (results, target_id, alt_ids)
+    dense_pairs = [
+        (data["dense"], data["target_id"], data["alt_ids"])
+        for data in question_data.values()
     ]
+    s_rows, l_rows = _make_pair(dense_pairs)
+    sr = _hit_rate(s_rows, strict_hit)
+    lr = _hit_rate(l_rows, lenient_hit)
+    flag = "identical (no adjacent chunk flips a miss on this data)" if sr == lr else "LENIENT > STRICT"
+    print(f"STRICT vs LENIENT hit@5 for dense: {sr:.3f} vs {lr:.3f} -> {flag}")
+
     for variant in ["v1", "v2", "v3", "v4"]:
-        kw_s = [{"results": d["keyword"][variant], "hit": lambda r, tid=d["target_id"], aids=d["alt_ids"]: strict_hit_at_k(r, tid, aids, 5)} for d in question_data.values()]
-        kw_l = [{"results": d["keyword"][variant], "hit": lambda r, tid=d["target_id"], aids=d["alt_ids"]: lenient_hit_at_k(r, tid, aids, chunk_index_by_id, 5)} for d in question_data.values()]
-        _pairs.append((f"keyword v{variant}", kw_s, kw_l))
-    for name, s_rows, l_rows in _pairs:
-        sr = _hit_rate(s_rows, lambda r, k: r["hit"](r["results"], k))
-        lr = _hit_rate(l_rows, lambda r, k: r["hit"](r["results"], k))
+        kw_pairs = [
+            (data["keyword"][variant], data["target_id"], data["alt_ids"])
+            for data in question_data.values()
+        ]
+        s_rows, l_rows = _make_pair(kw_pairs)
+        sr = _hit_rate(s_rows, strict_hit)
+        lr = _hit_rate(l_rows, lenient_hit)
         flag = "identical (no adjacent chunk flips a miss on this data)" if sr == lr else "LENIENT > STRICT"
-        print(f"STRICT vs LENIENT hit@5 for {name}: {sr:.3f} vs {lr:.3f} -> {flag}")
+        print(f"STRICT vs LENIENT hit@5 for keyword v{variant}: {sr:.3f} vs {lr:.3f} -> {flag}")
 
     # ---------- Table 2: 5-fold Cross-Validation ----------
     print("\n=== Table 2: 5-Fold Cross-Validation (STRICT metric) ===")
