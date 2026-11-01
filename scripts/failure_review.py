@@ -101,6 +101,8 @@ def main():
              "|---|---|---|---|---|---|"]
 
     failures = 0
+    # Build text lookup from chunk_meta: cid -> text
+    text_lookup = {row[0]: row[3] for row in chunk_meta}
     for q in questions:
         query_text = q["q"]
 
@@ -130,7 +132,7 @@ def main():
 
         failures += 1
         top3_pages = [r[2] for r in fused[:3]]
-        snippets = [centre_snippet(r[3], query_text, 250) for r in fused[:3]]
+        snippets = [centre_snippet(text_lookup.get(r[0], ""), query_text, 250) for r in fused[:3]]
 
         # Assessment: label problem vs real miss.
         dense_pages = [r[2] for r in dense_res[:5]]
