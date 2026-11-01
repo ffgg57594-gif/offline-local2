@@ -251,8 +251,8 @@ def dense_top_chunks(question, embeddings, chunk_meta, embed_query, top_k=3):
     order = sorted(range(len(scores)), key=lambda i: -scores[i])[:max(0, top_k)]
     out = []
     for i in order:
-        cid, name, page, text = chunk_meta[i]
-        out.append((cid, name, page, float(scores[i])))
+        row = chunk_meta[i]
+        out.append((row[0], row[1], row[2], float(scores[i])))
     return out
 
 
