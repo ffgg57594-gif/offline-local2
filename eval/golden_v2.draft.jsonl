@@ -98,3 +98,23 @@
 {"id": 98, "q": "Pregnant women and liver disease diagnosis", "lang": "en", "in_scope": false, "answer_terms": null, "expected_pages": [], "pair_id": null, "key_terms": ["pregnant", "women", "liver"]}
 {"id": 99, "q": "Pregnant women and lung disease care", "lang": "en", "in_scope": false, "answer_terms": null, "expected_pages": [], "pair_id": null, "key_terms": ["pregnant", "women", "lung"]}
 {"id": 100, "q": "Pregnant women and cancer treatment", "lang": "en", "in_scope": false, "answer_terms": null, "expected_pages": [], "pair_id": null, "key_terms": ["pregnant", "women", "cancer"]}
+{"id": 101, "q": "What is the capital of Japan?", "lang": "en", "in_scope": false, "answer_terms": null, "expected_pages": [], "pair_id": null, "key_terms": ["capital", "japan"]}
+{"id": 102, "q": "How do bees make honey?", "lang": "en", "in_scope": false, "answer_terms": null, "expected_pages": [], "pair_id": null, "key_terms": ["bees", "honey"]}
+{"id": 103, "q": "What is the tallest mountain in the world?", "lang": "en", "in_scope": false, "answer_terms": null, "expected_pages": [], "pair_id": null, "key_terms": ["tallest", "mountain", "world"]}
+{"id": 104, "q": "Who painted the Mona Lisa?", "lang": "en", "in_scope": false, "answer_terms": null, "expected_pages": [], "pair_id": null, "key_terms": ["painted", "mona", "lisa"]}
+{"id": 105, "q": "What causes the seasons on Earth?", "lang": "en", "in_scope": false, "answer_terms": null, "expected_pages": [], "pair_id": null, "key_terms": ["causes", "seasons", "earth"]}
+{"id": 106, "q": "How is cheese made from milk?", "lang": "en", "in_scope": false, "answer_terms": null, "expected_pages": [], "pair_id": null, "key_terms": ["cheese", "milk"]}
+{"id": 107, "q": "What is the currency of Brazil?", "lang": "en", "in_scope": false, "answer_terms": null, "expected_pages": [], "pair_id": null, "key_terms": ["currency", "brazil"]}
+{"id": 108, "q": "Who wrote the novel Pride and Prejudice?", "lang": "en", "in_scope": false, "answer_terms": null, "expected_pages": [], "pair_id": null, "key_terms": ["wrote", "novel", "pride", "prejudice"]}
+{"id": 109, "q": "What is the speed of light?", "lang": "en", "in_scope": false, "answer_terms": null, "expected_pages": [], "pair_id": null, "key_terms": ["speed", "light"]}
+{"id": 110, "q": "How do airplanes stay in the air?", "lang": "en", "in_scope": false, "answer_terms": null, "expected_pages": [], "pair_id": null, "key_terms": ["airplanes", "stay", "air"]}
+{"id": 111, "q": "What is the capital of Australia?", "lang": "en", "in_scope": false, "answer_terms": null, "expected_pages": [], "pair_id": null, "key_terms": ["capital", "australia"]}
+{"id": 112, "q": "Who discovered penicillin?", "lang": "en", "in_scope": false, "answer_terms": null, "expected_pages": [], "pair_id": null, "key_terms": ["discovered", "penicillin"]}
+{"id": 113, "q": "What is the largest ocean on Earth?", "lang": "en", "in_scope": false, "answer_terms": null, "expected_pages": [], "pair_id": null, "key_terms": ["largest", "ocean", "earth"]}
+{"id": 114, "q": "How is chocolate made from cocoa beans?", "lang": "en", "in_scope": false, "answer_terms": null, "expected_pages": [], "pair_id": null, "key_terms": ["chocolate", "cocoa", "beans"]}
+{"id": 115, "q": "What is the capital of Canada?", "lang": "en", "in_scope": false, "answer_terms": null, "expected_pages": [], "pair_id": null, "key_terms": ["capital", "canada"]}
+{"id": 116, "q": "Who was the first person to walk on the Moon?", "lang": "en", "in_scope": false, "answer_terms": null, "expected_pages": [], "pair_id": null, "key_terms": ["first", "person", "walk", "moon"]}
+{"id": 117, "q": "What is the chemical symbol for gold?", "lang": "en", "in_scope": false, "answer_terms": null, "expected_pages": [], "pair_id": null, "key_terms": ["chemical", "symbol", "gold"]}
+{"id": 118, "q": "How do submarines dive and surface?", "lang": "en", "in_scope": false, "answer_terms": null, "expected_pages": [], "pair_id": null, "key_terms": ["submarines", "dive", "surface"]}
+{"id": 119, "q": "What is the capital of India?", "lang": "en", "in_scope": false, "answer_terms": null, "expected_pages": [], "pair_id": null, "key_terms": ["capital", "india"]}
+{"id": 120, "q": "What is the smallest country in the world?", "lang": "en", "in_scope": false, "answer_terms": null, "expected_pages": [], "pair_id": null, "key_terms": ["smallest", "country", "world"]}

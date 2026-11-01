@@ -18,3 +18,4 @@ __pycache__/
 # CI/local junk (not source)
 .logs.zip
 eval/chunks_for_golden.jsonl
+eval/gate_signals.csv

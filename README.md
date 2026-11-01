@@ -129,3 +129,7 @@ in `embeddings_meta.json`. The CI verifies both hashes match.
   "hemorrhage", "uterine" هي كلمات محتوى.
 - المتغيرات: v1 (توقف + إزالة DF)، v2 (توقف فقط + أحرف فردية + bm25)،
   v3 (v2 + عبارات الكلمات المتجاورة)، v4 (v3 + أوزان الأعمدة).
+
+## Signal measurements: eval/gate_signals.csv (Stage 3.7a)
+- Per-question refusal-gate signals (s1_top1, s2_margin, s3_cov_top3, s4_unknown, s5_rare_cov_top3) for all 120 golden questions, split into in-scope / out-of-scope groups. Produced by CI; measurement only — no thresholds, no gate_config.json, and not shipped in the APK.
+- مقاييس بوابة الرفض لكل سؤال (s1_top1, s2_margin, s3_cov_top3, s4_unknown, s5_rare_cov_top3) لجميع الأسئلة الذهبية الـ 120، مقسمة إلى مجموعة ضمن النطاق ومجموعة خارج النطاق. تُنتَج عبر CI؛ قياس فقط — بدون عتبات، ولا gate_config.json، ولا تُشحن مع ملف الـ APK.

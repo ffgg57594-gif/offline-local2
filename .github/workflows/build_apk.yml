@@ -95,6 +95,13 @@ jobs:
               sys.exit(1)
           print("Language hygiene check: OK")
           PY
+      - name: Measure gate signals (Stage 3.7a)
+        run: python scripts/measure_gate_signals.py
+      - name: Upload gate signals artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-signals-csv
+          path: eval/gate_signals.csv
       - name: Gradle cache
         uses: actions/cache@v4
         with:
