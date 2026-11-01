@@ -384,7 +384,7 @@ def evaluate_keyword_variants(questions, embeddings, cur, chunk_meta, id_to_inde
             lines.append(f"| {variant} | {metric} | {hits1/n:.3f} | {hits3/n:.3f} | {hits5/n:.3f} | {mrr:.3f} |")
 
     print("\n".join(lines))
-    return "\n".join(lines)
+    return "\n".join(lines), chosen, config_means, fold_results
 
 
 def print_fold3_questions(fold_results, keyword_variant):
@@ -479,7 +479,7 @@ def main():
     print(f"\nBest keyword variant: {best_variant} (hit@3 = {best_hit3:.3f})")
 
     # Cross-validation with best keyword variant.
-    chosen, config_means, fold_results = cross_validate(
+    lines, chosen, config_means, fold_results = cross_validate(
         questions, embeddings, cur, chunk_meta, id_to_index,
         stopwords, non_content_words, variant_map,
         best_variant, use_column_weights=(best_variant == "v4")
