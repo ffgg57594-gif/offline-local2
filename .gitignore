@@ -11,3 +11,10 @@ app/src/main/assets/embedder_reference.json
 app/src/main/assets/models/
 app/src/main/assets/normalize_map.json
 app/src/main/assets/fusion_config.json
+app/src/main/assets/config_calibrated.json
+
+# Python bytecode
+__pycache__/
+# CI/local junk (not source)
+.logs.zip
+eval/chunks_for_golden.jsonl

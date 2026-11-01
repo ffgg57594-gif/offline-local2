@@ -128,10 +128,11 @@ jobs:
         run: |
           APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
           if unzip -l "$APK" | grep -i '\.pdf$'; then echo "PDF found in APK - FAIL"; exit 1; fi
-          for f in assets/books_knowledge.db assets/embeddings.bin assets/embeddings_meta.json assets/embedder_reference.json assets/models/embedder/model_quantized.onnx assets/models/embedder/tokenizer.json assets/normalize_map.json assets/fusion_config.json; do
+          for f in assets/books_knowledge.db assets/embeddings.bin assets/embeddings_meta.json assets/embedder_reference.json assets/models/embedder/model_quantized.onnx assets/models/embedder/tokenizer.json assets/normalize_map.json assets/fusion_config.json assets/medical_aliases.json; do
             if ! unzip -l "$APK" | grep -q "$f"; then echo "Missing $f in APK - FAIL"; exit 1; fi
           done
-          echo "APK contains all required assets and no .pdf - OK"
+          if unzip -l "$APK" | grep -q 'assets/config_calibrated.json'; then echo "config_calibrated.json found in APK - FAIL"; exit 1; fi
+          echo "APK contains all required assets, no .pdf and no config_calibrated.json - OK"
       - name: APK file sizes
         run: |
           APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
@@ -140,7 +141,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| File | Size (bytes) |" >> $GITHUB_STEP_SUMMARY
           echo "|---|---|" >> $GITHUB_STEP_SUMMARY
-          for f in assets/books_knowledge.db assets/embeddings.bin assets/embeddings_meta.json assets/embedder_reference.json assets/models/embedder/model_quantized.onnx assets/models/embedder/tokenizer.json assets/normalize_map.json assets/fusion_config.json; do
+          for f in assets/books_knowledge.db assets/embeddings.bin assets/embeddings_meta.json assets/embedder_reference.json assets/models/embedder/model_quantized.onnx assets/models/embedder/tokenizer.json assets/normalize_map.json assets/fusion_config.json assets/medical_aliases.json; do
             SIZE=$(unzip -l "$APK" | awk -v f="$f" '$4 == f {print $3}')
             if [ -z "$SIZE" ]; then SIZE=0; fi
             echo "| $f | $SIZE |" >> $GITHUB_STEP_SUMMARY
