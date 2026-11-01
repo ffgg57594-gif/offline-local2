@@ -102,8 +102,8 @@ def dense_search(query_vec, embeddings, chunk_meta, top_k=CANDIDATE_POOL):
     return results
 
 
-def keyword_search(cur, query, stopwords, variant_map, top_k=CANDIDATE_POOL):
-    kw_query, _ = build_keyword_query(query, stopwords, set(), variant_map, variant="v2")
+def keyword_search(cur, query, stopwords, variant_map, variant="v2", top_k=CANDIDATE_POOL):
+    kw_query, _ = build_keyword_query(query, stopwords, set(), variant_map, variant=variant)
     if not kw_query:
         return []
     return fts_search(cur, kw_query, top_k=top_k)
