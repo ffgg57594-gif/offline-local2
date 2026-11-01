@@ -213,14 +213,14 @@ def main():
     summary_lines.append(f"- embeddings.bin sha256: `{bin_sha256}`")
     summary_lines.append(f"- chunk_texts_sha256 from meta: `{chunk_sha256}`")
     summary_lines.append("")
-    summary_lines.append("## Weak Label Questions (>15 matching chunks)", "")
+    summary_lines.append("## Weak Label Questions (>15 matching chunks)")
     weak_list = sorted(weak_label_qids)
     if weak_list:
         summary_lines.append(f"Question IDs: {weak_list}")
     else:
         summary_lines.append("None")
     summary_lines.append("")
-    summary_lines.append("## Full Audit Table (all 60 in-scope questions)", "")
+    summary_lines.append("## Full Audit Table (all 60 in-scope questions)")
     summary_lines.append("| id | question | num_matching_chunks | first_8_matching_pages | expected_pages | ans_term_rank | page_rank | top3_pages | weak_label |")
     summary_lines.append("|---|---|---|---|---|---|---|---|---|")
 
@@ -292,7 +292,7 @@ def main():
             no_hit_top5.append(r)
 
     summary_lines.append("")
-    summary_lines.append("## Disagreement Rows (definitions differ or no hit in top-5)", "")
+    summary_lines.append("## Disagreement Rows (definitions differ or no hit in top-5)")
     summary_lines.append(f"- Rows where definitions disagree: {len(disagreement)}")
     summary_lines.append(f"- Rows with no hit in top-5 under either definition: {len(no_hit_top5)}")
     summary_lines.append("")
@@ -315,7 +315,7 @@ def main():
 
     # Print recall tables.
     summary_lines.append("")
-    summary_lines.append("## Dense Recall: All Questions (60)", "")
+    summary_lines.append("## Dense Recall: All Questions (60)")
     summary_lines.append("| Definition | Hit@1 | Hit@3 | Hit@5 | MRR |")
     summary_lines.append("|---|---|---|---|---|")
     for def_name in ["ans_term", "page"]:
@@ -323,7 +323,7 @@ def main():
         summary_lines.append(f"| {def_name} | {r['hit1']:.3f} | {r['hit3']:.3f} | {r['hit5']:.3f} | {r['mrr']:.3f} |")
 
     summary_lines.append("")
-    summary_lines.append("## Dense Recall: Strong Label Only (<=15 matching chunks)", "")
+    summary_lines.append("## Dense Recall: Strong Label Only (<=15 matching chunks)")
     summary_lines.append(f"Number of strong-label questions: {len(strong_rows)}")
     summary_lines.append("")
     summary_lines.append("| Definition | Hit@1 | Hit@3 | Hit@5 | MRR |")
