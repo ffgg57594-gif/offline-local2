@@ -384,7 +384,7 @@ def evaluate_keyword_variants(questions, embeddings, cur, chunk_meta, id_to_inde
             lines.append(f"| {variant} | {metric} | {hits1/n:.3f} | {hits3/n:.3f} | {hits5/n:.3f} | {mrr:.3f} |")
 
     print("\n".join(lines))
-    return "\n".join(lines), chosen, config_means, fold_results
+    return "\n".join(lines)
 
 
 def print_fold3_questions(fold_results, keyword_variant):
@@ -408,7 +408,7 @@ def print_fold3_questions(fold_results, keyword_variant):
                     f"{r['fused_pages']} | {r['expected_pages']} |"
                 )
             lines.append("")
-    return "\n".join(lines)
+    return "\n".join(lines), chosen, config_means, fold_results
 
 
 def main():
