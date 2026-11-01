@@ -434,7 +434,7 @@ def main():
         sr = _hit_rate(s_rows, strict_hit)
         lr = _hit_rate(l_rows, lenient_hit)
         flag = "identical (no adjacent chunk flips a miss on this data)" if sr == lr else "LENIENT > STRICT"
-        print(f"STRICT vs LENIENT hit@5 for keyword v{variant}: {sr:.3f} vs {lr:.3f} -> {flag}")
+        print(f"STRICT vs LENIENT hit@5 for keyword {variant}: {sr:.3f} vs {lr:.3f} -> {flag}")
 
     # ---------- Table 2: 5-fold Cross-Validation ----------
     print("\n=== Table 2: 5-Fold Cross-Validation (STRICT metric) ===")
