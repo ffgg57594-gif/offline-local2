@@ -143,7 +143,11 @@ def normalize_text_for_fts(text, variant_map=None):
 
 def hit_at_k_answer_term(results, cur, answer_terms, variant_map, k):
     """Answer-term hit: any top-k chunk matches ALL terms of at least one group."""
-    for rank, (cid, _name, page, _text, _score) in enumerate(results[:k], start=1):
+    for rank, r in enumerate(results[:k], start=1):
+        # Handle both 4-tuple (book, page, text, score) from RRF and
+        # 5-tuple (cid, name, page, text, score) from dense_search.
+        cid = r[0] if len(r) == 5 else None
+        page = r[1]
         if answer_terms_match_fts(cur, cid, answer_terms, variant_map):
             return rank
     return None
@@ -151,7 +155,8 @@ def hit_at_k_answer_term(results, cur, answer_terms, variant_map, k):
 
 def hit_at_k_page(results, expected_pages, k):
     """Page hit: any top-k chunk has page in expected_pages."""
-    for rank, (_cid, _name, page, _text, _score) in enumerate(results[:k], start=1):
+    for rank, r in enumerate(results[:k], start=1):
+        page = r[1]
         if page in expected_pages:
             return rank
     return None
