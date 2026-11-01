@@ -8,11 +8,10 @@ and would catch regressions in:
   - LENIENT >= STRICT, with a case where they differ (adjacent chunk flips a miss).
   - TARGET-ONLY excludes alt_chunk_ids.
 """
+import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
-
-import os  # noqa: E402
 
 from evaluate_golden_v3 import (  # noqa: E402
     recall_at_k,
