@@ -226,12 +226,15 @@ def answer_terms_match(chunk_text, answer_terms, variant_map=None):
     answer_terms is a list of groups; each group is a list of terms.
     A hit = chunk contains ALL terms of at least one group.
     Matching uses the same FTS5 tokenizer normalization (via normalize_text).
+    Both the chunk text AND the answer terms are normalized with the variant map.
     """
     if not answer_terms:
         return False
     norm_text = normalize_text(chunk_text, variant_map)
     for group in answer_terms:
-        if all(term.lower() in norm_text for term in group):
+        # Normalize each term with the same variant map.
+        normalized_terms = [normalize_text(t, variant_map) for t in group]
+        if all(t in norm_text for t in normalized_terms):
             return True
     return False
 

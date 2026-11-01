@@ -23,7 +23,7 @@ from fusion_tuning import weighted_rrf  # noqa: E402
 def test_answer_terms_match_all_in_group():
     """A chunk is a HIT if it contains ALL terms of at least one answer_terms group."""
     text = "Preeclampsia is hypertension with proteinuria in pregnancy."
-    terms = [["preeclampsia", "proteinuria"], ["eclampsia", "seizures"]]
+    terms = [["preeclampsia", "hypertension"], ["eclampsia", "seizures"]]
     # answer_terms_match from keyword_builder
     from keyword_builder import answer_terms_match
     assert answer_terms_match(text, terms) is True
