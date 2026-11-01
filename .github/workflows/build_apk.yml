@@ -47,6 +47,8 @@ jobs:
         run: python scripts/make_reference_vectors.py
       - name: Benchmark embedder latency
         run: python scripts/benchmark_embedder.py
+      - name: Print candidate alternates
+        run: python scripts/print_alternates.py
       - name: Language hygiene check
         run: |
           python3 - <<'PY'
