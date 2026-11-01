@@ -408,7 +408,7 @@ def print_fold3_questions(fold_results, keyword_variant):
                     f"{r['fused_pages']} | {r['expected_pages']} |"
                 )
             lines.append("")
-    return "\n".join(lines), chosen, config_means, fold_results
+    return "\n".join(lines), config_means, fold_results
 
 
 def main():
@@ -479,11 +479,14 @@ def main():
     print(f"\nBest keyword variant: {best_variant} (hit@3 = {best_hit3:.3f})")
 
     # Cross-validation with best keyword variant.
-    lines, chosen, config_means, fold_results = cross_validate(
+    lines, config_means, fold_results = cross_validate(
         questions, embeddings, cur, chunk_meta, id_to_index,
         stopwords, non_content_words, variant_map,
         best_variant, use_column_weights=(best_variant == "v4")
     )
+
+    # Determine chosen config from config_means (best hit@3).
+    chosen = max(config_means.items(), key=lambda item: item[1][0]["hit3"])[0]
 
     # Print fold-3 questions.
     fold3_lines = print_fold3_questions(fold_results, best_variant)
