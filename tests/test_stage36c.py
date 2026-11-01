@@ -209,10 +209,10 @@ def test_weighted_rrf_page_dedup():
     dense = [(1, "book", 7, "text one", 0.9), (2, "book", 7, "text two", 0.8)]
     kw = [(1, "book", 7, "text one", 0.7)]
     fused = fusion_weighted_rrf(dense, kw, w_dense=1.0, w_kw=1.0, k=60, top_k=5)
-    # After dedup, dense has 1 entry for (book, 7), kw has 1 entry for (book, 7).
-    # They're the same key, so only one entry in scores.
+    # Dedup key is (chunk_id, name). Chunks 1 and 2 have different ids, so both
+    # survive even though they share the same page.
     keys = [(r[1], r[2]) for r in fused]
-    assert keys.count(("book", 7)) == 1, f"Expected 1 entry for (book, 7), got {keys.count(('book', 7))}"
+    assert keys.count(("book", 7)) == 2, f"Expected 2 entries for (book, 7), got {keys.count(('book', 7))}"
 
 
 # ---------------------------------------------------------------------------
