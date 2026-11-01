@@ -49,6 +49,12 @@ jobs:
         run: python scripts/benchmark_embedder.py
       - name: Print candidate alternates
         run: python scripts/print_alternates.py
+      - name: Evaluate golden v3
+        run: python scripts/evaluate_golden_v3.py
+      - name: Failure review before label fixes
+        run: python scripts/failure_review.py eval/golden_v2.draft.jsonl
+      - name: Failure review after label fixes
+        run: python scripts/failure_review.py eval/golden_v3.draft.jsonl
       - name: Language hygiene check
         run: |
           python3 - <<'PY'
