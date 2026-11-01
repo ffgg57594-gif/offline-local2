@@ -183,7 +183,7 @@ def recall_at_k(results_list, hit_func, k):
     n = len(results_list)
     if n == 0:
         return 0.0, 0
-    hits = sum(1 for row in results_list if hit_func(row["results"], k) is not None)
+    hits = sum(1 for row in results_list if hit_func(row, k) is not None)
     return hits / n, n
 
 
@@ -194,7 +194,7 @@ def mrr_at_k(results_list, hit_func, k=MRR_K):
         return 0.0
     total = 0.0
     for row in results_list:
-        rank = hit_func(row["results"], k)
+        rank = hit_func(row, k)
         if rank is not None:
             total += 1.0 / rank
     return total / n
@@ -327,6 +327,15 @@ def main():
         mrr = mrr_at_k(results_list, hit_func, MRR_K)
         return r1, r3, r5, mrr, n
 
+    def strict_hit(row, k):
+        return strict_hit_at_k(row["results"], row["target_id"], row["alt_ids"], k)
+
+    def lenient_hit(row, k):
+        return lenient_hit_at_k(row["results"], row["target_id"], row["alt_ids"], chunk_index_by_id, k)
+
+    def target_only_hit(row, k):
+        return target_only_hit_at_k(row["results"], row["target_id"], k)
+
     # Dense, STRICT.
     dense_strict_rows = []
     dense_lenient_rows = []
@@ -336,22 +345,23 @@ def main():
         alt_ids = data["alt_ids"]
         dense_strict_rows.append({
             "results": data["dense"],
-            "hit": lambda results, k=5, tid=target_id, aids=alt_ids: strict_hit_at_k(results, tid, aids, k),
+            "target_id": target_id,
+            "alt_ids": alt_ids,
         })
         dense_lenient_rows.append({
             "results": data["dense"],
-            "hit": lambda results, k=5, tid=target_id, aids=alt_ids: lenient_hit_at_k(
-                results, tid, aids, chunk_index_by_id, k
-            ),
+            "target_id": target_id,
+            "alt_ids": alt_ids,
         })
         dense_to_rows.append({
             "results": data["dense"],
-            "hit": lambda results, k=5, tid=target_id: target_only_hit_at_k(results, tid, k),
+            "target_id": target_id,
+            "alt_ids": alt_ids,
         })
 
-    r1, r3, r5, mrr, n = eval_method(dense_strict_rows, lambda r, k: r["hit"](r["results"], k))
+    r1, r3, r5, mrr, n = eval_method(dense_strict_rows, strict_hit)
     t1_lines.append(f"| dense | STRICT | {r1:.3f} | {r3:.3f} | {r5:.3f} | {mrr:.3f} | {n} |")
-    r1, r3, r5, mrr, n = eval_method(dense_lenient_rows, lambda r, k: r["hit"](r["results"], k))
+    r1, r3, r5, mrr, n = eval_method(dense_lenient_rows, lenient_hit)
     t1_lines.append(f"| dense | LENIENT | {r1:.3f} | {r3:.3f} | {r5:.3f} | {mrr:.3f} | {n} |")
 
     # Keyword variants.
@@ -364,22 +374,23 @@ def main():
             alt_ids = data["alt_ids"]
             kw_strict_rows.append({
                 "results": data["keyword"][variant],
-                "hit": lambda results, k=5, tid=target_id, aids=alt_ids: strict_hit_at_k(results, tid, aids, k),
+                "target_id": target_id,
+                "alt_ids": alt_ids,
             })
             kw_lenient_rows.append({
                 "results": data["keyword"][variant],
-                "hit": lambda results, k=5, tid=target_id, aids=alt_ids: lenient_hit_at_k(
-                results, tid, aids, chunk_index_by_id, k
-            ),
+                "target_id": target_id,
+                "alt_ids": alt_ids,
             })
             kw_to_rows.append({
                 "results": data["keyword"][variant],
-                "hit": lambda results, k=5, tid=target_id: target_only_hit_at_k(results, tid, k),
+                "target_id": target_id,
+                "alt_ids": alt_ids,
             })
 
-        r1, r3, r5, mrr, n = eval_method(kw_strict_rows, lambda r, k: r["hit"](r["results"], k))
+        r1, r3, r5, mrr, n = eval_method(kw_strict_rows, strict_hit)
         t1_lines.append(f"| keyword v{variant} | STRICT | {r1:.3f} | {r3:.3f} | {r5:.3f} | {mrr:.3f} | {n} |")
-        r1, r3, r5, mrr, n = eval_method(kw_lenient_rows, lambda r, k: r["hit"](r["results"], k))
+        r1, r3, r5, mrr, n = eval_method(kw_lenient_rows, lenient_hit)
         t1_lines.append(f"| keyword v{variant} | LENIENT | {r1:.3f} | {r3:.3f} | {r5:.3f} | {mrr:.3f} | {n} |")
 
     print("\n".join(t1_lines))

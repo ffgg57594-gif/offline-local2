@@ -29,7 +29,7 @@ def _row(results):
 
 
 def _hit_func(k):
-    return lambda results, kk=k: strict_hit_at_k(results, FIXED_TARGET, [], kk)
+    return lambda row, kk=k: strict_hit_at_k(row["results"], FIXED_TARGET, [], kk)
 
 
 # ---------------------------------------------------------------------------
