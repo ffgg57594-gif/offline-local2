@@ -211,7 +211,7 @@ def test_weighted_rrf_page_dedup():
     fused = fusion_weighted_rrf(dense, kw, w_dense=1.0, w_kw=1.0, k=60, top_k=5)
     # After dedup, dense has 1 entry for (book, 7), kw has 1 entry for (book, 7).
     # They're the same key, so only one entry in scores.
-    keys = [(r[0], r[1]) for r in fused]
+    keys = [(r[1], r[2]) for r in fused]
     assert keys.count(("book", 7)) == 1, f"Expected 1 entry for (book, 7), got {keys.count(('book', 7))}"
 
 
