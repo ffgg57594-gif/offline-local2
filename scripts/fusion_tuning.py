@@ -334,7 +334,7 @@ def cross_validate(questions, embeddings, cur, chunk_meta, id_to_index,
     print(f"Wrote {FUSION_CONFIG_OUT}")
 
     print("\n".join(lines))
-    return chosen, config_means, fold_results
+    return "\n".join(lines), config_means, fold_results
 
 
 def evaluate_keyword_variants(questions, embeddings, cur, chunk_meta, id_to_index,
@@ -408,7 +408,7 @@ def print_fold3_questions(fold_results, keyword_variant):
                     f"{r['fused_pages']} | {r['expected_pages']} |"
                 )
             lines.append("")
-    return "\n".join(lines), config_means, fold_results
+    return "\n".join(lines)
 
 
 def main():
