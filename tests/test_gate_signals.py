@@ -123,7 +123,7 @@ def test_load_question_sets_returns_60_and_60():
     for q in in_scope:
         assert set(q.keys()) == {"id", "q"}, q
     for q in out_of_scope:
-        assert set(q.keys()) == {"id", "q", "key_terms"}, q
+        assert {"id", "q", "key_terms"}.issubset(set(q.keys())), q
         assert isinstance(q["key_terms"], list)
 
 

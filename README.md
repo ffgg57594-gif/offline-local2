@@ -27,7 +27,7 @@ Optional manual skip: `scripts/skip_pages.json` maps book name to page numbers t
 يُشغل CI سكريبت `scripts/build_knowledge_db.py` (بايثون، PyMuPDF) قبل البناء:
 - يستخرج نص كل صفحة من كل ملف `*.pdf` في `app/src/main/assets/books/`.
 - ينظف العناوين المتكررة، ويصلح الكلمات المنقوطة، ويقسّم إلى مقاطع 100–180 كلمة بدون تجاوز حدود الصفحة.
-- يكتب `app/src/main/assets/books_knowledge.db` (SQLite + FTS5) — هذا الملف غيرمراقب في git ولا يُ커밋.
+- يكتب `app/src/main/assets/books_knowledge.db` (SQLite + FTS5) — هذا الملف غيرمراقب في git ولا يتم تضمينه في git.
 - يحتوي APK على `assets/books_knowledge.db` ولا يحتوي على أي `.pdf`.
 
 ## How embeddings are built (Stage 3)
@@ -118,7 +118,7 @@ in `embeddings_meta.json`. The CI verifies both hashes match.
 المقتطف هو HIT إذا كان يحتوي على جميع مصطلحات مجموعة answer_terms واحدة على الأقل،
 يتم التحقق من خلال نفس التطبيع والمُرمّز لمؤشر FTS5.
 قائمة النتائج هي hit عند k إذا كان أي من أفضل k مقتطفات هو HIT.
-يتم الإبلاغ عن hit基于 الصفحة (expected_pages) بشكل منفصل.
+يتم الإبلاغ عن hit بناءً على الصفحة (expected_pages) بشكل منفصل.
 
 ## باني الاستعلام v2
 - التطبيع: أحرف صغيرة، توحيد الفواصل،renuants إملائية (normalize_map.json)
@@ -130,6 +130,8 @@ in `embeddings_meta.json`. The CI verifies both hashes match.
 - المتغيرات: v1 (توقف + إزالة DF)، v2 (توقف فقط + أحرف فردية + bm25)،
   v3 (v2 + عبارات الكلمات المتجاورة)، v4 (v3 + أوزان الأعمدة).
 
-## Signal measurements: eval/gate_signals.csv (Stage 3.7a)
-- Per-question refusal-gate signals (s1_top1, s2_margin, s3_cov_top3, s4_unknown, s5_rare_cov_top3) for all 120 golden questions, split into in-scope / out-of-scope groups. Produced by CI; measurement only — no thresholds, no gate_config.json, and not shipped in the APK.
-- مقاييس بوابة الرفض لكل سؤال (s1_top1, s2_margin, s3_cov_top3, s4_unknown, s5_rare_cov_top3) لجميع الأسئلة الذهبية الـ 120، مقسمة إلى مجموعة ضمن النطاق ومجموعة خارج النطاق. تُنتَج عبر CI؛ قياس فقط — بدون عتبات، ولا gate_config.json، ولا تُشحن مع ملف الـ APK.
+## Signal measurements: eval/gate_signals.csv (Stage 3.7b)
+- Measures refusal-gate signals (s1-s5) for 60 in-scope (golden_v3) and 60 balanced out-of-scope questions (golden_oos_v3: 24 other-specialty medical Class A, 24 unaddressed Ob/Gyn passing mentions Class B, and 12 distinct non-medical Class N). Measurement only: no thresholds chosen, not bundled in APK.
+- Ambiguous questions answered by the book (hypertension, diabetes, heart/liver disease in pregnancy) are moved to eval/ambiguous.jsonl.
+- قياس إشارات بوابة الرفض (s1-s5) لـ 60 سؤالاً ضمن النطاق و60 سؤالاً خارج النطاق متوازنة (golden_oos_v3: 24 تخصص طبي آخر فئة A، 24 سؤال نساء وتوليد غير مجاب فئة B، و12 غير طبي متنوع فئة N). قياس فقط: بدون اختيار عتبات ولا يُشحن مع APK.
+- الأسئلة الملتبسة المجابة في الكتاب (الضغط، السكري، أمراض القلب والكبد أثناء الحمل) نُقلت إلى eval/ambiguous.jsonl.

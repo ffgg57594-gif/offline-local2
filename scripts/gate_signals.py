@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Shared refusal-gate signal module (Stage 3.7a, measurement only).
+"""Shared refusal-gate signal module (Stage 3.7b, measurement only).
 
 Pure signal computation used by every later gate script. Exposes:
 
@@ -15,12 +15,6 @@ retrieval, fusion, embeddings, or Kotlin code. All functions are pure given
 their arguments; the only global state is caches (document-frequency cache,
 stem cache, and lazily opened default DB/embeddings resources), so a Kotlin
 port can reimplement this module directly.
-
-Normalization and stopword list are the same as keyword builder v2
-(text_normalize.normalize_text + STOPWORDS; no document-frequency removal).
-Stems are the FTS5 porter stems, queried from SQLite through a helper FTS5
-table with the same tokenizer as the knowledge DB, so they are byte-identical
-to the indexed terms.
 """
 import json
 import math
@@ -33,11 +27,16 @@ DB_PATH = os.path.join("app", "src", "main", "assets", "books_knowledge.db")
 EMBEDDINGS_BIN = os.path.join("app", "src", "main", "assets", "embeddings.bin")
 EMBEDDINGS_META = os.path.join("app", "src", "main", "assets", "embeddings_meta.json")
 GOLDEN_V3 = os.path.join("eval", "golden_v3.draft.jsonl")
+GOLDEN_OOS_V3 = os.path.join("eval", "golden_oos_v3.jsonl")
 GOLDEN_V2 = os.path.join("eval", "golden_v2.draft.jsonl")
 NORMALIZE_MAP_PATH = os.path.join("app", "src", "main", "assets", "normalize_map.json")
 
 EXPECTED_IN_SCOPE = 60
 EXPECTED_OUT_OF_SCOPE = 60
+EXPECTED_CLASS_A = 24
+EXPECTED_CLASS_B = 24
+EXPECTED_CLASS_N = 12
+
 RARE_MIN_DF = 1
 RARE_MAX_DF = 24  # about 2% of the ~1185 chunk corpus
 
@@ -63,9 +62,12 @@ _STEM_CACHE = {}    # token -> porter stem
 # Question sets
 # ---------------------------------------------------------------------------
 
-def load_question_sets():
+def load_question_sets(oos_path=None):
     """Return 60 in-scope questions from golden v3 and 60 out-of-scope from
-    golden v2. Fail with a clear message if counts differ from 60/60."""
+    golden_oos_v3 (or oos_path). Enforces 60/60 count and 24/24/12 classes."""
+    if oos_path is None:
+        oos_path = GOLDEN_OOS_V3 if os.path.exists(GOLDEN_OOS_V3) else GOLDEN_V2
+
     in_scope = []
     with open(GOLDEN_V3, "r", encoding="utf-8") as f:
         for line in f:
@@ -77,13 +79,21 @@ def load_question_sets():
                 in_scope.append({"id": obj["id"], "q": obj["q"]})
 
     out_of_scope = []
-    with open(GOLDEN_V2, "r", encoding="utf-8") as f:
+    cls_counts = {"A": 0, "B": 0, "N": 0}
+    with open(oos_path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line:
                 continue
             obj = json.loads(line)
-            if obj.get("in_scope") is False:
+            # golden_oos_v3 format
+            if "cls" in obj:
+                out_of_scope.append(obj)
+                c = obj.get("cls")
+                if c in cls_counts:
+                    cls_counts[c] += 1
+            elif obj.get("in_scope") is False:
+                # legacy golden_v2 format
                 out_of_scope.append({
                     "id": obj["id"],
                     "q": obj["q"],
@@ -97,9 +107,17 @@ def load_question_sets():
         )
     if len(out_of_scope) != EXPECTED_OUT_OF_SCOPE:
         raise ValueError(
-            f"Expected {EXPECTED_OUT_OF_SCOPE} out-of-scope questions from {GOLDEN_V2} "
-            f"(in_scope == false; fields q, key_terms, id), found {len(out_of_scope)}"
+            f"Expected {EXPECTED_OUT_OF_SCOPE} out-of-scope questions from {oos_path}, "
+            f"found {len(out_of_scope)}"
         )
+    if oos_path == GOLDEN_OOS_V3 or "cls" in out_of_scope[0]:
+        if (cls_counts["A"] != EXPECTED_CLASS_A or
+            cls_counts["B"] != EXPECTED_CLASS_B or
+            cls_counts["N"] != EXPECTED_CLASS_N):
+            raise ValueError(
+                f"Expected class counts A={EXPECTED_CLASS_A}, B={EXPECTED_CLASS_B}, N={EXPECTED_CLASS_N}, "
+                f"found {cls_counts}"
+            )
     return in_scope, out_of_scope
 
 
@@ -145,15 +163,24 @@ def content_stems(question, conn=None):
     """Ordered unique content stems of a question.
 
     Normalizes like keyword builder v2 (text_normalize.normalize_text with the
-    spelling-variant map), removes the same stopwords, then stems each token
-    with the FTS5 porter tokenizer.
+    spelling-variant map), strips possessive suffixes ('s and ’s), removes
+    non-alphabetic tokens and single-letter tokens, removes stopwords, and
+    stems each token with the FTS5 porter tokenizer.
     """
     c = _default_conn() if conn is None else conn
     norm = normalize_text(question, _variant_map())
+    # Strip possessive 's (both ASCII and curly apostrophe)
+    norm = re.sub(r"[\x27\u2019]s\b", "", norm)
     tokens = _TOKEN_RE.findall(norm)
     stems = []
     seen = set()
     for t in tokens:
+        # Require alphabetic characters only (e.g. drop numbers like '5')
+        if not t.isalpha():
+            continue
+        # Drop single-letter tokens (e.g. stray 's')
+        if len(t) < 2:
+            continue
         if t in STOPWORDS:
             continue
         s = fts_stem(t, c)
@@ -181,9 +208,10 @@ def stem_doc_freq(stem, conn=None):
     if key in _DF_CACHE:
         return _DF_CACHE[key]
     try:
+        # Use prefix star so porter stem matches indexed stems in FTS5
         n = c.execute(
             "SELECT COUNT(*) FROM chunks_fts WHERE chunks_fts MATCH ?",
-            ('"' + stem + '"',),
+            ('"' + stem + '"*',),
         ).fetchone()[0]
     except sqlite3.Error:
         n = 0
@@ -196,7 +224,7 @@ def chunk_contains_stem(conn, chunk_id, stem):
     try:
         n = conn.execute(
             "SELECT COUNT(*) FROM chunks_fts WHERE rowid = ? AND chunks_fts MATCH ?",
-            (chunk_id, '"' + stem + '"'),
+            (chunk_id, '"' + stem + '"*'),
         ).fetchone()[0]
     except sqlite3.Error:
         return False
@@ -227,20 +255,20 @@ def _cosine(a, b):
 def _load_default_embeddings_and_meta():
     global _DEFAULT_EMBEDDINGS, _DEFAULT_CHUNK_META
     if _DEFAULT_EMBEDDINGS is None:
-        import numpy as np  # noqa: E402 (heavy dep; real runs only)
+        import numpy as np  # noqa: E402
         with open(EMBEDDINGS_META, "r", encoding="utf-8") as f:
             meta = json.load(f)
         mat = np.fromfile(EMBEDDINGS_BIN, dtype=np.float32).reshape(meta["rows"], meta["dim"])
         _DEFAULT_EMBEDDINGS = mat.tolist()
         _DEFAULT_CHUNK_META = _default_conn().execute(
-            "SELECT c.id, b.name, c.page, c.text FROM chunks c "
+            "SELECT c.id, b.name, c.page, c.text, c.search_text FROM chunks c "
             "JOIN books b ON b.id = c.book_id ORDER BY c.id"
         ).fetchall()
     return _DEFAULT_EMBEDDINGS, _DEFAULT_CHUNK_META
 
 
 def _default_embed_query(question):
-    from embedding_common import embed_texts  # noqa: E402 (real runs only)
+    from embedding_common import embed_texts  # noqa: E402
     return embed_texts([question], kind="query")[0].tolist()
 
 
@@ -269,6 +297,7 @@ def compute_signals(question, conn=None, embeddings=None, chunk_meta=None,
                         (-1 when the question has no such stems)
       n_stems       number of content stems
       n_rare        number of stems with document frequency 1..24
+      unknown_stems list of stems with df == 0
     """
     c = _default_conn() if conn is None else conn
     if embeddings is None or chunk_meta is None:
@@ -289,6 +318,7 @@ def compute_signals(question, conn=None, embeddings=None, chunk_meta=None,
 
     s3_hits = 0
     s4_unknown = 0
+    unknown_stems = []
     n_rare = 0
     n_rare_hits = 0
     for s in stems:
@@ -298,6 +328,7 @@ def compute_signals(question, conn=None, embeddings=None, chunk_meta=None,
             s3_hits += 1
         if df == 0:
             s4_unknown += 1
+            unknown_stems.append(s)
         elif RARE_MIN_DF <= df <= RARE_MAX_DF:
             n_rare += 1
             if in_top3:
@@ -317,4 +348,4 @@ def compute_signals(question, conn=None, embeddings=None, chunk_meta=None,
         "s5_rare_cov_top3": s5_rare_cov_top3,
         "n_stems": n_stems,
         "n_rare": n_rare,
-    }
+        }

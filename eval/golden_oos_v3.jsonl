@@ -1,0 +1,60 @@
+{"id": 1, "q": "What are the symptoms of psoriasis vulgaris?", "cls": "A", "style": "question", "key_terms": ["psoriasis", "vulgaris"], "key_term_df": [1, 0], "judged_by": "df0"}
+{"id": 2, "q": "What are the types of cataract surgery in adults?", "cls": "A", "style": "question", "key_terms": ["cataract", "phacoemulsification"], "key_term_df": [0, 0], "judged_by": "df0"}
+{"id": 3, "q": "How is dental caries managed with fluoride in children?", "cls": "A", "style": "question", "key_terms": ["caries", "fluoride"], "key_term_df": [2, 0], "judged_by": "df0"}
+{"id": 4, "q": "What are the diagnostic criteria for schizophrenia?", "cls": "A", "style": "question", "key_terms": ["schizophrenia", "hallucinations"], "key_term_df": [0, 0], "judged_by": "df0"}
+{"id": 5, "q": "What causes brain tumors and how are they treated?", "cls": "A", "style": "question", "key_terms": ["glioblastoma", "craniotomy"], "key_term_df": [0, 0], "judged_by": "df0"}
+{"id": 6, "q": "What are complications of liver cirrhosis in end-stage disease?", "cls": "A", "style": "question", "key_terms": ["cirrhosis", "encephalopathy"], "key_term_df": [0, 2], "judged_by": "df0"}
+{"id": 7, "q": "What are symptoms of chronic gastritis and H pylori?", "cls": "A", "style": "question", "key_terms": ["gastritis", "pylori"], "key_term_df": [0, 0], "judged_by": "df0"}
+{"id": 8, "q": "What are types of bronchial pneumonia in children?", "cls": "A", "style": "question", "key_terms": ["bronchopneumonia", "consolidation"], "key_term_df": [1, 0], "judged_by": "df0"}
+{"id": 9, "q": "What causes rheumatoid arthritis and which joints?", "cls": "A", "style": "question", "key_terms": ["rheumatoid", "synovitis"], "key_term_df": [0, 0], "judged_by": "df0"}
+{"id": 10, "q": "What are symptoms of Alzheimer disease?", "cls": "A", "style": "question", "key_terms": ["alzheimer", "dementia"], "key_term_df": [0, 0], "judged_by": "df0"}
+{"id": 11, "q": "What are causes of chronic kidney failure?", "cls": "A", "style": "question", "key_terms": ["glomerulonephritis", "uremia"], "key_term_df": [0, 1], "judged_by": "df0"}
+{"id": 12, "q": "How is acute appendicitis diagnosed using McBurney sign?", "cls": "A", "style": "question", "key_terms": ["appendicitis", "mcburney"], "key_term_df": [5, 0], "judged_by": "df0"}
+{"id": 13, "q": "How is Parkinson disease tremor evaluated?", "cls": "A", "style": "question", "key_terms": ["parkinson", "bradykinesia"], "key_term_df": [0, 0], "judged_by": "df0"}
+{"id": 14, "q": "What is the acute management of ischemic stroke?", "cls": "A", "style": "question", "key_terms": ["ischemic", "thrombolysis"], "key_term_df": [5, 0], "judged_by": "df0"}
+{"id": 15, "q": "How is acute pancreatitis diagnosed clinically?", "cls": "A", "style": "question", "key_terms": ["pancreatitis", "amylase"], "key_term_df": [2, 0], "judged_by": "df0"}
+{"id": 16, "q": "What causes multiple sclerosis relapses?", "cls": "A", "style": "question", "key_terms": ["demyelination", "sclerosis"], "key_term_df": [0, 2], "judged_by": "df0"}
+{"id": 17, "q": "How is Crohn disease differentiated from ulcerative colitis?", "cls": "A", "style": "question", "key_terms": ["crohn", "cobblestoning"], "key_term_df": [0, 0], "judged_by": "df0"}
+{"id": 18, "q": "What are the clinical stages of melanoma?", "cls": "A", "style": "question", "key_terms": ["melanoma", "breslow"], "key_term_df": [3, 0], "judged_by": "df0"}
+{"id": 19, "q": "psoriasis vulgaris plaques", "cls": "A", "style": "keywords", "key_terms": ["psoriasis", "vulgaris"], "key_term_df": [1, 0], "judged_by": "df0"}
+{"id": 20, "q": "schizophrenia diagnostic criteria", "cls": "A", "style": "keywords", "key_terms": ["schizophrenia", "psychosis"], "key_term_df": [0, 1], "judged_by": "df0"}
+{"id": 21, "q": "cataract phacoemulsification intraocular", "cls": "A", "style": "keywords", "key_terms": ["cataract", "phacoemulsification"], "key_term_df": [0, 0], "judged_by": "df0"}
+{"id": 22, "q": "dental caries fluoride enamel", "cls": "A", "style": "keywords", "key_terms": ["fluoride", "enamel"], "key_term_df": [0, 0], "judged_by": "df0"}
+{"id": 23, "q": "rheumatoid arthritis methotrexate", "cls": "A", "style": "keywords", "key_terms": ["rheumatoid", "methotrexate"], "key_term_df": [0, 9], "judged_by": "df0"}
+{"id": 24, "q": "ischemic stroke thrombolysis alteplase", "cls": "A", "style": "keywords", "key_terms": ["alteplase", "thrombolysis"], "key_term_df": [0, 0], "judged_by": "df0"}
+{"id": 25, "q": "What is the long-term oncologic prognosis of benign Brenner tumor?", "cls": "B", "style": "question", "key_terms": ["brenner"], "key_term_df": [4], "judged_by": "reading"}
+{"id": 26, "q": "What is the genetic karyotype confirmed in Mayer-Rokitansky-Kuster-Hauser syndrome?", "cls": "B", "style": "question", "key_terms": ["rokitanski"], "key_term_df": [1], "judged_by": "reading"}
+{"id": 27, "q": "What are the histopathologic findings of catarrhal salpingitis?", "cls": "B", "style": "question", "key_terms": ["catarrh"], "key_term_df": [1], "judged_by": "reading"}
+{"id": 28, "q": "What are the modern pediatric surgical techniques for repairing neonatal exomphalos?", "cls": "B", "style": "question", "key_terms": ["exomphalo"], "key_term_df": [2], "judged_by": "reading"}
+{"id": 29, "q": "What is the technique for performing laparoscopic salpingostomy in unruptured tubal pregnancy?", "cls": "B", "style": "question", "key_terms": ["salpingostomi"], "key_term_df": [3], "judged_by": "reading"}
+{"id": 30, "q": "What is the pharmacokinetics and half-life of cyproterone acetate in women?", "cls": "B", "style": "question", "key_terms": ["cyproteron"], "key_term_df": [1], "judged_by": "reading"}
+{"id": 31, "q": "What topical depigmenting creams are most effective for chloasma?", "cls": "B", "style": "question", "key_terms": ["chloasma"], "key_term_df": [2], "judged_by": "reading"}
+{"id": 32, "q": "What are the specific collagen gene mutations in osteogenesis imperfecta?", "cls": "B", "style": "question", "key_terms": ["osteogenesi"], "key_term_df": [1], "judged_by": "reading"}
+{"id": 33, "q": "What are the laboratory reference ranges for tissue thromboplastin time?", "cls": "B", "style": "question", "key_terms": ["thromboplastin"], "key_term_df": [3], "judged_by": "reading"}
+{"id": 34, "q": "What is the complete endocrine workup protocol for unexplained oligomenorrhea?", "cls": "B", "style": "question", "key_terms": ["oligomenorrhea"], "key_term_df": [3], "judged_by": "reading"}
+{"id": 35, "q": "What is the exact genetic inheritance pattern of type 2 von Willebrand disease?", "cls": "B", "style": "question", "key_terms": ["willebrand"], "key_term_df": [5], "judged_by": "reading"}
+{"id": 36, "q": "What specific angiogenic cytokines are secreted by the syncytiotrophoblast?", "cls": "B", "style": "question", "key_terms": ["syncytiotrophoblast"], "key_term_df": [2], "judged_by": "reading"}
+{"id": 37, "q": "What are the standardized diagnostic criteria for abnormal findings on vulvoscopy?", "cls": "B", "style": "question", "key_terms": ["vulvoscopi"], "key_term_df": [1], "judged_by": "reading"}
+{"id": 38, "q": "What is the clinical classification of severe ovarian hyperstimulation syndrome?", "cls": "B", "style": "question", "key_terms": ["hyperstimul"], "key_term_df": [3], "judged_by": "reading"}
+{"id": 39, "q": "What is the surgical reconstruction technique for congenital uterus didelphys?", "cls": "B", "style": "question", "key_terms": ["didelphi"], "key_term_df": [1], "judged_by": "reading"}
+{"id": 40, "q": "What is the technical calibration procedure for an external tocodynamometer?", "cls": "B", "style": "question", "key_terms": ["tocodynamomet"], "key_term_df": [1], "judged_by": "reading"}
+{"id": 41, "q": "What is the standard adjuvant dosing protocol for carboplatin in advanced ovarian carcinoma?", "cls": "B", "style": "question", "key_terms": ["carboplatin"], "key_term_df": [1], "judged_by": "reading"}
+{"id": 42, "q": "What are the clinical indications for using finasteride in female pattern androgenic alopecia?", "cls": "B", "style": "question", "key_terms": ["finasterid"], "key_term_df": [1], "judged_by": "reading"}
+{"id": 43, "q": "What is the chemical composition and shelf life of Monsel solution?", "cls": "B", "style": "question", "key_terms": ["monsel"], "key_term_df": [1], "judged_by": "reading"}
+{"id": 44, "q": "What is the surgical mesh repair technique for bilateral pediatric inguinal hernioplasty?", "cls": "B", "style": "question", "key_terms": ["hernioplasti"], "key_term_df": [1], "judged_by": "reading"}
+{"id": 45, "q": "pediculosis pubis permethrin treatment", "cls": "B", "style": "keywords", "key_terms": ["pediculosi"], "key_term_df": [2], "judged_by": "reading"}
+{"id": 46, "q": "decubitus ulcer staging grading", "cls": "B", "style": "keywords", "key_terms": ["decubitu"], "key_term_df": [2], "judged_by": "reading"}
+{"id": 47, "q": "testicular hydrocele aspiration procedure", "cls": "B", "style": "keywords", "key_terms": ["hydrocel"], "key_term_df": [2], "judged_by": "reading"}
+{"id": 48, "q": "vaginal ecosystem lactobacilli dominant", "cls": "B", "style": "keywords", "key_terms": ["ecosystem"], "key_term_df": [1], "judged_by": "reading"}
+{"id": 49, "q": "What is the capital of France?", "cls": "N", "style": "question", "key_terms": ["paris", "france"], "key_term_df": [0, 0], "judged_by": "manual-nonmedical"}
+{"id": 50, "q": "How do you bake a chocolate cake?", "cls": "N", "style": "question", "key_terms": ["bake", "chocolate"], "key_term_df": [0, 3], "judged_by": "manual-nonmedical"}
+{"id": 51, "q": "What is the best programming language for web development?", "cls": "N", "style": "question", "key_terms": ["programming", "language"], "key_term_df": [7, 0], "judged_by": "manual-nonmedical"}
+{"id": 52, "q": "Who won the World Cup in 2018?", "cls": "N", "style": "question", "key_terms": ["world", "cup"], "key_term_df": [5, 3], "judged_by": "manual-nonmedical"}
+{"id": 53, "q": "What is the recipe for pasta carbonara?", "cls": "N", "style": "question", "key_terms": ["pasta", "carbonara"], "key_term_df": [0, 0], "judged_by": "manual-nonmedical"}
+{"id": 54, "q": "How does photosynthesis work in plants?", "cls": "N", "style": "question", "key_terms": ["photosynthesis", "chlorophyll"], "key_term_df": [0, 0], "judged_by": "manual-nonmedical"}
+{"id": 55, "q": "What is quantum computing and its practical applications?", "cls": "N", "style": "question", "key_terms": ["quantum", "computing"], "key_term_df": [0, 1], "judged_by": "manual-nonmedical"}
+{"id": 56, "q": "How do airplanes fly in the atmosphere?", "cls": "N", "style": "question", "key_terms": ["airplanes", "aerodynamics"], "key_term_df": [0, 0], "judged_by": "manual-nonmedical"}
+{"id": 57, "q": "beethoven symphonies orchestra", "cls": "N", "style": "keywords", "key_terms": ["beethoven", "orchestra"], "key_term_df": [0, 0], "judged_by": "manual-nonmedical"}
+{"id": 58, "q": "mars rover astronomy exploration", "cls": "N", "style": "keywords", "key_terms": ["rover", "astronomy"], "key_term_df": [0, 0], "judged_by": "manual-nonmedical"}
+{"id": 59, "q": "renaissance oil painting canvas", "cls": "N", "style": "keywords", "key_terms": ["renaissance", "canvas"], "key_term_df": [0, 0], "judged_by": "manual-nonmedical"}
+{"id": 60, "q": "currency exchange inflation rates", "cls": "N", "style": "keywords", "key_terms": ["currency", "inflation"], "key_term_df": [0, 1], "judged_by": "manual-nonmedical"}
