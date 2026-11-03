@@ -167,6 +167,14 @@ def main():
 
     print("\nNOTE: These timings are from the GitHub Actions CI runner, not a phone.")
 
+    # Run check_determinism.py (Stage 3.7d-check)
+    try:
+        import check_determinism
+        print("\n--- Running Determinism & Hardware Checks (Stage 3.7d-check) ---")
+        check_determinism.main()
+    except Exception as e:
+        print(f"Warning: check_determinism failed: {e}", file=sys.stderr)
+
 
 if __name__ == "__main__":
     main()
