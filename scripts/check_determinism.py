@@ -110,17 +110,9 @@ def embed_batch(session, tokenizer, texts, kind="query"):
 
 
 def load_golden_120():
-    texts = []
-    with open(GOLDEN_V3, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                texts.append(json.loads(line)["q"])
-    with open(GOLDEN_OOS_V3, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                texts.append(json.loads(line)["q"])
+    import gate_signals
+    in_scope, out_of_scope = gate_signals.load_question_sets()
+    texts = [q["q"] for q in in_scope] + [q["q"] for q in out_of_scope]
     assert len(texts) == 120, f"Expected 120 questions, got {len(texts)}"
     return texts
 
