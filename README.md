@@ -135,3 +135,10 @@ in `embeddings_meta.json`. The CI verifies both hashes match.
 - Ambiguous questions answered by the book (hypertension, diabetes, heart/liver disease in pregnancy) are moved to eval/ambiguous.jsonl.
 - قياس إشارات بوابة الرفض (s1-s5) لـ 60 سؤالاً ضمن النطاق و60 سؤالاً خارج النطاق متوازنة (golden_oos_v3: 24 تخصص طبي آخر فئة A، 24 سؤال نساء وتوليد غير مجاب فئة B، و12 غير طبي متنوع فئة N). قياس فقط: بدون اختيار عتبات ولا يُشحن مع APK.
 - الأسئلة الملتبسة المجابة في الكتاب (الضغط، السكري، أمراض القلب والكبد أثناء الحمل) نُقلت إلى eval/ambiguous.jsonl.
+
+## Refusal Gate Frozen Presets (Stage 3.7c)
+- Refusal gate parameters fitted from real signals: balanced (t1=0.84, t3=0.5714, k=0) and strict (t1=0.8525, t3=0.5714, k=0).
+- Label fixes applied in eval/label_fixes.json (B 26, 29, 48 answered by book); hyphen compound tokenization unified bidirectionally.
+- Bundled in assets/gate_config.json and assets/gate_reference.json (120 questions decisions); no Kotlin or retrieval changes.
+- معايير بوابة الرفض المجمدة من الإشارات الحقيقية: الإعداد المتوازن (t1=0.84, t3=0.5714, k=0) والصارم (t1=0.8525, t3=0.5714, k=0).
+- تطبيق تصحيحات التصنيف في eval/label_fixes.json ومعالجة الكلمات المركبة ذات الوصلات ثنائية الاتجاه، وتضمين ملفات التهيئة والمرجع في الحزمة.

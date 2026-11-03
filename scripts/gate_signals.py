@@ -159,6 +159,18 @@ def fts_stem(token, conn):
     return stem
 
 
+HYPHEN_COMPOUNDS = {
+    "vesicovaginal": ("vesico", "vaginal"),
+    "vesico-vaginal": ("vesico", "vaginal"),
+    "tensionfree": ("tension", "free"),
+    "tension-free": ("tension", "free"),
+    "rectovaginal": ("recto", "vaginal"),
+    "recto-vaginal": ("recto", "vaginal"),
+    "urethrovaginal": ("urethro", "vaginal"),
+    "urethro-vaginal": ("urethro", "vaginal"),
+}
+
+
 def content_stems(question, conn=None):
     """Ordered unique content stems of a question.
 
@@ -172,9 +184,15 @@ def content_stems(question, conn=None):
     # Strip possessive 's (both ASCII and curly apostrophe)
     norm = re.sub(r"[\x27\u2019]s\b", "", norm)
     tokens = _TOKEN_RE.findall(norm)
+    expanded = []
+    for t in tokens:
+        if t in HYPHEN_COMPOUNDS:
+            expanded.extend(HYPHEN_COMPOUNDS[t])
+        else:
+            expanded.append(t)
     stems = []
     seen = set()
-    for t in tokens:
+    for t in expanded:
         # Require alphabetic characters only (e.g. drop numbers like '5')
         if not t.isalpha():
             continue

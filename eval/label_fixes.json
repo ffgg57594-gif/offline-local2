@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "fixes": [
+    {
+      "id": 26,
+      "source_class": "B",
+      "action": "answered_by_book",
+      "target_group": "in",
+      "evidence": "page 217 '46 XX karyotype'"
+    },
+    {
+      "id": 29,
+      "source_class": "B",
+      "action": "answered_by_book",
+      "target_group": "in",
+      "evidence": "pages 37-38 'linear incision' and 'Laparoscopic Salpingostomy'"
+    },
+    {
+      "id": 48,
+      "source_class": "B",
+      "action": "answered_by_book",
+      "target_group": "in",
+      "evidence": "page 260 'Lactobacillus acidophilus is the dominant bacterium'"
+    }
+  ]
+}

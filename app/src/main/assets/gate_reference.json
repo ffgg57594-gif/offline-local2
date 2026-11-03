@@ -1,0 +1,2162 @@
+[
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 1,
+    "question": "How does a woman's body adapt physiologically during pregnancy?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.885206,
+      "s2_margin": 0.017233,
+      "s3_cov_top3": 0.2,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 2,
+    "question": "What skeletal changes occur during pregnancy?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.857492,
+      "s2_margin": 0.001293,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 3,
+    "question": "How are the double and triple marker tests used in prenatal screening?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.87451,
+      "s2_margin": 0.00422,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 4,
+    "question": "What are the timing and risks of amniocentesis?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.896967,
+      "s2_margin": 0.016338,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 5,
+    "question": "What is the McDonald procedure in cervical cerclage?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.869663,
+      "s2_margin": 0.0111,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 6,
+    "question": "How is gestational trophoblastic neoplasia classified clinically?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.878561,
+      "s2_margin": 0.005932,
+      "s3_cov_top3": 0.6,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.333333
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 7,
+    "question": "What are the main causes of antepartum hemorrhage?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.903858,
+      "s2_margin": 0.007704,
+      "s3_cov_top3": 0.75,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 8,
+    "question": "When is expectant management appropriate for placenta previa bleeding?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.886904,
+      "s2_margin": 0.006011,
+      "s3_cov_top3": 0.833333,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.5
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 9,
+    "question": "How is eclampsia managed in obstetric emergencies?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.863236,
+      "s2_margin": 0.005681,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 10,
+    "question": "What are the dosing and safety precautions for magnesium sulfate therapy?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.850448,
+      "s2_margin": 0.004077,
+      "s3_cov_top3": 0.666667,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.5
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": false
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 11,
+    "question": "How is acute cystitis diagnosed and treated in pregnancy?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.894267,
+      "s2_margin": 0.017526,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 12,
+    "question": "What are the fetal effects of maternal anticonvulsant drug use?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.895362,
+      "s2_margin": 0.02756,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 13,
+    "question": "What is Rh isoimmunization and how does it affect pregnancy?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.903206,
+      "s2_margin": 0.007382,
+      "s3_cov_top3": 0.75,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 14,
+    "question": "What anatomical landmarks determine fetal head engagement during labor?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.879668,
+      "s2_margin": 0.018657,
+      "s3_cov_top3": 0.571429,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 15,
+    "question": "How do the shoulders and body deliver during normal vaginal birth?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.89899,
+      "s2_margin": 0.009305,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": -1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 16,
+    "question": "How is fetal wellbeing assessed using movement count?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.869412,
+      "s2_margin": 0.011352,
+      "s3_cov_top3": 0.8,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 17,
+    "question": "What do late decelerations in fetal heart rate indicate?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.866919,
+      "s2_margin": 0.001488,
+      "s3_cov_top3": 0.833333,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 18,
+    "question": "What is the mechanism of vaginal breech delivery?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.902901,
+      "s2_margin": 0.023179,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": -1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 19,
+    "question": "What is shoulder presentation and why is it obstructed?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.861938,
+      "s2_margin": 0.004406,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": -1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 20,
+    "question": "How is prolonged second stage of labor managed?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.870508,
+      "s2_margin": 0.022803,
+      "s3_cov_top3": 0.8,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": -1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 21,
+    "question": "How is cephalopelvic disproportion assessed clinically?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.882874,
+      "s2_margin": 0.010537,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 22,
+    "question": "What are the signs of uterine rupture during labor?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.880611,
+      "s2_margin": 0.000793,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": -1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 23,
+    "question": "What are the three types of placenta accreta spectrum?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.877231,
+      "s2_margin": 0.000878,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 24,
+    "question": "How is placenta accreta spectrum best managed?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.870695,
+      "s2_margin": 0.003098,
+      "s3_cov_top3": 0.8,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 25,
+    "question": "What is the aim of tocolytic therapy in preterm labor?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.869409,
+      "s2_margin": 0.007765,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 26,
+    "question": "What are the main risk factors for fetal macrosomia?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.867078,
+      "s2_margin": 0.003351,
+      "s3_cov_top3": 0.8,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": -1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 27,
+    "question": "When is elective cesarean section recommended for suspected macrosomia?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.846633,
+      "s2_margin": 0.001792,
+      "s3_cov_top3": 0.666667,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.5
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": false
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 28,
+    "question": "How are postpartum septic complications treated?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.879005,
+      "s2_margin": 0.009121,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 29,
+    "question": "How do median and mediolateral episiotomies differ?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.885512,
+      "s2_margin": 0.004149,
+      "s3_cov_top3": 0.75,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 30,
+    "question": "What are the advantages of lower segment cesarean section?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.876931,
+      "s2_margin": 0.005709,
+      "s3_cov_top3": 0.8,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.75
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 31,
+    "question": "How is fundal level assessed during obstetric examination?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.896041,
+      "s2_margin": 0.021112,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 32,
+    "question": "What is the anatomical relationship between the ureter and uterine artery?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.860877,
+      "s2_margin": 0.009405,
+      "s3_cov_top3": 0.8,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 33,
+    "question": "How do congenital uterine anomalies affect pregnancy outcomes?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.8653,
+      "s2_margin": 0.002602,
+      "s3_cov_top3": 0.5,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 34,
+    "question": "How is central precocious puberty treated?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.867439,
+      "s2_margin": 0.012135,
+      "s3_cov_top3": 0.75,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.666667
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 35,
+    "question": "What are the vasomotor symptoms of menopause?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.884791,
+      "s2_margin": 0.025639,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 36,
+    "question": "What causes Asherman's syndrome?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.90717,
+      "s2_margin": 0.042137,
+      "s3_cov_top3": 0.666667,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 37,
+    "question": "How does basal body temperature charting indicate ovulation?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.893277,
+      "s2_margin": 0.00558,
+      "s3_cov_top3": 0.833333,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 38,
+    "question": "What are the Rotterdam criteria for diagnosing PCOS?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.855089,
+      "s2_margin": 0.0086,
+      "s3_cov_top3": 0.75,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 39,
+    "question": "How does cervical factor contribute to female infertility?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.876321,
+      "s2_margin": 0.013977,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 40,
+    "question": "What is the role of laparoscopy in evaluating tubal infertility?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.899155,
+      "s2_margin": 0.008292,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 41,
+    "question": "When is the best time to insert an IUD?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.894167,
+      "s2_margin": 0.018295,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": -1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 42,
+    "question": "What are the potential complications of IUD use?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.876775,
+      "s2_margin": 0.007386,
+      "s3_cov_top3": 0.666667,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 43,
+    "question": "What options are available for emergency contraception?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.854497,
+      "s2_margin": 0.003613,
+      "s3_cov_top3": 0.75,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.666667
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 44,
+    "question": "What causes bacterial vaginosis?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.916528,
+      "s2_margin": 0.023175,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 45,
+    "question": "What are the common causes of acute endocervicitis?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.884084,
+      "s2_margin": 0.005937,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": -1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 46,
+    "question": "What are the symptoms of gonococcal endocervicitis?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.905584,
+      "s2_margin": 0.014474,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 47,
+    "question": "How is syphilis treated in pregnant women?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.868041,
+      "s2_margin": 0.006243,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 48,
+    "question": "How is the degree of uterine prolapse classified?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.873405,
+      "s2_margin": 0.008201,
+      "s3_cov_top3": 0.75,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 49,
+    "question": "What is the tension-free vaginal tape procedure for urinary incontinence?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.860689,
+      "s2_margin": 0.004429,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 50,
+    "question": "How can vesicovaginal fistula be prevented?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.874814,
+      "s2_margin": 0.02364,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 51,
+    "question": "What are the common degenerative changes in uterine fibroids?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.856046,
+      "s2_margin": 0.001994,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 52,
+    "question": "What pressure symptoms can uterine fibroids cause?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.851103,
+      "s2_margin": 0.001,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": -1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": false
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 53,
+    "question": "What are the most common types of functional ovarian cysts?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.884512,
+      "s2_margin": 0.011992,
+      "s3_cov_top3": 0.8,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": -1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 54,
+    "question": "How do follicular cysts develop?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.873705,
+      "s2_margin": 0.002701,
+      "s3_cov_top3": 0.666667,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 55,
+    "question": "What are the risk factors for cervical intraepithelial neoplasia?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.865667,
+      "s2_margin": 0.001825,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 56,
+    "question": "What are the main histological types of cervical cancer?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.865968,
+      "s2_margin": 0.002638,
+      "s3_cov_top3": 0.8,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 57,
+    "question": "How are ovarian neoplasms classified histogenetically?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.881022,
+      "s2_margin": 0.006921,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 58,
+    "question": "What imaging is used to investigate ovarian swellings?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.869626,
+      "s2_margin": 0.000308,
+      "s3_cov_top3": 0.75,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 59,
+    "question": "What hormones do granulosa cell tumors secrete?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.893043,
+      "s2_margin": 0.028614,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "in",
+    "cls": "IN",
+    "id": 60,
+    "question": "What is the standard surgical treatment for early-stage ovarian cancer?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.8746,
+      "s2_margin": 0.001608,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": -1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "out",
+    "cls": "A",
+    "id": 1,
+    "question": "What are the symptoms of psoriasis vulgaris?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.870371,
+      "s2_margin": 0.019288,
+      "s3_cov_top3": 0.333333,
+      "s4_unknown": 1.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "A",
+    "id": 2,
+    "question": "What are the types of cataract surgery in adults?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.85383,
+      "s2_margin": 0.003918,
+      "s3_cov_top3": 0.5,
+      "s4_unknown": 1.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "A",
+    "id": 3,
+    "question": "How is dental caries managed with fluoride in children?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.824927,
+      "s2_margin": 0.011735,
+      "s3_cov_top3": 0.2,
+      "s4_unknown": 1.0,
+      "s5_rare_cov_top3": 0.333333
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "A",
+    "id": 4,
+    "question": "What are the diagnostic criteria for schizophrenia?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.826512,
+      "s2_margin": 0.001005,
+      "s3_cov_top3": 0.333333,
+      "s4_unknown": 1.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "A",
+    "id": 5,
+    "question": "What causes brain tumors and how are they treated?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.857825,
+      "s2_margin": 0.003469,
+      "s3_cov_top3": 0.5,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "A",
+    "id": 6,
+    "question": "What are complications of liver cirrhosis in end-stage disease?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.853869,
+      "s2_margin": 0.015276,
+      "s3_cov_top3": 0.333333,
+      "s4_unknown": 1.0,
+      "s5_rare_cov_top3": -1.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "A",
+    "id": 7,
+    "question": "What are symptoms of chronic gastritis and H pylori?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.849344,
+      "s2_margin": 0.000489,
+      "s3_cov_top3": 0.5,
+      "s4_unknown": 2.0,
+      "s5_rare_cov_top3": -1.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "A",
+    "id": 8,
+    "question": "What are types of bronchial pneumonia in children?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.827163,
+      "s2_margin": 0.002346,
+      "s3_cov_top3": 0.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "A",
+    "id": 9,
+    "question": "What causes rheumatoid arthritis and which joints?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.846697,
+      "s2_margin": 0.004809,
+      "s3_cov_top3": 0.25,
+      "s4_unknown": 1.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "A",
+    "id": 10,
+    "question": "What are symptoms of Alzheimer disease?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.839677,
+      "s2_margin": 0.000118,
+      "s3_cov_top3": 0.333333,
+      "s4_unknown": 1.0,
+      "s5_rare_cov_top3": -1.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "A",
+    "id": 11,
+    "question": "What are causes of chronic kidney failure?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.841927,
+      "s2_margin": 0.006264,
+      "s3_cov_top3": 0.5,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "A",
+    "id": 12,
+    "question": "How is acute appendicitis diagnosed using McBurney sign?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.842814,
+      "s2_margin": 0.010402,
+      "s3_cov_top3": 0.6,
+      "s4_unknown": 1.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "A",
+    "id": 13,
+    "question": "How is Parkinson disease tremor evaluated?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.812344,
+      "s2_margin": 0.000978,
+      "s3_cov_top3": 0.0,
+      "s4_unknown": 2.0,
+      "s5_rare_cov_top3": -1.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "A",
+    "id": 14,
+    "question": "What is the acute management of ischemic stroke?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.828187,
+      "s2_margin": 0.000157,
+      "s3_cov_top3": 0.75,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "A",
+    "id": 15,
+    "question": "How is acute pancreatitis diagnosed clinically?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.841303,
+      "s2_margin": 0.00355,
+      "s3_cov_top3": 0.5,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "A",
+    "id": 16,
+    "question": "What causes multiple sclerosis relapses?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.8427,
+      "s2_margin": 0.004424,
+      "s3_cov_top3": 0.0,
+      "s4_unknown": 1.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "A",
+    "id": 17,
+    "question": "How is Crohn disease differentiated from ulcerative colitis?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.837894,
+      "s2_margin": 0.003308,
+      "s3_cov_top3": 0.6,
+      "s4_unknown": 2.0,
+      "s5_rare_cov_top3": -1.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "A",
+    "id": 18,
+    "question": "What are the clinical stages of melanoma?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.852654,
+      "s2_margin": 0.011355,
+      "s3_cov_top3": 0.666667,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "out",
+    "cls": "A",
+    "id": 19,
+    "question": "psoriasis vulgaris plaques",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.861071,
+      "s2_margin": 0.009334,
+      "s3_cov_top3": 0.333333,
+      "s4_unknown": 1.0,
+      "s5_rare_cov_top3": 0.5
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "A",
+    "id": 20,
+    "question": "schizophrenia diagnostic criteria",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.847957,
+      "s2_margin": 0.000559,
+      "s3_cov_top3": 0.333333,
+      "s4_unknown": 1.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "A",
+    "id": 21,
+    "question": "cataract phacoemulsification intraocular",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.852912,
+      "s2_margin": 0.002161,
+      "s3_cov_top3": 0.0,
+      "s4_unknown": 3.0,
+      "s5_rare_cov_top3": -1.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "A",
+    "id": 22,
+    "question": "dental caries fluoride enamel",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.829823,
+      "s2_margin": 0.000988,
+      "s3_cov_top3": 0.25,
+      "s4_unknown": 2.0,
+      "s5_rare_cov_top3": 0.5
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "A",
+    "id": 23,
+    "question": "rheumatoid arthritis methotrexate",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.883487,
+      "s2_margin": 0.022128,
+      "s3_cov_top3": 0.333333,
+      "s4_unknown": 1.0,
+      "s5_rare_cov_top3": 0.5
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "A",
+    "id": 24,
+    "question": "ischemic stroke thrombolysis alteplase",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.862809,
+      "s2_margin": 0.002585,
+      "s3_cov_top3": 0.5,
+      "s4_unknown": 2.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "B",
+    "id": 25,
+    "question": "What is the long-term oncologic prognosis of benign Brenner tumor?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.870245,
+      "s2_margin": 0.009869,
+      "s3_cov_top3": 0.714286,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.666667
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "out",
+    "cls": "B",
+    "id": 26,
+    "question": "What is the genetic karyotype confirmed in Mayer-Rokitansky-Kuster-Hauser syndrome?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.812476,
+      "s2_margin": 0.000321,
+      "s3_cov_top3": 0.875,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "B",
+    "id": 27,
+    "question": "What are the histopathologic findings of catarrhal salpingitis?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.828908,
+      "s2_margin": 0.00466,
+      "s3_cov_top3": 0.5,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.333333
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "B",
+    "id": 28,
+    "question": "What are the modern pediatric surgical techniques for repairing neonatal exomphalos?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.838089,
+      "s2_margin": 0.002583,
+      "s3_cov_top3": 0.428571,
+      "s4_unknown": 1.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "B",
+    "id": 29,
+    "question": "What is the technique for performing laparoscopic salpingostomy in unruptured tubal pregnancy?",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.883211,
+      "s2_margin": 0.006788,
+      "s3_cov_top3": 0.857143,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.666667
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "out",
+    "cls": "B",
+    "id": 30,
+    "question": "What is the pharmacokinetics and half-life of cyproterone acetate in women?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.862178,
+      "s2_margin": 0.031415,
+      "s3_cov_top3": 0.5,
+      "s4_unknown": 1.0,
+      "s5_rare_cov_top3": 0.666667
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "B",
+    "id": 31,
+    "question": "What topical depigmenting creams are most effective for chloasma?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.819596,
+      "s2_margin": 0.003463,
+      "s3_cov_top3": 0.6,
+      "s4_unknown": 1.0,
+      "s5_rare_cov_top3": 0.666667
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "B",
+    "id": 32,
+    "question": "What are the specific collagen gene mutations in osteogenesis imperfecta?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.813252,
+      "s2_margin": 0.001915,
+      "s3_cov_top3": 0.166667,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "B",
+    "id": 33,
+    "question": "What are the laboratory reference ranges for tissue thromboplastin time?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.833375,
+      "s2_margin": 0.000299,
+      "s3_cov_top3": 0.166667,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "B",
+    "id": 34,
+    "question": "What is the complete endocrine workup protocol for unexplained oligomenorrhea?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.856467,
+      "s2_margin": 0.009583,
+      "s3_cov_top3": 0.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "B",
+    "id": 35,
+    "question": "What is the exact genetic inheritance pattern of type 2 von Willebrand disease?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.840226,
+      "s2_margin": 0.021041,
+      "s3_cov_top3": 0.375,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.4
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "B",
+    "id": 36,
+    "question": "What specific angiogenic cytokines are secreted by the syncytiotrophoblast?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.824818,
+      "s2_margin": 0.002739,
+      "s3_cov_top3": 0.6,
+      "s4_unknown": 1.0,
+      "s5_rare_cov_top3": 0.5
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "B",
+    "id": 37,
+    "question": "What are the standardized diagnostic criteria for abnormal findings on vulvoscopy?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.864328,
+      "s2_margin": 0.016725,
+      "s3_cov_top3": 0.166667,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "B",
+    "id": 38,
+    "question": "What is the clinical classification of severe ovarian hyperstimulation syndrome?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.851845,
+      "s2_margin": 0.000886,
+      "s3_cov_top3": 0.666667,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "B",
+    "id": 39,
+    "question": "What is the surgical reconstruction technique for congenital uterus didelphys?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.854202,
+      "s2_margin": 0.002952,
+      "s3_cov_top3": 0.333333,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "B",
+    "id": 40,
+    "question": "What is the technical calibration procedure for an external tocodynamometer?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.825285,
+      "s2_margin": 0.003574,
+      "s3_cov_top3": 0.4,
+      "s4_unknown": 2.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "B",
+    "id": 41,
+    "question": "What is the standard adjuvant dosing protocol for carboplatin in advanced ovarian carcinoma?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.8581,
+      "s2_margin": 0.0139,
+      "s3_cov_top3": 0.75,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.75
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "out",
+    "cls": "B",
+    "id": 42,
+    "question": "What are the clinical indications for using finasteride in female pattern androgenic alopecia?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.851287,
+      "s2_margin": 0.004199,
+      "s3_cov_top3": 0.428571,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.333333
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "B",
+    "id": 43,
+    "question": "What is the chemical composition and shelf life of Monsel solution?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.782985,
+      "s2_margin": 0.002002,
+      "s3_cov_top3": 0.0,
+      "s4_unknown": 1.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "B",
+    "id": 44,
+    "question": "What is the surgical mesh repair technique for bilateral pediatric inguinal hernioplasty?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.827577,
+      "s2_margin": 0.000813,
+      "s3_cov_top3": 0.25,
+      "s4_unknown": 1.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "B",
+    "id": 45,
+    "question": "pediculosis pubis permethrin treatment",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.876846,
+      "s2_margin": 0.006729,
+      "s3_cov_top3": 0.25,
+      "s4_unknown": 1.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "B",
+    "id": 46,
+    "question": "decubitus ulcer staging grading",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.866891,
+      "s2_margin": 0.01087,
+      "s3_cov_top3": 0.5,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "B",
+    "id": 47,
+    "question": "testicular hydrocele aspiration procedure",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.896129,
+      "s2_margin": 0.006606,
+      "s3_cov_top3": 0.75,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 0.666667
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "out",
+    "cls": "B",
+    "id": 48,
+    "question": "vaginal ecosystem lactobacilli dominant",
+    "answerable": true,
+    "signals": {
+      "s1_top1": 0.887422,
+      "s2_margin": 0.014512,
+      "s3_cov_top3": 1.0,
+      "s4_unknown": 0.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": true,
+      "strict": true
+    }
+  },
+  {
+    "group": "out",
+    "cls": "N",
+    "id": 49,
+    "question": "What is the capital of France?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.75453,
+      "s2_margin": 0.006528,
+      "s3_cov_top3": 0.0,
+      "s4_unknown": 2.0,
+      "s5_rare_cov_top3": -1.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "N",
+    "id": 50,
+    "question": "How do you bake a chocolate cake?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.768044,
+      "s2_margin": 0.001699,
+      "s3_cov_top3": 0.333333,
+      "s4_unknown": 1.0,
+      "s5_rare_cov_top3": 0.5
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "N",
+    "id": 51,
+    "question": "What is the best programming language for web development?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.795768,
+      "s2_margin": 0.00988,
+      "s3_cov_top3": 0.0,
+      "s4_unknown": 1.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "N",
+    "id": 52,
+    "question": "Who won the World Cup in 2018?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.75504,
+      "s2_margin": 0.008401,
+      "s3_cov_top3": 0.333333,
+      "s4_unknown": 1.0,
+      "s5_rare_cov_top3": 0.5
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "N",
+    "id": 53,
+    "question": "What is the recipe for pasta carbonara?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.775824,
+      "s2_margin": 0.000938,
+      "s3_cov_top3": 0.0,
+      "s4_unknown": 2.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "N",
+    "id": 54,
+    "question": "How does photosynthesis work in plants?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.811648,
+      "s2_margin": 0.000829,
+      "s3_cov_top3": 0.0,
+      "s4_unknown": 1.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "N",
+    "id": 55,
+    "question": "What is quantum computing and its practical applications?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.784642,
+      "s2_margin": 0.005272,
+      "s3_cov_top3": 0.0,
+      "s4_unknown": 1.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "N",
+    "id": 56,
+    "question": "How do airplanes fly in the atmosphere?",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.804272,
+      "s2_margin": 0.003461,
+      "s3_cov_top3": 0.0,
+      "s4_unknown": 3.0,
+      "s5_rare_cov_top3": -1.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "N",
+    "id": 57,
+    "question": "beethoven symphonies orchestra",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.770826,
+      "s2_margin": 0.002094,
+      "s3_cov_top3": 0.0,
+      "s4_unknown": 3.0,
+      "s5_rare_cov_top3": -1.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "N",
+    "id": 58,
+    "question": "mars rover astronomy exploration",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.790157,
+      "s2_margin": 0.000243,
+      "s3_cov_top3": 0.25,
+      "s4_unknown": 2.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "N",
+    "id": 59,
+    "question": "renaissance oil painting canvas",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.789658,
+      "s2_margin": 0.016064,
+      "s3_cov_top3": 0.25,
+      "s4_unknown": 3.0,
+      "s5_rare_cov_top3": 1.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  },
+  {
+    "group": "out",
+    "cls": "N",
+    "id": 60,
+    "question": "currency exchange inflation rates",
+    "answerable": false,
+    "signals": {
+      "s1_top1": 0.825025,
+      "s2_margin": 0.00068,
+      "s3_cov_top3": 0.0,
+      "s4_unknown": 1.0,
+      "s5_rare_cov_top3": 0.0
+    },
+    "decisions": {
+      "balanced": false,
+      "strict": false
+    }
+  }
+]

@@ -335,6 +335,15 @@ def write_csv(rows):
                 r["top1_chunk_id"], r["top1_page"],
             ])
 
+    import hashlib
+    with open(OUT_CSV, "rb") as f:
+        csv_bytes = f.read()
+    sha = hashlib.sha256(csv_bytes).hexdigest()
+    print("=== BEGIN GATE SIGNALS CSV ===")
+    print(csv_bytes.decode("utf-8"), end="")
+    print("=== END GATE SIGNALS CSV ===")
+    print(f"gate_signals.csv sha256: {sha}")
+
 
 def main():
     if not os.path.exists(DB_PATH):
@@ -383,6 +392,14 @@ def main():
             f.write("\n\nFull tables B, C, E, F and the CSV artifact (eval/gate_signals.csv) are in the step log.\n")
     conn.close()
     print("\nGate signal measurement complete.")
+
+    # Fit refusal gate presets and write gate_config.json & gate_reference.json
+    try:
+        import fit_gate
+        print("\nFitting refusal gate presets via fit_gate...")
+        fit_gate.main()
+    except Exception as e:
+        print(f"Warning: fit_gate invocation failed: {e}", file=sys.stderr)
 
 
 if __name__ == "__main__":
