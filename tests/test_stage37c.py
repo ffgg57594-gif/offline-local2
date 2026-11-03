@@ -1,10 +1,13 @@
 import json
 import os
+import sys
 import pytest
 
-from scripts.gate_signals import content_stems, load_question_sets
-from scripts.gate_rule import accept
-from scripts.fit_gate import load_labeled_signals, fit_preset, CONFIG_OUT, REFERENCE_OUT
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
+
+from gate_signals import content_stems, load_question_sets
+from gate_rule import accept
+from fit_gate import load_labeled_signals, fit_preset, CONFIG_OUT, REFERENCE_OUT
 
 
 def test_loader_with_label_fixes():
