@@ -401,6 +401,14 @@ def main():
     except Exception as e:
         print(f"Warning: fit_gate invocation failed: {e}", file=sys.stderr)
 
+    # Generate assets-small and manifest.txt
+    try:
+        import generate_manifest
+        print("\nGenerating assets manifest and staging...")
+        generate_manifest.generate()
+    except Exception as e:
+        print(f"Warning: generate_manifest failed: {e}", file=sys.stderr)
+
 
 if __name__ == "__main__":
     main()
