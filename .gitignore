@@ -15,6 +15,7 @@ app/src/main/assets/config_calibrated.json
 
 # Python bytecode
 __pycache__/
+.cache
 # CI/local junk (not source)
 .logs.zip
 eval/chunks_for_golden.jsonl

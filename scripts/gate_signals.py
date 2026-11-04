@@ -135,25 +135,31 @@ def _variant_map():
     return _DEFAULT_VARIANT_MAP
 
 
-def _ensure_stem_tables(conn):
-    """Create once-per-connection helper FTS5 tables for exact porter stemming."""
-    conn.execute(
-        "CREATE VIRTUAL TABLE IF NOT EXISTS _gate_stem_helper "
-        "USING fts5(x, tokenize='" + FTS5_TOKENIZER + "')"
-    )
-    conn.execute(
-        "CREATE VIRTUAL TABLE IF NOT EXISTS _gate_stem_vocab USING fts5vocab(_gate_stem_helper, 'col')"
-    )
+_DEFAULT_STEM_CONN = None
 
 
-def fts_stem(token, conn):
+def _get_stem_conn():
+    global _DEFAULT_STEM_CONN
+    if _DEFAULT_STEM_CONN is None:
+        _DEFAULT_STEM_CONN = sqlite3.connect(":memory:")
+        _DEFAULT_STEM_CONN.execute(
+            "CREATE VIRTUAL TABLE _gate_stem_helper "
+            "USING fts5(x, tokenize='" + FTS5_TOKENIZER + "')"
+        )
+        _DEFAULT_STEM_CONN.execute(
+            "CREATE VIRTUAL TABLE _gate_stem_vocab USING fts5vocab(_gate_stem_helper, 'col')"
+        )
+    return _DEFAULT_STEM_CONN
+
+
+def fts_stem(token, conn=None):
     """Stem one token with the same FTS5 porter tokenizer as the index."""
     if token in _STEM_CACHE:
         return _STEM_CACHE[token]
-    _ensure_stem_tables(conn)
-    conn.execute("DELETE FROM _gate_stem_helper")
-    conn.execute("INSERT INTO _gate_stem_helper(rowid, x) VALUES (1, ?)", (token,))
-    row = conn.execute("SELECT term FROM _gate_stem_vocab").fetchone()
+    stem_conn = _get_stem_conn()
+    stem_conn.execute("DELETE FROM _gate_stem_helper")
+    stem_conn.execute("INSERT INTO _gate_stem_helper(rowid, x) VALUES (1, ?)", (token,))
+    row = stem_conn.execute("SELECT term FROM _gate_stem_vocab").fetchone()
     stem = row[0] if row else token
     _STEM_CACHE[token] = stem
     return stem

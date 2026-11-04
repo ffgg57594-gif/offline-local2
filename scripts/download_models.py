@@ -136,6 +136,12 @@ def main():
         }
         print(f"  {local_name}: {size} bytes, sha256={digest}")
 
+    # Clean up any .cache directory created under OUT_DIR or its parents
+    cache_dir = os.path.join(OUT_DIR, ".cache")
+    if os.path.exists(cache_dir):
+        import shutil
+        shutil.rmtree(cache_dir, ignore_errors=True)
+
     # 4. Write manifest (committed).
     os.makedirs(os.path.dirname(MANIFEST_PATH), exist_ok=True)
     with open(MANIFEST_PATH, "w", encoding="utf-8") as f:

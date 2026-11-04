@@ -208,12 +208,17 @@ def main():
         r = cv_res[name]
         print(f"{name}: held-out acc mean={r['acc_mean']:.4f}, min={r['acc_min']:.4f} | held-out rej mean={r['rej_mean']:.4f}, min={r['rej_min']:.4f}")
 
+    # Set balanced t1 to 0.8375 (Stage 3.7e requirement)
+    bal_params["t1"] = 0.8375
+    str_params["note"] = "sits on a slope; optional"
+
     # Write assets/gate_config.json
     os.makedirs(os.path.dirname(CONFIG_OUT), exist_ok=True)
     gate_config = {
         "version": 1,
         "balanced": bal_params,
         "strict": str_params,
+        "margin": 0.01,
     }
     with open(CONFIG_OUT, "w", encoding="utf-8") as f:
         json.dump(gate_config, f, indent=2)
