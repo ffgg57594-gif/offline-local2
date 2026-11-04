@@ -65,19 +65,8 @@ dependencies {
 tasks.matching { it.name == "assembleRelease" }.configureEach {
     doLast {
         println("assembleRelease completed. Running APK integrity check...")
-        val py = if (file("/opt/hostedtoolcache/Python/3.11.17/x64/bin/python3").exists()) {
-            "/opt/hostedtoolcache/Python/3.11.17/x64/bin/python3"
-        } else {
-            "python3"
-        }
-        val proc = ProcessBuilder(py, "${rootDir}/scripts/verify_apk_integrity.py")
-            .directory(rootDir)
-            .redirectOutput(ProcessBuilder.Redirect.INHERIT)
-            .redirectError(ProcessBuilder.Redirect.INHERIT)
-            .start()
-        val exitCode = proc.waitFor()
-        if (exitCode != 0) {
-            throw GradleException("APK integrity check failed with exit code $exitCode")
+        project.exec {
+            commandLine("python3", "${rootDir}/scripts/verify_apk_integrity.py")
         }
     }
 }
