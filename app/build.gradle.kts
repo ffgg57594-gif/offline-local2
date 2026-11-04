@@ -62,7 +62,7 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
 }
 
-tasks.named("assembleRelease") {
+tasks.matching { it.name == "assembleRelease" }.configureEach {
     doLast {
         println("assembleRelease completed. Running APK integrity check...")
         val py = if (file("/opt/hostedtoolcache/Python/3.11.17/x64/bin/python3").exists()) {
