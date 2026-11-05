@@ -1,0 +1,121 @@
+group,cls,id,question,rank_1_chunk_id,rank_1_page,rank_1_dense_cosine,rank_2_chunk_id,rank_2_page,rank_2_dense_cosine,rank_3_chunk_id,rank_3_page,rank_3_dense_cosine,rank_4_chunk_id,rank_4_page,rank_4_dense_cosine,rank_5_chunk_id,rank_5_page,rank_5_dense_cosine,target_chunk_id,alt_chunk_ids
+in,IN,1,How does a woman's body adapt physiologically during pregnancy?,310,100,0.884846,87,32,0.866498,64,24,0.865575,304,98,0.862319,164,56,0.862300,16,"226,202"
+in,IN,2,What skeletal changes occur during pregnancy?,23,13,0.855840,31,15,0.853919,25,14,0.851717,21,12,0.845645,16,11,0.844223,31,"23,25,29"
+in,IN,3,How are the double and triple marker tests used in prenatal screening?,61,23,0.876590,57,22,0.873552,62,23,0.862797,59,23,0.854692,63,24,0.841751,61,"57,62,59"
+in,IN,4,What are the timing and risks of amniocentesis?,69,25,0.894267,67,25,0.876941,56,22,0.868578,68,25,0.868304,71,26,0.867426,69,"67,68,70"
+in,IN,5,What is the McDonald procedure in cervical cerclage?,90,33,0.870006,91,34,0.857641,414,134,0.837000,89,33,0.834028,593,192,0.833055,90,"91,89,88"
+in,IN,6,How is gestational trophoblastic neoplasia classified clinically?,121,43,0.876420,108,39,0.870074,123,44,0.863916,122,44,0.863811,107,39,0.856785,122,"121,108,123"
+in,IN,7,What are the main causes of antepartum hemorrhage?,127,46,0.903583,205,67,0.895173,129,46,0.886766,565,179,0.872899,135,48,0.869702,127,"129,135,12"
+in,IN,8,When is expectant management appropriate for placenta previa bleeding?,136,49,0.886974,150,53,0.884492,141,50,0.876033,303,98,0.874409,169,58,0.872811,150,"136,141,127"
+in,IN,9,How is eclampsia managed in obstetric emergencies?,178,60,0.862330,52,21,0.856689,304,98,0.852383,150,53,0.848858,402,128,0.847946,180,"178,161,39"
+in,IN,10,What are the dosing and safety precautions for magnesium sulfate therapy?,175,59,0.849343,181,61,0.847093,473,151,0.844822,499,158,0.833485,172,58,0.832330,181,"175,473,499"
+in,IN,11,How is acute cystitis diagnosed and treated in pregnancy?,217,70,0.890842,215,70,0.871737,1015,321,0.869931,855,272,0.869266,126,45,0.868363,215,"217,214"
+in,IN,12,What are the fetal effects of maternal anticonvulsant drug use?,225,72,0.897151,224,72,0.867242,173,59,0.856439,70,25,0.853066,308,99,0.844688,225,"224,471"
+in,IN,13,What is Rh isoimmunization and how does it affect pregnancy?,237,76,0.900095,234,76,0.894409,236,76,0.890451,238,77,0.882382,235,76,0.872648,236,"237,234,238"
+in,IN,14,What anatomical landmarks determine fetal head engagement during labor?,270,87,0.879387,341,110,0.858832,384,123,0.858584,284,92,0.856968,382,123,0.856941,258,"270,271,581"
+in,IN,15,How do the shoulders and body deliver during normal vaginal birth?,288,93,0.899593,299,97,0.890338,355,114,0.882636,547,173,0.881834,344,111,0.881076,288,"299,344,289"
+in,IN,16,How is fetal wellbeing assessed using movement count?,160,55,0.867576,309,100,0.858181,151,53,0.851698,310,100,0.849651,307,99,0.847412,309,"160,307,159"
+in,IN,17,What do late decelerations in fetal heart rate indicate?,318,102,0.867816,317,102,0.866956,316,102,0.861827,311,100,0.858261,511,162,0.856942,318,"317,316,511"
+in,IN,18,What is the mechanism of vaginal breech delivery?,343,110,0.902602,350,112,0.878560,320,103,0.860603,355,114,0.858668,344,111,0.855161,343,"350,344,355"
+in,IN,19,What is shoulder presentation and why is it obstructed?,265,86,0.863187,337,108,0.858934,358,115,0.853862,357,114,0.850664,360,115,0.846764,358,"357,360,265"
+in,IN,20,How is prolonged second stage of labor managed?,384,123,0.870532,301,97,0.847479,280,90,0.839979,385,123,0.839910,438,141,0.838170,388,"384,385,438"
+in,IN,21,How is cephalopelvic disproportion assessed clinically?,405,130,0.882399,407,130,0.872069,404,129,0.853544,388,124,0.844819,326,105,0.838650,405,"407,404,561"
+in,IN,22,What are the signs of uterine rupture during labor?,411,133,0.881924,555,175,0.881393,397,127,0.876508,400,128,0.870305,150,53,0.868756,411,"555,397,409"
+in,IN,23,What are the three types of placenta accreta spectrum?,153,53,0.877978,442,143,0.877140,152,53,0.870768,132,47,0.857784,428,138,0.854593,442,"153,152,12"
+in,IN,24,How is placenta accreta spectrum best managed?,442,143,0.870661,152,53,0.867887,153,53,0.865367,136,49,0.856556,444,143,0.854287,446,"442,152,444"
+in,IN,25,What is the aim of tocolytic therapy in preterm labor?,471,150,0.869214,461,148,0.863428,462,148,0.849445,150,53,0.847854,175,59,0.846427,471,"461,462"
+in,IN,26,What are the main risk factors for fetal macrosomia?,500,159,0.868021,193,64,0.864463,499,158,0.861510,194,64,0.857511,498,158,0.856605,500,"193,499,390"
+in,IN,27,When is elective cesarean section recommended for suspected macrosomia?,348,112,0.846755,502,159,0.845102,498,158,0.843888,566,180,0.842856,349,112,0.841403,502,"348,498,499"
+in,IN,28,How are postpartum septic complications treated?,562,178,0.877660,1149,362,0.868837,539,170,0.864607,537,170,0.860050,526,166,0.860026,539,"536,532"
+in,IN,29,How do median and mediolateral episiotomies differ?,558,176,0.887680,555,175,0.882494,559,177,0.854283,556,176,0.854110,557,176,0.834031,558,"556,557"
+in,IN,30,What are the advantages of lower segment cesarean section?,571,181,0.875958,566,180,0.869657,360,115,0.848900,388,124,0.841941,18,11,0.841290,571,"566,18,360"
+in,IN,31,How is fundal level assessed during obstetric examination?,576,184,0.894587,577,184,0.874222,115,41,0.855008,45,19,0.852759,501,159,0.851030,576,"577,45,43"
+in,IN,32,What is the anatomical relationship between the ureter and uterine artery?,601,195,0.862126,927,294,0.853594,595,193,0.851072,592,192,0.846959,606,196,0.845275,601,"595,600"
+in,IN,33,How do congenital uterine anomalies affect pregnancy outcomes?,66,24,0.865615,53,21,0.860777,54,21,0.858014,425,138,0.851140,686,221,0.849564,617,"66,53"
+in,IN,34,How is central precocious puberty treated?,646,209,0.872687,642,208,0.857381,647,210,0.856937,644,209,0.856234,681,219,0.845712,647,"646,644,1119"
+in,IN,35,What are the vasomotor symptoms of menopause?,654,212,0.884203,656,212,0.858968,655,212,0.854583,651,211,0.854245,649,210,0.853963,654,"658,649,655"
+in,IN,36,What causes Asherman's syndrome?,1158,365,0.908683,677,218,0.866913,678,218,0.863835,674,217,0.826464,684,220,0.825347,677,"1158,678,674"
+in,IN,37,How does basal body temperature charting indicate ovulation?,698,224,0.894068,699,224,0.885967,697,224,0.865384,310,100,0.862474,747,239,0.857993,699,"698,697,720"
+in,IN,38,What are the Rotterdam criteria for diagnosing PCOS?,717,230,0.850299,711,228,0.842338,746,239,0.838304,714,229,0.837311,713,228,0.835062,711,"713,714,712"
+in,IN,39,How does cervical factor contribute to female infertility?,739,237,0.879350,752,241,0.867580,741,237,0.866954,738,236,0.865948,735,235,0.863723,739,"736,738,735"
+in,IN,40,What is the role of laparoscopy in evaluating tubal infertility?,750,240,0.899256,741,237,0.891816,976,309,0.882883,744,239,0.882339,1143,360,0.878411,744,"750,976,1143"
+in,IN,41,When is the best time to insert an IUD?,780,249,0.894000,782,250,0.873019,402,128,0.872829,779,249,0.869728,783,250,0.869142,780,"782,779,783"
+in,IN,42,What are the potential complications of IUD use?,1149,362,0.873600,783,250,0.867775,792,253,0.864651,786,251,0.864361,778,249,0.861592,787,"783,786,792"
+in,IN,43,What options are available for emergency contraception?,812,258,0.852347,402,128,0.848147,814,259,0.846534,769,246,0.844332,768,246,0.841018,814,"812,768,766"
+in,IN,44,What causes bacterial vaginosis?,822,261,0.915633,821,261,0.890993,820,261,0.882099,835,265,0.869930,823,262,0.865029,822,"821,820,823"
+in,IN,45,What are the common causes of acute endocervicitis?,876,277,0.878728,838,266,0.874791,840,267,0.870540,841,267,0.868971,875,277,0.855464,838,"876,872,840"
+in,IN,46,What are the symptoms of gonococcal endocervicitis?,876,277,0.906085,872,276,0.890696,875,277,0.871267,873,277,0.869890,838,266,0.869384,872,"876,875,873"
+in,IN,47,How is syphilis treated in pregnant women?,888,281,0.865720,892,282,0.857998,890,281,0.853287,87,32,0.851717,537,170,0.850970,890,"888,892"
+in,IN,48,How is the degree of uterine prolapse classified?,897,284,0.875059,905,287,0.866559,1151,363,0.865482,896,284,0.862620,812,258,0.856180,896,"897,905,911"
+in,IN,49,What is the tension-free vaginal tape procedure for urinary incontinence?,923,293,0.860661,913,290,0.854879,1177,372,0.847488,909,288,0.846421,906,287,0.846094,923,"913,925,909"
+in,IN,50,How can vesicovaginal fistula be prevented?,935,296,0.875201,937,297,0.851359,401,128,0.850373,939,297,0.847995,929,295,0.846982,935,"937,929,936"
+in,IN,51,What are the common degenerative changes in uterine fibroids?,959,304,0.856272,968,307,0.853936,124,44,0.851930,135,48,0.849100,971,308,0.847321,968,"959,971"
+in,IN,52,What pressure symptoms can uterine fibroids cause?,534,169,0.851445,959,304,0.850475,124,44,0.848948,1163,367,0.848136,973,308,0.847311,973,"959,1100,1101"
+in,IN,53,What are the most common types of functional ovarian cysts?,1011,319,0.885350,1009,319,0.873465,1010,319,0.872584,1012,320,0.870546,1018,322,0.866596,1009,"1011,1012,1010"
+in,IN,54,How do follicular cysts develop?,1011,319,0.873761,1012,320,0.871175,1016,321,0.860424,1015,321,0.859872,1017,321,0.859869,1011,"1012,1016,1009"
+in,IN,55,What are the risk factors for cervical intraepithelial neoplasia?,1043,329,0.865969,1046,330,0.864430,1045,330,0.857305,1071,338,0.855676,341,110,0.851580,1047,"1043,1045,1046"
+in,IN,56,What are the main histological types of cervical cancer?,1043,329,0.865339,1044,329,0.863108,1056,333,0.855540,1039,328,0.855317,1046,330,0.852442,1054,"1044,1043,1056"
+in,IN,57,How are ovarian neoplasms classified histogenetically?,1079,340,0.881664,1088,342,0.874583,1109,349,0.863953,1108,348,0.862063,1120,352,0.860791,1079,"1088,1120,1109"
+in,IN,58,What imaging is used to investigate ovarian swellings?,1104,347,0.869671,1105,347,0.869158,976,309,0.863016,741,237,0.849695,1009,319,0.843972,1104,"1105,976,862"
+in,IN,59,What hormones do granulosa cell tumors secrete?,1119,351,0.892904,645,209,0.864470,1022,323,0.844307,621,201,0.844177,620,201,0.843079,1119,"645,1022,1083"
+in,IN,60,What is the standard surgical treatment for early-stage ovarian cancer?,1136,356,0.875147,1134,356,0.872749,1036,327,0.869846,1106,347,0.869380,1067,337,0.861846,1134,"1136,1036,1067"
+out,A,1,What are the symptoms of psoriasis vulgaris?,829,263,0.870345,1008,318,0.851341,931,295,0.850195,1004,317,0.848133,1002,317,0.847553,,
+out,A,2,What are the types of cataract surgery in adults?,1136,356,0.853466,1144,360,0.848859,1106,347,0.844338,1122,352,0.837371,90,33,0.834584,,
+out,A,3,How is dental caries managed with fluoride in children?,49,20,0.825713,742,237,0.814184,310,100,0.811270,315,101,0.810955,87,32,0.809963,,
+out,A,4,What are the diagnostic criteria for schizophrenia?,65,24,0.826682,377,120,0.825453,66,24,0.822760,64,24,0.822550,53,21,0.821908,,
+out,A,5,What causes brain tumors and how are they treated?,1092,343,0.855049,1088,342,0.853351,695,223,0.849508,87,32,0.848403,3,2,0.846095,,
+out,A,6,What are complications of liver cirrhosis in end-stage disease?,186,62,0.852660,801,255,0.832879,1167,368,0.830452,356,114,0.827347,1149,362,0.826645,,
+out,A,7,What are symptoms of chronic gastritis and H pylori?,26,14,0.847456,840,267,0.847389,222,71,0.845306,656,212,0.839963,1162,367,0.838020,,
+out,A,8,What are types of bronchial pneumonia in children?,531,167,0.827401,892,282,0.824749,30,15,0.822442,821,261,0.821338,195,64,0.820804,,
+out,A,9,What causes rheumatoid arthritis and which joints?,234,76,0.846015,426,138,0.841534,1016,321,0.832908,356,114,0.831188,916,291,0.830938,,
+out,A,10,What are symptoms of Alzheimer disease?,222,71,0.842269,656,212,0.837815,186,62,0.837485,144,51,0.836724,1059,334,0.836055,,
+out,A,11,What are causes of chronic kidney failure?,484,153,0.837155,612,198,0.831629,656,212,0.829543,916,291,0.828296,1167,368,0.826864,,
+out,A,12,How is acute appendicitis diagnosed using McBurney sign?,853,271,0.843382,847,269,0.835863,876,277,0.834241,855,272,0.833040,215,70,0.832738,,
+out,A,13,How is Parkinson disease tremor evaluated?,970,307,0.812017,295,95,0.811222,1174,370,0.809941,992,314,0.809384,130,47,0.808612,,
+out,A,14,What is the acute management of ischemic stroke?,659,213,0.828158,388,124,0.826359,801,255,0.825312,87,32,0.825056,757,242,0.825026,,
+out,A,15,How is acute pancreatitis diagnosed clinically?,216,70,0.841292,215,70,0.834631,1015,321,0.831960,217,70,0.831674,163,56,0.830405,,
+out,A,16,What causes multiple sclerosis relapses?,186,62,0.845386,135,48,0.838357,227,73,0.837501,973,308,0.835098,163,56,0.834729,,
+out,A,17,How is Crohn disease differentiated from ulcerative colitis?,840,267,0.836653,1152,363,0.832193,877,278,0.831329,534,169,0.828950,215,70,0.826858,,
+out,A,18,What are the clinical stages of melanoma?,970,307,0.853291,1036,327,0.843348,1092,343,0.839242,1062,335,0.835041,1061,335,0.835015,,
+out,A,19,psoriasis vulgaris plaques,1073,338,0.862117,931,295,0.853685,1004,317,0.852795,1002,317,0.851460,152,53,0.850107,,
+out,A,20,schizophrenia diagnostic criteria,686,221,0.849149,223,72,0.845467,65,24,0.845287,53,21,0.844481,892,282,0.843153,,
+out,A,21,cataract phacoemulsification intraocular,2,2,0.853409,1136,356,0.850914,1148,361,0.847108,420,136,0.846365,1123,352,0.846281,,
+out,A,22,dental caries fluoride enamel,453,146,0.830125,49,20,0.829296,2,2,0.824033,481,153,0.823806,679,219,0.820518,,
+out,A,23,rheumatoid arthritis methotrexate,102,37,0.884875,126,45,0.862464,103,37,0.851483,995,315,0.849072,977,310,0.848914,,
+out,A,24,ischemic stroke thrombolysis alteplase,226,73,0.864713,178,60,0.861163,659,213,0.858584,450,145,0.857721,130,47,0.857366,,
+out,B,25,What is the long-term oncologic prognosis of benign Brenner tumor?,1086,342,0.870036,1087,342,0.858872,1092,343,0.829030,1088,342,0.824371,970,307,0.820438,,
+out,B,26,What is the genetic karyotype confirmed in Mayer-Rokitansky-Kuster-Hauser syndrome?,65,24,0.811915,674,217,0.811399,679,219,0.805267,1110,349,0.805067,109,39,0.803775,,
+out,B,27,What are the histopathologic findings of catarrhal salpingitis?,846,269,0.828238,976,309,0.825664,96,35,0.825460,861,273,0.824496,864,274,0.823207,,
+out,B,28,What are the modern pediatric surgical techniques for repairing neonatal exomphalos?,299,97,0.837782,393,125,0.836846,1122,352,0.835903,749,240,0.834381,910,289,0.834109,,
+out,B,29,What is the technique for performing laparoscopic salpingostomy in unruptured tubal pregnancy?,750,240,0.882317,101,37,0.874823,104,38,0.873002,96,35,0.856102,864,274,0.855149,,
+out,B,30,What is the pharmacokinetics and half-life of cyproterone acetate in women?,726,232,0.866593,87,32,0.832917,636,207,0.832579,690,222,0.831849,806,257,0.831745,,
+out,B,31,What topical depigmenting creams are most effective for chloasma?,1074,338,0.818862,703,226,0.815869,838,266,0.814083,1073,338,0.812241,1051,332,0.809400,,
+out,B,32,What are the specific collagen gene mutations in osteogenesis imperfecta?,661,214,0.810909,678,218,0.810216,1041,329,0.807483,681,219,0.807290,660,213,0.805086,,
+out,B,33,What are the laboratory reference ranges for tissue thromboplastin time?,452,145,0.832573,168,57,0.831787,231,74,0.831312,461,148,0.830787,173,59,0.830346,,
+out,B,34,What is the complete endocrine workup protocol for unexplained oligomenorrhea?,688,221,0.856442,957,304,0.848661,994,315,0.848204,636,207,0.846171,697,224,0.840429,,
+out,B,35,What is the exact genetic inheritance pattern of type 2 von Willebrand disease?,1167,368,0.842321,234,76,0.820748,1110,349,0.809955,1046,330,0.807404,238,77,0.806972,,
+out,B,36,What specific angiogenic cytokines are secreted by the syncytiotrophoblast?,10,9,0.826116,678,218,0.824401,234,76,0.823118,620,201,0.821970,135,48,0.821854,,
+out,B,37,What are the standardized diagnostic criteria for abnormal findings on vulvoscopy?,976,309,0.865920,675,218,0.848958,1176,371,0.848476,741,237,0.847683,866,275,0.847328,,
+out,B,38,What is the clinical classification of severe ovarian hyperstimulation syndrome?,755,241,0.852988,754,241,0.852055,696,223,0.841315,1079,340,0.838574,711,228,0.837539,,
+out,B,39,What is the surgical reconstruction technique for congenital uterus didelphys?,1069,337,0.852978,1149,362,0.850037,910,289,0.849145,413,133,0.840515,911,289,0.840381,,
+out,B,40,What is the technical calibration procedure for an external tocodynamometer?,405,130,0.826962,407,130,0.825827,744,239,0.821267,346,111,0.818955,1130,355,0.818661,,
+out,B,41,What is the standard adjuvant dosing protocol for carboplatin in advanced ovarian carcinoma?,1136,356,0.860843,1130,355,0.847478,1038,328,0.846190,1109,349,0.838112,1034,327,0.835835,,
+out,B,42,What are the clinical indications for using finasteride in female pattern androgenic alopecia?,724,232,0.853794,726,232,0.847606,663,214,0.836347,703,226,0.835232,718,230,0.835004,,
+out,B,43,What is the chemical composition and shelf life of Monsel solution?,181,61,0.787553,632,205,0.785119,315,101,0.784913,631,205,0.781326,775,248,0.778877,,
+out,B,44,What is the surgical mesh repair technique for bilateral pediatric inguinal hernioplasty?,910,289,0.824309,909,288,0.821910,380,121,0.820969,351,113,0.819455,677,218,0.818912,,
+out,B,45,pediculosis pubis permethrin treatment,857,272,0.874568,859,273,0.869086,220,71,0.867539,539,170,0.867203,877,278,0.864928,,
+out,B,46,decubitus ulcer staging grading,1061,335,0.864151,1136,356,0.852440,1060,334,0.851183,1032,326,0.850996,397,127,0.850881,,
+out,B,47,testicular hydrocele aspiration procedure,731,234,0.895224,730,234,0.890786,732,234,0.885097,741,237,0.867985,1141,358,0.864531,,
+out,B,48,vaginal ecosystem lactobacilli dominant,817,260,0.889061,823,262,0.874313,822,261,0.860705,820,261,0.852573,836,266,0.851434,,
+out,N,49,What is the capital of France?,310,100,0.754131,2,2,0.752523,703,226,0.747382,234,76,0.746967,765,245,0.746789,,
+out,N,50,How do you bake a chocolate cake?,1122,352,0.767985,294,95,0.766212,1019,322,0.763592,526,166,0.762921,438,141,0.761965,,
+out,N,51,What is the best programming language for web development?,1170,369,0.794496,1136,356,0.782014,812,258,0.781608,997,315,0.780816,402,128,0.780344,,
+out,N,52,Who won the World Cup in 2018?,2,2,0.756161,765,245,0.747821,186,62,0.740538,865,274,0.737628,1044,329,0.736530,,
+out,N,53,What is the recipe for pasta carbonara?,420,136,0.775574,3,2,0.774648,442,143,0.774160,526,166,0.770761,2,2,0.770026,,
+out,N,54,How does photosynthesis work in plants?,7,8,0.810782,626,203,0.810156,624,202,0.810124,627,203,0.809594,1121,352,0.807283,,
+out,N,55,What is quantum computing and its practical applications?,1019,322,0.786988,62,23,0.780885,1031,326,0.777568,545,172,0.775941,3,2,0.775466,,
+out,N,56,How do airplanes fly in the atmosphere?,310,100,0.805350,542,171,0.801791,2,2,0.801023,561,178,0.800573,64,24,0.799193,,
+out,N,57,beethoven symphonies orchestra,678,218,0.767623,663,214,0.767266,615,199,0.764044,538,170,0.764017,2,2,0.762756,,
+out,N,58,mars rover astronomy exploration,1134,356,0.790033,2,2,0.789135,1123,352,0.787347,1136,356,0.786423,1122,352,0.783706,,
+out,N,59,renaissance oil painting canvas,743,238,0.789691,19,12,0.772858,2,2,0.772682,742,237,0.772625,420,136,0.772466,,
+out,N,60,currency exchange inflation rates,2,2,0.826827,167,57,0.824199,483,153,0.818005,49,20,0.811766,197,65,0.811710,,

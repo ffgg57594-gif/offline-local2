@@ -409,6 +409,14 @@ def main():
     except Exception as e:
         print(f"Warning: generate_manifest failed: {e}", file=sys.stderr)
 
+    # Export Stage 3.7f top-5 retrieval CSV
+    try:
+        import export_retrieval_top5
+        print("\nExporting retrieval_top5.csv (Stage 3.7f)...")
+        export_retrieval_top5.main()
+    except Exception as e:
+        print(f"Warning: export_retrieval_top5 failed: {e}", file=sys.stderr)
+
 
 if __name__ == "__main__":
     main()
