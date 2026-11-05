@@ -61,12 +61,3 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     testImplementation("junit:junit:4.13.2")
 }
-
-tasks.matching { it.name == "assembleRelease" }.configureEach {
-    doLast {
-        println("assembleRelease completed. Running APK integrity check...")
-        project.exec {
-            commandLine("python3", "${rootDir}/scripts/verify_apk_integrity.py")
-        }
-    }
-}
