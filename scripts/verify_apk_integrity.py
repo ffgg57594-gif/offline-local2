@@ -29,12 +29,37 @@ def sha256_file(path):
             h.update(block)
     return h.hexdigest()
 
+def find_apk():
+    # 1. Search standard paths
+    candidates = [
+        "app/build/outputs/apk/release/*.apk",
+        "app/build/outputs/apk/release/*/*.apk",
+        "app/build/intermediates/apk/release/*.apk",
+        "app/build/intermediates/apk/release/*/*.apk",
+    ]
+    for pattern in candidates:
+        apks = glob.glob(pattern)
+        if apks:
+            return apks[0]
+            
+    # 2. Recursive search under app/build
+    for root, dirs, files in os.walk("app/build"):
+        for f in files:
+            if f.endswith(".apk"):
+                return os.path.join(root, f)
+
+    # 3. Print tree for diagnosis if not found
+    print("DEBUG: Searched app/build, structure is:", file=sys.stderr)
+    for root, dirs, files in os.walk("app/build"):
+        print(f"  {root} -> {files[:5]}", file=sys.stderr)
+    return None
+
 def main():
-    apks = glob.glob("app/build/outputs/apk/release/*.apk")
-    if not apks:
-        print("ERROR: No release APK found in app/build/outputs/apk/release/", file=sys.stderr)
+    apk_path = find_apk()
+    if not apk_path:
+        print("ERROR: No release APK found in app/build", file=sys.stderr)
         sys.exit(1)
-    apk_path = apks[0]
+
     total_apk_size = os.path.getsize(apk_path)
 
     print(f"=== APK INTEGRITY VERIFICATION ===")
