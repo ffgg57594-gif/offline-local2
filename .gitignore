@@ -20,3 +20,5 @@ __pycache__/
 .logs.zip
 eval/chunks_for_golden.jsonl
 eval/gate_signals.csv
+app/src/test/resources/tokenizer_reference.json
+eval/assets_small/
