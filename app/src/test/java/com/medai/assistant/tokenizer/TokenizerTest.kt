@@ -32,15 +32,22 @@ class TokenizerTest {
                 File("assets/models/embedder/tokenizer.json")
             ).firstOrNull { it.exists() }
 
+            // Helper to get settled memory after GC
+            fun getSettledUsedMemory(): Long {
+                for (i in 0 until 4) {
+                    System.gc()
+                    Thread.sleep(20)
+                }
+                return runtime.totalMemory() - runtime.freeMemory()
+            }
+
             if (jsonFile != null) {
-                runtime.gc()
-                val beforeMemJson = runtime.totalMemory() - runtime.freeMemory()
+                val beforeMemJson = getSettledUsedMemory()
                 val t0 = System.currentTimeMillis()
                 FileInputStream(jsonFile).use { fis ->
                     jsonTokenizer = Tokenizer.fromStream(fis)
                 }
                 jsonLoadTimeMs = System.currentTimeMillis() - t0
-                runtime.gc()
                 val afterMemJson = runtime.totalMemory() - runtime.freeMemory()
                 jsonPeakHeapBytes = (afterMemJson - beforeMemJson).coerceAtLeast(0)
             } else {
@@ -56,14 +63,21 @@ class TokenizerTest {
             ).firstOrNull { it.exists() }
 
             if (binFile != null) {
-                runtime.gc()
-                val beforeMemBin = runtime.totalMemory() - runtime.freeMemory()
+                // Null out jsonTokenizer to allow GC of JSON structures before measuring BIN loader
+                jsonTokenizer = null
+                val beforeMemBin = getSettledUsedMemory()
                 val t0Bin = System.currentTimeMillis()
                 binTokenizer = Tokenizer.fromBinaryFile(binFile)
                 binLoadTimeMs = System.currentTimeMillis() - t0Bin
-                runtime.gc()
                 val afterMemBin = runtime.totalMemory() - runtime.freeMemory()
                 binPeakHeapBytes = (afterMemBin - beforeMemBin).coerceAtLeast(0)
+
+                // Re-load jsonTokenizer if jsonFile exists for parity tests
+                if (jsonFile != null) {
+                    FileInputStream(jsonFile).use { fis ->
+                        jsonTokenizer = Tokenizer.fromStream(fis)
+                    }
+                }
             } else {
                 println("tokenizer.bin not found; skipping binary tokenizer benchmark")
             }

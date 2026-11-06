@@ -7,6 +7,8 @@ Tokenization: truncation max_length=384, padding per batch, attention mask.
 Pooling: mean pooling over the attention mask, then L2 normalization.
 Output dim is 384 (asserted). Batch size 16. Deterministic.
 """
+from __future__ import annotations
+
 import json
 import os
 from typing import List

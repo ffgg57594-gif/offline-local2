@@ -9,8 +9,8 @@
     },
     {
       "name": "embedder_reference.json",
-      "size": 302737,
-      "sha256": "6c055242fd9a9d12e508b2c14b41b29fbb599505bdd38f616c47cfcb93df4cad"
+      "size": 302628,
+      "sha256": "790a3ea72005c8b0f1c374c6ac3c25949105e0ff2619749de8fd9a69f1524dd6"
     },
     {
       "name": "embeddings.bin",

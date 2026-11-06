@@ -86,4 +86,24 @@ class AndroidChunkRepository(
             db.close()
         }
     }
+
+    override fun getAllPages(expectedCount: Int): IntArray {
+        val db = openDb()
+        try {
+            val pages = IntArray(expectedCount)
+            val query = "SELECT id, page FROM chunks ORDER BY id ASC"
+            db.rawQuery(query, null).use { cursor ->
+                while (cursor.moveToNext()) {
+                    val id = cursor.getInt(0)
+                    val page = cursor.getInt(1)
+                    if (id in 1..expectedCount) {
+                        pages[id - 1] = page
+                    }
+                }
+            }
+            return pages
+        } finally {
+            db.close()
+        }
+    }
 }

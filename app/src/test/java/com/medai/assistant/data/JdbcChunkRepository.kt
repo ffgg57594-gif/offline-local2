@@ -89,6 +89,25 @@ class JdbcChunkRepository(
         return ids.mapNotNull { results[it] }
     }
 
+    override fun getAllPages(expectedCount: Int): IntArray {
+        val pages = IntArray(expectedCount)
+        val query = "SELECT id, page FROM chunks ORDER BY id ASC"
+        getConnection().use { conn ->
+            conn.createStatement().use { stmt ->
+                stmt.executeQuery(query).use { rs ->
+                    while (rs.next()) {
+                        val id = rs.getInt(1)
+                        val page = rs.getInt(2)
+                        if (id in 1..expectedCount) {
+                            pages[id - 1] = page
+                        }
+                    }
+                }
+            }
+        }
+        return pages
+    }
+
     fun getAllChunkTextsOrdered(): List<String> {
         val list = mutableListOf<String>()
         getConnection().use { conn ->
