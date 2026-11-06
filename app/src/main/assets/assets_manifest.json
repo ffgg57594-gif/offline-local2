@@ -1,0 +1,51 @@
+{
+  "chunk_count": 1185,
+  "chunk_texts_sha256": "65f55f00c933296f5d7ec975920b5459c5ef6e0eb6d8acac77a3ee4e5bdd144c",
+  "assets": [
+    {
+      "name": "books_knowledge.db",
+      "size": 2428928,
+      "sha256": "7efd8eab7815bb80ec311bf77dd393eec59e9359cad240475db359fa12a3a60d"
+    },
+    {
+      "name": "embeddings.bin",
+      "size": 1820160,
+      "sha256": "6d0ad0de13217200a13b6aaffb1d278003c337e83d13e984ff366ca51a91b712"
+    },
+    {
+      "name": "embeddings_meta.json",
+      "size": 381,
+      "sha256": "97c07194c726876d03def775d1db514804cdb0e687e2cb593408ab836bf88f75"
+    },
+    {
+      "name": "gate_config.json",
+      "size": 215,
+      "sha256": "b6a2e83140ecbcd29d1595c19da577714856240277d8872f10e21e013b382edb"
+    },
+    {
+      "name": "gate_reference.json",
+      "size": 46977,
+      "sha256": "85157d4b050bd3a4469c85e315b05b8ac7ea6f2ce5715ebc993dde534fa2b604"
+    },
+    {
+      "name": "medical_aliases.json",
+      "size": 11302,
+      "sha256": "71ba9a8380e1d7c69a051f03f8c1ac3a7c76d4a31e23ba96e5891a24d50f4468"
+    },
+    {
+      "name": "models/embedder/model_quantized.onnx",
+      "size": 118308185,
+      "sha256": "f80102d3f2a1229f387d3c81909990d8945513e347b0eab049f7de3c6f98c193"
+    },
+    {
+      "name": "models/embedder/tokenizer.json",
+      "size": 17082730,
+      "sha256": "0b44a9d7b51c3c62626640cda0e2c2f70fdacdc25bbbd68038369d14ebdf4c39"
+    },
+    {
+      "name": "normalize_map.json",
+      "size": 1054,
+      "sha256": "e48dd4fa3339e12557a5affd50ee39779743e4b3950cf1876345c8f2a7db1bff"
+    }
+  ]
+}

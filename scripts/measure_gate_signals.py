@@ -417,6 +417,14 @@ def main():
     except Exception as e:
         print(f"Warning: export_retrieval_top5 failed: {e}", file=sys.stderr)
 
+    # Generate Stage K1 assets_manifest.json
+    try:
+        import make_assets_manifest
+        print("\nGenerating assets_manifest.json (Stage K1)...")
+        make_assets_manifest.main()
+    except Exception as e:
+        print(f"Warning: make_assets_manifest failed: {e}", file=sys.stderr)
+
 
 if __name__ == "__main__":
     main()

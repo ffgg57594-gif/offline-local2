@@ -44,6 +44,10 @@ android {
 
     buildFeatures { compose = true; buildConfig = true }
 
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
+
     packaging { jniLibs { useLegacyPackaging = true } }
     androidResources { ignoreAssetsPattern = "!books" }
 
@@ -60,4 +64,5 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.ui.tooling.preview)
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.xerial:sqlite-jdbc:3.45.3.0")
 }
