@@ -148,6 +148,18 @@ def main():
         json.dump(manifest, f, indent=2, ensure_ascii=False)
         f.write("\n")
     print(f"Manifest written to {MANIFEST_PATH}")
+
+    # 5. Compile tokenizer binary and update assets manifest if script exists.
+    compile_script = os.path.join("scripts", "compile_tokenizer_bin.py")
+    if os.path.exists(compile_script):
+        import subprocess
+        print("Compiling tokenizer.bin from downloaded tokenizer.json...")
+        res = subprocess.run([sys.executable, compile_script], check=True)
+        manifest_script = os.path.join("scripts", "make_assets_manifest.py")
+        if os.path.exists(manifest_script):
+            print("Updating assets manifest...")
+            subprocess.run([sys.executable, manifest_script], check=True)
+
     print("Download complete.")
 
 

@@ -10,42 +10,70 @@ import java.io.FileInputStream
 class TokenizerTest {
 
     companion object {
-        private var tokenizer: Tokenizer? = null
-        private var loadTimeMs: Long = 0
-        private var peakHeapBytes: Long = 0
+        private var jsonTokenizer: Tokenizer? = null
+        private var binTokenizer: Tokenizer? = null
+
+        private var jsonLoadTimeMs: Long = 0
+        private var jsonPeakHeapBytes: Long = 0
+
+        private var binLoadTimeMs: Long = 0
+        private var binPeakHeapBytes: Long = 0
 
         @BeforeClass
         @JvmStatic
         fun setUp() {
             val runtime = Runtime.getRuntime()
-            runtime.gc()
-            val beforeMem = runtime.totalMemory() - runtime.freeMemory()
 
-            val tokenizerFile = sequenceOf(
+            // 1. JSON Tokenizer Benchmark
+            val jsonFile = sequenceOf(
                 File("src/main/assets/models/embedder/tokenizer.json"),
                 File("app/src/main/assets/models/embedder/tokenizer.json"),
-                File("../app/src/main/assets/models/embedder/tokenizer.json")
+                File("../app/src/main/assets/models/embedder/tokenizer.json"),
+                File("assets/models/embedder/tokenizer.json")
             ).firstOrNull { it.exists() }
 
-            if (tokenizerFile == null) {
-                println("tokenizer.json not found on disk; skipping tokenizer initialization")
-                return
+            if (jsonFile != null) {
+                runtime.gc()
+                val beforeMemJson = runtime.totalMemory() - runtime.freeMemory()
+                val t0 = System.currentTimeMillis()
+                FileInputStream(jsonFile).use { fis ->
+                    jsonTokenizer = Tokenizer.fromStream(fis)
+                }
+                jsonLoadTimeMs = System.currentTimeMillis() - t0
+                runtime.gc()
+                val afterMemJson = runtime.totalMemory() - runtime.freeMemory()
+                jsonPeakHeapBytes = (afterMemJson - beforeMemJson).coerceAtLeast(0)
+            } else {
+                println("tokenizer.json not found; skipping JSON tokenizer benchmark")
             }
 
-            val t0 = System.currentTimeMillis()
-            FileInputStream(tokenizerFile).use { fis ->
-                tokenizer = Tokenizer.fromStream(fis)
-            }
-            loadTimeMs = System.currentTimeMillis() - t0
+            // 2. Binary Tokenizer Benchmark (Mmap fast loader)
+            val binFile = sequenceOf(
+                File("src/main/assets/models/embedder/tokenizer.bin"),
+                File("app/src/main/assets/models/embedder/tokenizer.bin"),
+                File("../app/src/main/assets/models/embedder/tokenizer.bin"),
+                File("assets/models/embedder/tokenizer.bin")
+            ).firstOrNull { it.exists() }
 
-            runtime.gc()
-            val afterMem = runtime.totalMemory() - runtime.freeMemory()
-            peakHeapBytes = (afterMem - beforeMem).coerceAtLeast(0)
+            if (binFile != null) {
+                runtime.gc()
+                val beforeMemBin = runtime.totalMemory() - runtime.freeMemory()
+                val t0Bin = System.currentTimeMillis()
+                binTokenizer = Tokenizer.fromBinaryFile(binFile)
+                binLoadTimeMs = System.currentTimeMillis() - t0Bin
+                runtime.gc()
+                val afterMemBin = runtime.totalMemory() - runtime.freeMemory()
+                binPeakHeapBytes = (afterMemBin - beforeMemBin).coerceAtLeast(0)
+            } else {
+                println("tokenizer.bin not found; skipping binary tokenizer benchmark")
+            }
 
             println("\n=======================================================")
             println("INFORMATIONAL: Tokenizer Performance Benchmark")
-            println("Tokenizer load time : $loadTimeMs ms")
-            println("Tokenizer peak heap : ${peakHeapBytes / (1024 * 1024)} MB (${peakHeapBytes} bytes)")
+            println("JSON Tokenizer load time : $jsonLoadTimeMs ms")
+            println("JSON Tokenizer peak heap : ${jsonPeakHeapBytes / (1024 * 1024)} MB ($jsonPeakHeapBytes bytes)")
+            println("BIN  Tokenizer load time : $binLoadTimeMs ms")
+            println("BIN  Tokenizer peak heap : ${binPeakHeapBytes / (1024 * 1024)} MB ($binPeakHeapBytes bytes)")
             println("=======================================================\n")
         }
     }
@@ -102,7 +130,7 @@ class TokenizerTest {
             return
         }
 
-        val tok = tokenizer ?: error("Tokenizer not initialized")
+        val tok = binTokenizer ?: jsonTokenizer ?: error("Neither binTokenizer nor jsonTokenizer initialized")
 
         // Parse reference cases
         val content = refStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
@@ -297,4 +325,40 @@ class TokenizerTest {
         if (listStr.isEmpty()) return emptyList()
         return listStr.split(',').mapNotNull { it.trim().toIntOrNull() }
     }
+
+    @Test
+    fun testJsonAndBinParityIdentical() {
+        val jTok = jsonTokenizer
+        val bTok = binTokenizer
+        if (jTok == null || bTok == null) {
+            println("Skipping testJsonAndBinParityIdentical as one of the tokenizers is null (JSON: $jTok, BIN: $bTok)")
+            return
+        }
+
+        val refStream = TokenizerTest::class.java.classLoader?.getResourceAsStream("tokenizer_reference.json")
+            ?: File("src/test/resources/tokenizer_reference.json").takeIf { it.exists() }?.inputStream()
+            ?: File("app/src/test/resources/tokenizer_reference.json").takeIf { it.exists() }?.inputStream()
+            ?: File("tokenizer_reference.json").takeIf { it.exists() }?.inputStream()
+
+        if (refStream == null) {
+            println("tokenizer_reference.json not found; skipping comparison test")
+            return
+        }
+
+        val content = refStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+        val cases = parseReferenceCases(content)
+
+        var matched = 0
+        for (case in cases) {
+            val jsonEnc = jTok.encode(case.input, Tokenizer.MAX_LENGTH)
+            val binEnc = bTok.encode(case.input, Tokenizer.MAX_LENGTH)
+
+            assertEquals("IDs must match between JSON and BIN for case #${case.id}", jsonEnc.ids, binEnc.ids)
+            assertEquals("Tokens must match between JSON and BIN for case #${case.id}", jsonEnc.tokens, binEnc.tokens)
+            assertEquals("Attention length must match between JSON and BIN for case #${case.id}", jsonEnc.attentionLength, binEnc.attentionLength)
+            matched++
+        }
+        println("testJsonAndBinParityIdentical: 100% matched across $matched cases!")
+    }
+
 }

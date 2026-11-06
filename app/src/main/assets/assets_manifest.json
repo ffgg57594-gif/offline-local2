@@ -8,6 +8,11 @@
       "sha256": "7efd8eab7815bb80ec311bf77dd393eec59e9359cad240475db359fa12a3a60d"
     },
     {
+      "name": "embedder_reference.json",
+      "size": 302737,
+      "sha256": "6c055242fd9a9d12e508b2c14b41b29fbb599505bdd38f616c47cfcb93df4cad"
+    },
+    {
       "name": "embeddings.bin",
       "size": 1820160,
       "sha256": "6d0ad0de13217200a13b6aaffb1d278003c337e83d13e984ff366ca51a91b712"
@@ -16,6 +21,11 @@
       "name": "embeddings_meta.json",
       "size": 381,
       "sha256": "97c07194c726876d03def775d1db514804cdb0e687e2cb593408ab836bf88f75"
+    },
+    {
+      "name": "fusion_config.json",
+      "size": 75,
+      "sha256": "41c7a7d267264e01d6c6bdc7bc56a73f824d1dfe5920dcbaeb5bc6266ba8a19b"
     },
     {
       "name": "gate_config.json",
@@ -38,9 +48,9 @@
       "sha256": "f80102d3f2a1229f387d3c81909990d8945513e347b0eab049f7de3c6f98c193"
     },
     {
-      "name": "models/embedder/tokenizer.json",
-      "size": 17082730,
-      "sha256": "0b44a9d7b51c3c62626640cda0e2c2f70fdacdc25bbbd68038369d14ebdf4c39"
+      "name": "models/embedder/tokenizer.bin",
+      "size": 14994873,
+      "sha256": "eefc97b3739f55879a4c18f7e154854f1b4c4be0ad0fafed1647418382f6ce8e"
     },
     {
       "name": "normalize_map.json",

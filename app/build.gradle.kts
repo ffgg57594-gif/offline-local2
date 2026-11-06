@@ -49,7 +49,7 @@ android {
     }
 
     packaging { jniLibs { useLegacyPackaging = true } }
-    androidResources { ignoreAssetsPattern = "!books" }
+    androidResources { ignoreAssetsPattern = "!books:!models/embedder/tokenizer.json" }
 
     androidResources { noCompress += listOf("gguf", "onnx", "db", "bin", "traineddata") }
 }

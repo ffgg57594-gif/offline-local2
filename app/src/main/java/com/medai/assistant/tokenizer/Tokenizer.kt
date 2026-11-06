@@ -1,6 +1,11 @@
 package com.medai.assistant.tokenizer
 
+import java.io.File
+import java.io.FileInputStream
 import java.io.InputStream
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.nio.channels.FileChannel
 import java.nio.charset.StandardCharsets
 
 /**
@@ -36,6 +41,122 @@ class Tokenizer private constructor(
         fun fromStream(inputStream: InputStream): Tokenizer {
             val parser = TokenizerJsonStreamParser()
             return parser.parse(inputStream)
+        }
+
+        /**
+         * Fast memory-mapped binary loader from `tokenizer.bin`.
+         * Reads flat arrays with bulk copies and no per-node loops.
+         */
+        fun fromBinaryFile(file: File): Tokenizer {
+            FileInputStream(file).use { fis ->
+                val channel = fis.channel
+                val buffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size())
+                buffer.order(ByteOrder.LITTLE_ENDIAN)
+                return fromByteBuffer(buffer)
+            }
+        }
+
+        /**
+         * Fast binary loader from [ByteBuffer] (must be LITTLE_ENDIAN).
+         */
+        fun fromByteBuffer(buffer: ByteBuffer): Tokenizer {
+            buffer.order(ByteOrder.LITTLE_ENDIAN)
+
+            // Header (76 bytes)
+            val magic = ByteArray(4)
+            buffer.get(magic)
+            val magicStr = String(magic, StandardCharsets.US_ASCII)
+            require(magicStr == "TKBN") { "Invalid magic in binary tokenizer: $magicStr" }
+
+            val version = buffer.int
+            require(version == 1) { "Unsupported tokenizer.bin version: $version" }
+
+            val sha256Bytes = ByteArray(32)
+            buffer.get(sha256Bytes)
+
+            val unkId = buffer.int
+            val bosId = buffer.int
+            val eosId = buffer.int
+            val vocabSize = buffer.int
+            val minScore = buffer.double
+            val charsmapLen = buffer.int
+            val pieceBlobLen = buffer.int
+            val trieNodeCount = buffer.int
+
+            // 1. Charsmap
+            val precompiledNormalizer = if (charsmapLen > 0) {
+                val charsmapBytes = ByteArray(charsmapLen)
+                buffer.get(charsmapBytes)
+                PrecompiledNormalizer.fromBytes(charsmapBytes)
+            } else {
+                null
+            }
+
+            // 2. Vocab scores (float32 array)
+            val vocabScores = DoubleArray(vocabSize)
+            val floatBuf = buffer.asFloatBuffer()
+            val tempFloats = FloatArray(vocabSize)
+            floatBuf.get(tempFloats)
+            buffer.position(buffer.position() + vocabSize * 4)
+            for (i in 0 until vocabSize) {
+                vocabScores[i] = tempFloats[i].toDouble()
+            }
+
+            // 3. Piece offsets (int32 array)
+            val pieceOffsets = IntArray(vocabSize + 1)
+            val intBuf1 = buffer.asIntBuffer()
+            intBuf1.get(pieceOffsets)
+            buffer.position(buffer.position() + (vocabSize + 1) * 4)
+
+            // 4. Piece blob
+            val pieceBlob = ByteArray(pieceBlobLen)
+            buffer.get(pieceBlob)
+
+            // Build pieces array from blob and offsets
+            val pieces = Array(vocabSize) { i ->
+                val start = pieceOffsets[i]
+                val end = pieceOffsets[i + 1]
+                String(pieceBlob, start, end - start, StandardCharsets.UTF_8)
+            }
+
+            // 5. Trie node byte
+            val nodeByte = ByteArray(trieNodeCount)
+            buffer.get(nodeByte)
+
+            // 6. Trie node vocab id
+            val nodeVocabId = IntArray(trieNodeCount)
+            val intBuf2 = buffer.asIntBuffer()
+            intBuf2.get(nodeVocabId)
+            buffer.position(buffer.position() + trieNodeCount * 4)
+
+            // 7. Trie node first child
+            val nodeFirstChild = IntArray(trieNodeCount)
+            val intBuf3 = buffer.asIntBuffer()
+            intBuf3.get(nodeFirstChild)
+            buffer.position(buffer.position() + trieNodeCount * 4)
+
+            // 8. Trie node next sibling
+            val nodeNextSibling = IntArray(trieNodeCount)
+            val intBuf4 = buffer.asIntBuffer()
+            intBuf4.get(nodeNextSibling)
+            buffer.position(buffer.position() + trieNodeCount * 4)
+
+            val trie = FlatByteTrie(
+                nodeByte = nodeByte,
+                nodeVocabId = nodeVocabId,
+                nodeFirstChild = nodeFirstChild,
+                nodeNextSibling = nodeNextSibling
+            )
+
+            return Tokenizer(
+                unkId = unkId,
+                bosId = bosId,
+                eosId = eosId,
+                minScore = minScore,
+                precompiledNormalizer = precompiledNormalizer,
+                vocabScores = vocabScores,
+                trie = trie
+            )
         }
     }
 
@@ -250,15 +371,15 @@ class Tokenizer private constructor(
             while (pos + offset < len) {
                 val b = sentenceBytes[pos + offset]
                 var child = nodeFirstChild[curr]
-                var found = 0
-                while (child != 0) {
+                var found = -1
+                while (child != -1 && child != 0) {
                     if (nodeByte[child] == b) {
                         found = child
                         break
                     }
                     child = nodeNextSibling[child]
                 }
-                if (found == 0) {
+                if (found <= 0) {
                     break
                 }
                 offset++

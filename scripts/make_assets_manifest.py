@@ -60,6 +60,8 @@ def main():
                 continue
             if rel.startswith("books/") or rel == "books":
                 continue
+            if rel == "models/embedder/tokenizer.json":
+                continue
             if rel.startswith("."):
                 continue
             sz = os.path.getsize(p)
