@@ -4,8 +4,10 @@ import com.medai.assistant.embedder.OnnxEmbedder
 import com.medai.assistant.tokenizer.Tokenizer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 import java.io.File
+import java.security.MessageDigest
 import kotlin.math.abs
 
 class DenseSearchTest {
@@ -89,6 +91,49 @@ class DenseSearchTest {
             return
         }
 
+        // ---- K3c: the reference must have been generated for this exact embeddings.bin ----
+        val csvBytes = csvStream.use { it.readBytes() }
+        val csvSha = sha256Hex(csvBytes)
+
+        val metaText = (DenseSearchTest::class.java.classLoader
+            ?.getResourceAsStream("retrieval_top5.meta.json")
+            ?.use { String(it.readBytes(), Charsets.UTF_8) })
+            ?: File("src/test/resources/retrieval_top5.meta.json").takeIf { it.exists() }?.readText(Charsets.UTF_8)
+            ?: File("app/src/test/resources/retrieval_top5.meta.json").takeIf { it.exists() }?.readText(Charsets.UTF_8)
+            ?: File("eval/retrieval_top5.meta.json").takeIf { it.exists() }?.readText(Charsets.UTF_8)
+            ?: File("../eval/retrieval_top5.meta.json").takeIf { it.exists() }?.readText(Charsets.UTF_8)
+
+        if (metaText == null) {
+            fail(
+                "stale reference: retrieval_top5.meta.json is missing; regenerate " +
+                    "eval/retrieval_top5.csv in the same CI job that builds embeddings.bin"
+            )
+            return
+        }
+
+        val expectedEmbeddingsSha = extractJsonStringField(metaText, "embeddings_bin_sha256")
+        if (expectedEmbeddingsSha.isNullOrBlank()) {
+            fail("stale reference: retrieval_top5.meta.json has no embeddings_bin_sha256")
+        }
+        val actualEmbeddingsSha = sha256Hex(embeddingsBinFile.readBytes())
+        if (!actualEmbeddingsSha.equals(expectedEmbeddingsSha, ignoreCase = true)) {
+            val cpu = extractJsonStringField(metaText, "cpu_model") ?: "unknown"
+            val ortVersion = extractJsonStringField(metaText, "onnxruntime_version") ?: "unknown"
+            fail(
+                "stale reference: retrieval_top5.csv was generated for embeddings.bin " +
+                    "sha256=$expectedEmbeddingsSha (CPU=$cpu, onnxruntime=$ortVersion) but the " +
+                    "current embeddings.bin sha256=$actualEmbeddingsSha; regenerate " +
+                    "eval/retrieval_top5.csv in the same CI job that builds embeddings.bin"
+            )
+        }
+        val expectedCsvSha = extractJsonStringField(metaText, "retrieval_top5_csv_sha256")
+        if (!expectedCsvSha.isNullOrBlank() && !csvSha.equals(expectedCsvSha, ignoreCase = true)) {
+            fail(
+                "stale reference: retrieval_top5.csv sha256=$csvSha does not match the " +
+                    "metadata value $expectedCsvSha; regenerate it in the same CI job"
+            )
+        }
+
         // Load chunk pages from database
         val chunkPages = IntArray(1185)
         java.sql.DriverManager.getConnection("jdbc:sqlite:${dbFile.absolutePath}").use { conn ->
@@ -116,8 +161,8 @@ class DenseSearchTest {
 
         val denseSearch = DenseSearch(embeddingsBinFile, metaRows = 1185, metaDim = 384, chunkPages = chunkPages)
 
-        // Parse retrieval_top5.csv
-        val lines = csvStream.bufferedReader(Charsets.UTF_8).readLines()
+        // Parse retrieval_top5.csv (bytes were already read for the stale-reference check).
+        val lines = String(csvBytes, Charsets.UTF_8).lines()
         if (lines.isEmpty()) return
         val header = parseCsvLine(lines[0])
         val qRows = mutableListOf<Map<String, String>>()
@@ -247,6 +292,20 @@ class DenseSearchTest {
         assertTrue("Top-1 match rate (${top1Rate}%) must be >= 90.0%", top1Rate >= 90.0)
         assertTrue("Top-3 set overlap (${top3OverlapRate}%) must be >= 80.0%", top3OverlapRate >= 80.0)
         assertTrue("|delta s1| <= 0.01 rate (${deltaRate}%) must be >= 95.0%", deltaRate >= 95.0)
+    }
+
+    private fun sha256Hex(bytes: ByteArray): String {
+        val digest = MessageDigest.getInstance("SHA-256").digest(bytes)
+        val sb = StringBuilder(digest.size * 2)
+        for (b in digest) {
+            sb.append("%02x".format(b.toInt() and 0xff))
+        }
+        return sb.toString()
+    }
+
+    private fun extractJsonStringField(json: String, key: String): String? {
+        val pattern = "\"$key\"\\s*:\\s*\"([^\"]*)\"".toRegex()
+        return pattern.find(json)?.groupValues?.get(1)
     }
 
     private fun parseCsvLine(line: String): List<String> {

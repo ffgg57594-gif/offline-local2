@@ -43,6 +43,15 @@ jobs:
         run: python scripts/download_models.py
       - name: Build embeddings
         run: python scripts/build_embeddings.py
+      - name: Export retrieval top5 reference (K3c)
+        run: python scripts/export_retrieval_top5.py
+      - name: Upload retrieval reference
+        uses: actions/upload-artifact@v4
+        with:
+          name: retrieval-reference
+          path: |
+            eval/retrieval_top5.csv
+            eval/retrieval_top5.meta.json
       - name: Make reference vectors
         run: python scripts/make_reference_vectors.py
       - name: Benchmark embedder latency
@@ -109,6 +118,14 @@ jobs:
           key: gradle-${{ hashFiles('**/*.gradle*', '**/libs.versions.toml') }}
       - name: Unit tests (Android)
         run: ./gradlew testDebugUnitTest
+      - name: Report retrieval parity (K3c)
+        run: python scripts/report_retrieval_parity.py
+      - name: Upload parity reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parity-reports
+          path: build/reports/parity/
       - name: Assemble release
         run: ./gradlew assembleRelease
       - name: Sign APK

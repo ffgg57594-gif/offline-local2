@@ -16,10 +16,14 @@ import csv
 import hashlib
 import json
 import os
+import platform
 import sqlite3
+import subprocess
 import sys
+from datetime import datetime, timezone
 
 import numpy as np
+import onnxruntime as ort
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from embedding_common import embed_texts  # noqa: E402
@@ -30,6 +34,39 @@ EMBEDDINGS_BIN = os.path.join("app", "src", "main", "assets", "embeddings.bin")
 EMBEDDINGS_META = os.path.join("app", "src", "main", "assets", "embeddings_meta.json")
 GOLDEN_PATH = os.path.join("eval", "golden_v3.draft.jsonl")
 OUT_CSV = os.path.join("eval", "retrieval_top5.csv")
+OUT_META = os.path.join("eval", "retrieval_top5.meta.json")
+
+
+def sha256_file(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for block in iter(lambda: f.read(65536), b""):
+            h.update(block)
+    return h.hexdigest()
+
+
+def cpu_model():
+    """Return the first CPU model string reported by the host."""
+    try:
+        with open("/proc/cpuinfo", "r", encoding="utf-8", errors="replace") as f:
+            for line in f:
+                key, sep, value = line.partition(":")
+                if not sep:
+                    continue
+                k = key.strip().lower()
+                if k in ("model name", "hardware", "model") and value.strip():
+                    return value.strip()
+    except OSError:
+        pass
+    try:
+        out = subprocess.check_output(["lscpu"], text=True, stderr=subprocess.DEVNULL)
+        for line in out.splitlines():
+            key, sep, value = line.partition(":")
+            if sep and key.strip().lower() == "model name" and value.strip():
+                return value.strip()
+    except Exception:
+        pass
+    return platform.processor() or platform.machine() or "unknown"
 
 
 def main():
@@ -48,8 +85,21 @@ def main():
     conn.close()
 
     with open(EMBEDDINGS_META, "r", encoding="utf-8") as f:
-        meta = json.load(f)
-    emb_mat = np.fromfile(EMBEDDINGS_BIN, dtype=np.float32).reshape(meta["rows"], meta["dim"])
+        emb_meta = json.load(f)
+
+    embeddings_sha = sha256_file(EMBEDDINGS_BIN)
+    recorded_embeddings_sha = emb_meta.get("sha256", "")
+    if recorded_embeddings_sha and recorded_embeddings_sha != embeddings_sha:
+        print(
+            f"ERROR: embeddings_meta.json sha256 ({recorded_embeddings_sha}) "
+            f"does not match {EMBEDDINGS_BIN} ({embeddings_sha}).",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    emb_mat = np.fromfile(EMBEDDINGS_BIN, dtype=np.float32).reshape(
+        emb_meta["rows"], emb_meta["dim"]
+    )
 
     in_scope, out_of_scope = load_question_sets()
 
@@ -113,10 +163,33 @@ def main():
         writer.writeheader()
         writer.writerows(rows)
 
-    with open(OUT_CSV, "rb") as f:
-        sha = hashlib.sha256(f.read()).hexdigest()
+    csv_sha = sha256_file(OUT_CSV)
 
-    print(f"Wrote {OUT_CSV} with {len(rows)} rows. SHA256: {sha}")
+    reference_meta = {
+        "reference_version": 1,
+        "generated_by": "scripts/export_retrieval_top5.py",
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "retrieval_top5_csv": OUT_CSV,
+        "retrieval_top5_csv_sha256": csv_sha,
+        "rows": len(rows),
+        "embeddings_bin": EMBEDDINGS_BIN,
+        "embeddings_bin_sha256": embeddings_sha,
+        "embeddings_meta_sha256": sha256_file(EMBEDDINGS_META),
+        "embeddings_rows": emb_meta["rows"],
+        "embeddings_dim": emb_meta["dim"],
+        "cpu_model": cpu_model(),
+        "onnxruntime_version": ort.__version__,
+        "python_version": platform.python_version(),
+    }
+    with open(OUT_META, "w", encoding="utf-8") as f:
+        json.dump(reference_meta, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+
+    print(f"embeddings.bin sha256: {embeddings_sha}")
+    print(f"CPU model: {reference_meta['cpu_model']}")
+    print(f"onnxruntime version: {reference_meta['onnxruntime_version']}")
+    print(f"Wrote {OUT_CSV} with {len(rows)} rows. SHA256: {csv_sha}")
+    print(f"Wrote {OUT_META}")
 
 
 if __name__ == "__main__":
