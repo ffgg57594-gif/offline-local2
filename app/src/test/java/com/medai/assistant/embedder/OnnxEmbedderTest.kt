@@ -5,8 +5,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
-import kotlin.math.abs
-import kotlin.math.min
 import kotlin.math.sqrt
 
 class OnnxEmbedderTest {
@@ -67,7 +65,7 @@ class OnnxEmbedderTest {
         ).firstOrNull { it.exists() }
 
         if (modelFile == null || tokenizerBinFile == null || refFile == null) {
-            println("Skipping testEmbedderParityAgainstReferenceJson: required files missing (model: $modelFile, tokenizer: $tokenizerBinFile, ref: $refFile)")
+            println("Skipping testEmbedderParityAgainstReferenceJson: required files missing")
             return
         }
 
@@ -75,42 +73,22 @@ class OnnxEmbedderTest {
         val embedder = OnnxEmbedder(modelFile, tokenizer)
 
         val content = refFile.readText(Charsets.UTF_8)
-        // Parse simple JSON array without third party json lib
         val entries = parseEmbedderReference(content)
         println("Testing embedder parity across ${entries.size} reference vectors...")
 
-        println("\n=========================================================================================")
-        println("EMBEDDER REFERENCE PARITY TABLE (24 Reference Vectors)")
-        println("=========================================================================================")
-        println(String.format("%-4s | %-8s | %-12s | %-50s", "ID", "Kind", "Cosine", "Input (truncated)"))
-        println("-----+----------+--------------+---------------------------------------------------------")
+        // Prepare report file: build/reports/parity/embedder_parity.csv
+        val reportDir = File("build/reports/parity").takeIf { it.isAbsolute }
+            ?: (if (File("app").exists()) File("build/reports/parity") else File("../build/reports/parity"))
+        reportDir.mkdirs()
+        val reportFile = File(reportDir, "embedder_parity.csv")
+        val csvLines = mutableListOf<String>()
+        csvLines.add("index,kind,input,cosine")
 
         var minCosine = 1.0f
         for (entry in entries) {
-            // Note: reference vectors in embedder_reference.json are generated with:
-            // if kind == "passage": prefix = "passage: "
-            // if kind == "query": prefix = "query: "
-            // The prompt states:
-            // Query text = "query: " + question, tokenizer truncation 384
-            // Let's test using embedQuery for query kind, and prefix appropriately
-            val text = if (entry.kind == "query") {
-                entry.input
-            } else {
-                // If passage, test with raw input prepended as passage
-                // For direct testing, embedder.embedQuery prepends "query: "
-                // To test both kinds with embedQuery logic:
-                entry.input
-            }
-
-            // In embedder_reference.json:
-            // "query: " + input was passed to embedder for kind="query",
-            // "passage: " + input was passed for kind="passage".
-            // If entry.kind == "query", embedQuery(entry.input) produces the exact same text ("query: " + entry.input).
-            // If entry.kind == "passage", we test query embedder or test with "passage: "
             val computedVec = if (entry.kind == "query") {
                 embedder.embedQuery(entry.input)
             } else {
-                // Encode with "passage: " prefix to verify underlying ONNX inference parity on passages too
                 val enc = tokenizer.encode("passage: " + entry.input, OnnxEmbedder.MAX_LENGTH)
                 val seqLen = enc.ids.size
                 val inputIds = LongArray(seqLen) { i -> enc.ids[i].toLong() }
@@ -121,7 +99,6 @@ class OnnxEmbedderTest {
                 val tMask = ai.onnxruntime.OnnxTensor.createTensor(env, java.nio.LongBuffer.wrap(mask), shape)
                 val tTypes = ai.onnxruntime.OnnxTensor.createTensor(env, java.nio.LongBuffer.wrap(LongArray(seqLen)), shape)
                 val map = mapOf("input_ids" to tIds, "attention_mask" to tMask, "token_type_ids" to tTypes)
-                // Use reflection or private session if needed, or instantiate session
                 val sessField = OnnxEmbedder::class.java.getDeclaredField("session")
                 sessField.isAccessible = true
                 val sess = sessField.get(embedder) as ai.onnxruntime.OrtSession
@@ -140,13 +117,23 @@ class OnnxEmbedderTest {
             val cosine = OnnxEmbedder.cosineSimilarity(computedVec, entry.vector)
             if (cosine < minCosine) minCosine = cosine
 
-            val displayInput = if (entry.input.length > 50) entry.input.substring(0, 47) + "..." else entry.input
-            println(String.format("%-4d | %-8s | %12.6f | %-50s", entry.id, entry.kind, cosine, displayInput))
+            // Truncate to 80 chars
+            val truncatedInput = if (entry.input.length > 80) entry.input.substring(0, 80) else entry.input
+            val safeInput = "\"" + truncatedInput.replace("\"", "\"\"").replace("\n", " ") + "\""
+            csvLines.add("${entry.id},${entry.kind},$safeInput,${String.format("%.6f", cosine)}")
 
             assertTrue("Cosine similarity for vector #${entry.id} ($cosine) must be >= 0.998", cosine >= 0.998f)
         }
-        println("=========================================================================================")
-        println("Embedder parity test passed! Minimum cosine similarity: $minCosine (target >= 0.998)\n")
+
+        reportFile.writeText(csvLines.joinToString("\n") + "\n", Charsets.UTF_8)
+        println("Wrote embedder parity report to ${reportFile.absolutePath} (${entries.size} rows)")
+
+        // Also write to project root if run from subproject
+        val rootReport = File("build/reports/parity/embedder_parity.csv")
+        if (rootReport.canonicalPath != reportFile.canonicalPath) {
+            rootReport.parentFile?.mkdirs()
+            rootReport.writeText(csvLines.joinToString("\n") + "\n", Charsets.UTF_8)
+        }
 
         embedder.close()
     }
@@ -194,54 +181,55 @@ class OnnxEmbedderTest {
                 }
             }
             if (endIdx == -1) break
-
             val objStr = jsonStr.substring(startIdx, endIdx + 1)
-            val id = extractInt(objStr, "id")
-            val kind = extractString(objStr, "kind")
-            val input = extractString(objStr, "input")
-            val vector = extractFloatArray(objStr, "vector")
-
-            if (id > 0 && vector.isNotEmpty()) {
-                entries.add(RefEntry(id, kind, input, vector))
-            }
+            parseRefEntry(objStr)?.let { entries.add(it) }
             startIdx = jsonStr.indexOf('{', endIdx + 1)
         }
         return entries
     }
 
-    private fun extractInt(objStr: String, key: String): Int {
-        val k = "\"$key\":"
-        val pos = objStr.indexOf(k)
-        if (pos == -1) return 0
-        var start = pos + k.length
-        while (start < objStr.length && (objStr[start] == ' ' || objStr[start] == '\t')) start++
-        var end = start
-        while (end < objStr.length && (objStr[end].isDigit() || objStr[end] == '-')) end++
-        return objStr.substring(start, end).toIntOrNull() ?: 0
+    private fun parseRefEntry(objStr: String): RefEntry? {
+        val idVal = extractJsonInt(objStr, "id") ?: return null
+        val kindVal = extractJsonString(objStr, "kind") ?: return null
+        val inputVal = extractJsonString(objStr, "input") ?: return null
+        val vectorVal = extractJsonFloatArray(objStr, "vector") ?: return null
+        return RefEntry(idVal, kindVal, inputVal, vectorVal)
     }
 
-    private fun extractString(objStr: String, key: String): String {
-        val k = "\"$key\":"
-        val pos = objStr.indexOf(k)
-        if (pos == -1) return ""
-        val quoteStart = objStr.indexOf('"', pos + k.length)
-        if (quoteStart == -1) return ""
+    private fun extractJsonInt(json: String, key: String): Int? {
+        val pattern = "\"$key\"\\s*:\\s*(\\d+)".toRegex()
+        return pattern.find(json)?.groupValues?.get(1)?.toIntOrNull()
+    }
+
+    private fun extractJsonString(json: String, key: String): String? {
+        val k = "\"$key\""
+        val idx = json.indexOf(k)
+        if (idx == -1) return null
+        val colon = json.indexOf(':', idx + k.length)
+        if (colon == -1) return null
+        val startQuote = json.indexOf('"', colon + 1)
+        if (startQuote == -1) return null
         val sb = StringBuilder()
-        var i = quoteStart + 1
         var escape = false
-        while (i < objStr.length) {
-            val c = objStr[i]
+        var i = startQuote + 1
+        while (i < json.length) {
+            val c = json[i]
             if (escape) {
                 when (c) {
+                    '"' -> sb.append('"')
+                    '\\' -> sb.append('\\')
                     'n' -> sb.append('\n')
                     'r' -> sb.append('\r')
                     't' -> sb.append('\t')
-                    '\\' -> sb.append('\\')
-                    '"' -> sb.append('"')
                     'u' -> {
-                        val hex = objStr.substring(i + 1, min(i + 5, objStr.length))
-                        sb.append(hex.toInt(16).toChar())
-                        i += 4
+                        if (i + 4 < json.length) {
+                            val hex = json.substring(i + 1, i + 5)
+                            val codePoint = hex.toIntOrNull(16)
+                            if (codePoint != null) {
+                                sb.append(codePoint.toChar())
+                                i += 4
+                            }
+                        }
                     }
                     else -> sb.append(c)
                 }
@@ -249,27 +237,29 @@ class OnnxEmbedderTest {
             } else if (c == '\\') {
                 escape = true
             } else if (c == '"') {
-                break
+                return sb.toString()
             } else {
                 sb.append(c)
             }
             i++
         }
-        return sb.toString()
+        return null
     }
 
-    private fun extractFloatArray(objStr: String, key: String): FloatArray {
-        val k = "\"$key\":"
-        val pos = objStr.indexOf(k)
-        if (pos == -1) return FloatArray(0)
-        val arrStart = objStr.indexOf('[', pos + k.length)
-        val arrEnd = objStr.indexOf(']', arrStart)
-        if (arrStart == -1 || arrEnd == -1) return FloatArray(0)
-        val elements = objStr.substring(arrStart + 1, arrEnd).split(',')
-        val result = FloatArray(elements.size)
-        for (i in elements.indices) {
-            result[i] = elements[i].trim().toFloatOrNull() ?: 0f
+    private fun extractJsonFloatArray(json: String, key: String): FloatArray? {
+        val k = "\"$key\""
+        val idx = json.indexOf(k)
+        if (idx == -1) return null
+        val startBracket = json.indexOf('[', idx + k.length)
+        if (startBracket == -1) return null
+        val endBracket = json.indexOf(']', startBracket)
+        if (endBracket == -1) return null
+        val inner = json.substring(startBracket + 1, endBracket)
+        val tokens = inner.split(',')
+        val arr = FloatArray(tokens.size)
+        for (i in tokens.indices) {
+            arr[i] = tokens[i].trim().toFloatOrNull() ?: 0.0f
         }
-        return result
+        return arr
     }
 }

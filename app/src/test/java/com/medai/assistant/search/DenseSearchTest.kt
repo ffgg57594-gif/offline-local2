@@ -12,45 +12,40 @@ class DenseSearchTest {
 
     @Test
     fun testDenseSearchOnSmallFakeMatrix() {
-        // 4 items, dimension 3
-        // row 0: [1.0, 0.0, 0.0] -> chunk 1, page 10
-        // row 1: [0.0, 1.0, 0.0] -> chunk 2, page 20
-        // row 2: [0.0, 1.0, 0.0] -> chunk 3, page 30 (tie with chunk 2 on dot product with [0, 1, 0])
-        // row 3: [0.0, 0.0, 1.0] -> chunk 4, page 40
         val matrix = arrayOf(
-            floatArrayOf(1.0f, 0.0f, 0.0f),
-            floatArrayOf(0.0f, 1.0f, 0.0f),
-            floatArrayOf(0.0f, 1.0f, 0.0f),
-            floatArrayOf(0.0f, 0.0f, 1.0f)
+            floatArrayOf(1.0f, 0.0f, 0.0f), // row 0 (chunkId = 1): score = 1.0 * 1.0 = 1.0
+            floatArrayOf(0.0f, 1.0f, 0.0f), // row 1 (chunkId = 2): score = 1.0 * 0.0 = 0.0
+            floatArrayOf(0.8f, 0.6f, 0.0f), // row 2 (chunkId = 3): score = 0.8
+            floatArrayOf(1.0f, 0.0f, 0.0f)  // row 3 (chunkId = 4): score = 1.0 (tie with chunkId 1)
         )
-        val pages = intArrayOf(10, 20, 30, 40)
+        val chunkPages = intArrayOf(10, 20, 30, 40)
 
-        // Query: [0.0, 1.0, 0.0]
-        // Expected dot products:
-        // row 0: 0.0
-        // row 1: 1.0 (chunk 2)
-        // row 2: 1.0 (chunk 3)
-        // row 3: 0.0 (chunk 4)
-        // Order: chunk 2 (1.0), chunk 3 (1.0 - tie broken by lower id 2 < 3), then chunk 1 (0.0), chunk 4 (0.0)
+        val queryVector = floatArrayOf(1.0f, 0.0f, 0.0f)
 
-        // Test with k=2
-        val top2 = DenseSearch.searchMatrix(matrix, pages, floatArrayOf(0f, 1f, 0f), k = 2)
-        assertEquals(2, top2.size)
-        assertEquals(2, top2[0].chunkId)
-        assertEquals(20, top2[0].page)
-        assertEquals(1.0f, top2[0].score, 1e-5f)
+        // Test k = 3
+        val results = DenseSearch.searchMatrix(matrix, chunkPages, queryVector, k = 3)
+        assertEquals(3, results.size)
 
-        assertEquals(3, top2[1].chunkId)
-        assertEquals(30, top2[1].page)
-        assertEquals(1.0f, top2[1].score, 1e-5f)
+        // Expected order:
+        // Chunk 1 and Chunk 4 both have dot product 1.0f.
+        // Tie must be broken by lower chunk id: chunk 1 first, then chunk 4!
+        assertEquals(1, results[0].chunkId)
+        assertEquals(10, results[0].page)
+        assertEquals(1.0f, results[0].score, 1e-5f)
 
-        // Test with k larger than rows (k=10 on 4 rows)
-        val topAll = DenseSearch.searchMatrix(matrix, pages, floatArrayOf(0f, 1f, 0f), k = 10)
-        assertEquals(4, topAll.size)
-        assertEquals(2, topAll[0].chunkId)
-        assertEquals(3, topAll[1].chunkId)
-        assertEquals(1, topAll[2].chunkId) // tie 0.0 between id 1 and id 4: id 1 first
-        assertEquals(4, topAll[3].chunkId)
+        assertEquals(4, results[1].chunkId)
+        assertEquals(40, results[1].page)
+        assertEquals(1.0f, results[1].score, 1e-5f)
+
+        // Chunk 3 has score 0.8f
+        assertEquals(3, results[2].chunkId)
+        assertEquals(30, results[2].page)
+        assertEquals(0.8f, results[2].score, 1e-5f)
+
+        // Test k > rows: should clamp to available rows without crashing
+        val resultsAll = DenseSearch.searchMatrix(matrix, chunkPages, queryVector, k = 10)
+        assertEquals(4, resultsAll.size)
+        assertEquals(2, resultsAll[3].chunkId)
     }
 
     @Test
@@ -87,6 +82,7 @@ class DenseSearchTest {
             ?: File("src/test/resources/retrieval_top5.csv").takeIf { it.exists() }?.inputStream()
             ?: File("app/src/test/resources/retrieval_top5.csv").takeIf { it.exists() }?.inputStream()
             ?: File("eval/retrieval_top5.csv").takeIf { it.exists() }?.inputStream()
+            ?: File("../eval/retrieval_top5.csv").takeIf { it.exists() }?.inputStream()
 
         if (modelFile == null || tokenizerBinFile == null || embeddingsBinFile == null || dbFile == null || csvStream == null) {
             println("Skipping testRetrievalParityAgainstPythonGolden120: missing assets")
@@ -108,8 +104,16 @@ class DenseSearchTest {
             }
         }
 
+        // Measure Tokenizer Load Time
+        val tokStart = System.nanoTime()
         val tokenizer = Tokenizer.fromBinaryFile(tokenizerBinFile)
+        val tokenizerLoadMs = (System.nanoTime() - tokStart) / 1_000_000.0
+
+        // Measure Embedder Load Time
+        val embStart = System.nanoTime()
         val embedder = OnnxEmbedder(modelFile, tokenizer)
+        val embedderLoadMs = (System.nanoTime() - embStart) / 1_000_000.0
+
         val denseSearch = DenseSearch(embeddingsBinFile, metaRows = 1185, metaDim = 384, chunkPages = chunkPages)
 
         // Parse retrieval_top5.csv
@@ -132,50 +136,103 @@ class DenseSearchTest {
 
         println("Loaded ${qRows.size} golden questions from retrieval_top5.csv for parity check.")
 
+        // Prepare report file: build/reports/parity/retrieval_parity.csv
+        val reportDir = File("build/reports/parity").takeIf { it.isAbsolute }
+            ?: (if (File("app").exists()) File("build/reports/parity") else File("../build/reports/parity"))
+        reportDir.mkdirs()
+        val retrievalReportFile = File(reportDir, "retrieval_parity.csv")
+        val timingReportFile = File(reportDir, "timing_jvm.csv")
+
+        val retrievalCsvLines = mutableListOf<String>()
+        retrievalCsvLines.add("cls,id,question,python_top1_chunk,kotlin_top1_chunk,python_s1,kotlin_s1,abs_delta,python_top3,kotlin_top3")
+
         var top1Matches = 0
         var top3OverlapSum = 0.0
         var deltaS1WithinThreshold = 0
         val deltas = mutableListOf<Double>()
-        val top1Mismatches = mutableListOf<String>()
+        val embedLatenciesMs = mutableListOf<Double>()
 
         for (row in qRows) {
+            val cls = row["cls"] ?: ""
             val qid = row["id"]?.toIntOrNull() ?: 0
             val question = row["question"] ?: ""
             val expectedRank1Chunk = row["rank_1_chunk_id"]?.toIntOrNull() ?: 0
             val expectedRank1Score = row["rank_1_dense_cosine"]?.toDoubleOrNull() ?: 0.0
 
+            val pyChunk1 = row["rank_1_chunk_id"] ?: ""
+            val pyChunk2 = row["rank_2_chunk_id"] ?: ""
+            val pyChunk3 = row["rank_3_chunk_id"] ?: ""
+            val pythonTop3Str = "\"[$pyChunk1, $pyChunk2, $pyChunk3]\""
+
             val expectedTop3Chunks = setOfNotNull(
-                row["rank_1_chunk_id"]?.toIntOrNull(),
-                row["rank_2_chunk_id"]?.toIntOrNull(),
-                row["rank_3_chunk_id"]?.toIntOrNull()
+                pyChunk1.toIntOrNull(),
+                pyChunk2.toIntOrNull(),
+                pyChunk3.toIntOrNull()
             )
 
+            val t0 = System.nanoTime()
             val queryVec = embedder.embedQuery(question)
+            val embedDurationMs = (System.nanoTime() - t0) / 1_000_000.0
+            embedLatenciesMs.add(embedDurationMs)
+
             val results = denseSearch.search(queryVec, k = 5)
 
             val actualRank1Chunk = results[0].chunkId
             val actualRank1Score = results[0].score.toDouble()
-            val actualTop3Chunks = results.take(3).map { it.chunkId }.toSet()
+            val actualTop3List = results.take(3).map { it.chunkId }
+            val actualTop3Chunks = actualTop3List.toSet()
+            val kotlinTop3Str = "\"${actualTop3List}\""
 
-            // Top-1 chunk id match
             if (actualRank1Chunk == expectedRank1Chunk) {
                 top1Matches++
-            } else {
-                top1Mismatches.add(
-                    "Q#$qid: expected chunk $expectedRank1Chunk (s=$expectedRank1Score), got $actualRank1Chunk (s=$actualRank1Score) - '$question'"
-                )
             }
 
-            // Top-3 set overlap
             val overlap = actualTop3Chunks.intersect(expectedTop3Chunks).size.toDouble() / 3.0
             top3OverlapSum += overlap
 
-            // Delta s1
             val delta = abs(actualRank1Score - expectedRank1Score)
             deltas.add(delta)
             if (delta <= 0.01) {
                 deltaS1WithinThreshold++
             }
+
+            val safeQuestion = "\"" + question.replace("\"", "\"\"") + "\""
+            retrievalCsvLines.add(
+                "$cls,$qid,$safeQuestion,$expectedRank1Chunk,$actualRank1Chunk,${String.format("%.6f", expectedRank1Score)},${String.format("%.6f", actualRank1Score)},${String.format("%.6f", delta)},$pythonTop3Str,$kotlinTop3Str"
+            )
+        }
+
+        retrievalReportFile.writeText(retrievalCsvLines.joinToString("\n") + "\n", Charsets.UTF_8)
+        println("Wrote retrieval parity report to ${retrievalReportFile.absolutePath} (${qRows.size} rows)")
+
+        val rootRetrievalReport = File("build/reports/parity/retrieval_parity.csv")
+        if (rootRetrievalReport.canonicalPath != retrievalReportFile.canonicalPath) {
+            rootRetrievalReport.parentFile?.mkdirs()
+            rootRetrievalReport.writeText(retrievalCsvLines.joinToString("\n") + "\n", Charsets.UTF_8)
+        }
+
+        // Compute timing percentiles
+        embedLatenciesMs.sort()
+        val n = embedLatenciesMs.size
+        val p50 = if (n > 0) embedLatenciesMs[(n * 0.50).toInt().coerceAtMost(n - 1)] else 0.0
+        val p95 = if (n > 0) embedLatenciesMs[(n * 0.95).toInt().coerceAtMost(n - 1)] else 0.0
+        val maxTiming = if (n > 0) embedLatenciesMs.last() else 0.0
+
+        val timingCsvLines = listOf(
+            "metric,value_ms",
+            "tokenizer_load_ms,${String.format("%.2f", tokenizerLoadMs)}",
+            "embedder_load_ms,${String.format("%.2f", embedderLoadMs)}",
+            "embed_120_queries_p50_ms,${String.format("%.2f", p50)}",
+            "embed_120_queries_p95_ms,${String.format("%.2f", p95)}",
+            "embed_120_queries_max_ms,${String.format("%.2f", maxTiming)}"
+        )
+        timingReportFile.writeText(timingCsvLines.joinToString("\n") + "\n", Charsets.UTF_8)
+        println("Wrote timing report to ${timingReportFile.absolutePath}")
+
+        val rootTimingReport = File("build/reports/parity/timing_jvm.csv")
+        if (rootTimingReport.canonicalPath != timingReportFile.canonicalPath) {
+            rootTimingReport.parentFile?.mkdirs()
+            rootTimingReport.writeText(timingCsvLines.joinToString("\n") + "\n", Charsets.UTF_8)
         }
 
         deltas.sort()
@@ -183,30 +240,6 @@ class DenseSearchTest {
         val top1Rate = (top1Matches.toDouble() / total) * 100.0
         val top3OverlapRate = (top3OverlapSum / total) * 100.0
         val deltaRate = (deltaS1WithinThreshold.toDouble() / total) * 100.0
-
-        val maxDelta = if (deltas.isNotEmpty()) deltas.last() else 0.0
-        val meanDelta = if (deltas.isNotEmpty()) deltas.average() else 0.0
-        val p95Idx = ((total * 0.95).toInt()).coerceAtMost(deltas.size - 1)
-        val p95Delta = if (deltas.isNotEmpty()) deltas[p95Idx] else 0.0
-
-        println("\n=========================================================================")
-        println("RETRIEVAL PARITY SUMMARY (Against Python eval/retrieval_top5.csv)")
-        println("=========================================================================")
-        println(String.format("Top-1 Chunk ID match  : %d / %d (%.2f%%) [Requirement >= 90.0%%]", top1Matches, total, top1Rate))
-        println(String.format("Top-3 Set Overlap     : %.2f%% [Requirement >= 80.0%%]", top3OverlapRate))
-        println(String.format("|delta s1| <= 0.01    : %d / %d (%.2f%%) [Requirement >= 95.0%%]", deltaS1WithinThreshold, total, deltaRate))
-        println("-------------------------------------------------------------------------")
-        println("|delta s1| Distribution : Max = ${String.format("%.6f", maxDelta)}, p95 = ${String.format("%.6f", p95Delta)}, Mean = ${String.format("%.6f", meanDelta)}")
-        println("-------------------------------------------------------------------------")
-        if (top1Mismatches.isEmpty()) {
-            println("Top-1 mismatches: NONE (100% Top-1 match!)")
-        } else {
-            println("Top-1 mismatches (${top1Mismatches.size}):")
-            for (m in top1Mismatches) {
-                println("  * $m")
-            }
-        }
-        println("=========================================================================\n")
 
         embedder.close()
         denseSearch.close()
