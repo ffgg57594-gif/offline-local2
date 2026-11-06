@@ -46,7 +46,12 @@ def sha256_file(path):
 
 
 def cpu_model():
-    """Return the first CPU model string reported by the host."""
+    """Return the host CPU model, preferring a descriptive name over a number.
+
+    On x86 /proc/cpuinfo contains both "model : 17" and "model name : ...";
+    the generic "model" key must only be used as a last resort.
+    """
+    found = {}
     try:
         with open("/proc/cpuinfo", "r", encoding="utf-8", errors="replace") as f:
             for line in f:
@@ -54,10 +59,15 @@ def cpu_model():
                 if not sep:
                     continue
                 k = key.strip().lower()
-                if k in ("model name", "hardware", "model") and value.strip():
-                    return value.strip()
+                if k in ("model name", "hardware", "model") and value.strip() and k not in found:
+                    found[k] = value.strip()
     except OSError:
         pass
+
+    for key in ("model name", "hardware", "model"):
+        if found.get(key):
+            return found[key]
+
     try:
         out = subprocess.check_output(["lscpu"], text=True, stderr=subprocess.DEVNULL)
         for line in out.splitlines():
