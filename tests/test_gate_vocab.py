@@ -40,7 +40,9 @@ def test_payload_contains_python_sources(tmp_path):
     assert "\u2013" in norm["hyphen_like_chars"]
     assert norm["possessive_pattern"] == "[\x27\u2019]s\\b"
     assert norm["token_pattern_python"] == r"\w+"
-    assert norm["token_pattern_kotlin"] == r"\w+"
+    # Android's ICU regex engine rejects the JVM-only Unicode flag, so the
+    # Kotlin side spells the classes out (see Patterns.kt).
+    assert norm["token_pattern_kotlin"] == r"[\p{L}\p{M}\p{N}_]+"
 
     assert norm["hyphen_compounds"]["vesicovaginal"] == ["vesico", "vaginal"]
     assert norm["hyphen_compounds"]["vesico-vaginal"] == ["vesico", "vaginal"]
