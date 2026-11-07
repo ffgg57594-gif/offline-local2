@@ -91,7 +91,7 @@ def main():
     # 1. 12 English medical sentences from real chunks (seed 7).
     english_sentences = _pick_english_sentences(7, 12)
     for s in english_sentences:
-        vectors = embed_texts([s], kind="passage")
+        vectors = embed_texts([s], kind="passage", batch_size=1)
         session, tokenizer = _load()
         enc = tokenizer.encode(PASSAGE_PREFIX + s)
         tokens = enc.ids[:MAX_LENGTH]
@@ -107,7 +107,7 @@ def main():
 
     # 2. 6 Arabic medical questions.
     for q in ARABIC_QUESTIONS:
-        vectors = embed_texts([q], kind="query")
+        vectors = embed_texts([q], kind="query", batch_size=1)
         session, tokenizer = _load()
         enc = tokenizer.encode(QUERY_PREFIX + q)
         tokens = enc.ids[:MAX_LENGTH]
@@ -123,7 +123,7 @@ def main():
 
     # 3. 3 mixed Arabic/English.
     for q in MIXED_QUESTIONS:
-        vectors = embed_texts([q], kind="query")
+        vectors = embed_texts([q], kind="query", batch_size=1)
         session, tokenizer = _load()
         enc = tokenizer.encode(QUERY_PREFIX + q)
         tokens = enc.ids[:MAX_LENGTH]
@@ -139,7 +139,7 @@ def main():
 
     # 4. 3 edge cases.
     for q in EDGE_CASES:
-        vectors = embed_texts([q], kind="query")
+        vectors = embed_texts([q], kind="query", batch_size=1)
         session, tokenizer = _load()
         enc = tokenizer.encode(QUERY_PREFIX + q)
         tokens = enc.ids[:MAX_LENGTH]

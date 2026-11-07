@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "note": "Pre-K4b presets, preserved so fit_gate.py can evaluate them on newly measured signals.",
+  "balanced": {
+    "t1": 0.8375,
+    "t3": 0.571429,
+    "k": 0
+  },
+  "strict": {
+    "t1": 0.8525,
+    "t3": 0.571429,
+    "k": 0,
+    "note": "sits on a slope; optional"
+  },
+  "margin": 0.01
+}

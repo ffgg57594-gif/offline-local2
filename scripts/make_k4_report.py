@@ -243,7 +243,7 @@ def main() -> int:
     lines.append("")
     lines.append(
         f"Balanced: {bal_match}/{bal_total} equal; strict: {strict_match}/{strict_total} equal. "
-        "Required threshold: at least 112/120."
+        "Required threshold: at least 119/120."
     )
     lines.append("")
     if bal_diffs or strict_diffs:

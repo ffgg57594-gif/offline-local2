@@ -47,11 +47,16 @@ data class GateConfig(
 }
 
 /**
- * Pure decision function: `accept = s1 >= t1 and s3 >= t3 and s4 <= k`.
- * Copied from `scripts/gate_rule.py`.
+ * Pure decision function: `accept = s1 + eps >= t1 and s3 + eps >= t3 and s4 <= k`.
+ * Copied from `scripts/gate_rule.py`. The 1e-6 epsilon absorbs float rounding
+ * differences between the Python pipeline and the JVM (for example s3 = 4/7).
  */
 object GateDecision {
+    const val EPSILON = 1e-6
+
     fun accept(s1Top1: Double, s3CovTop3: Double, s4Unknown: Int, preset: GatePreset): Boolean {
-        return s1Top1 >= preset.t1 && s3CovTop3 >= preset.t3 && s4Unknown <= preset.k
+        return s1Top1 + EPSILON >= preset.t1 &&
+            s3CovTop3 + EPSILON >= preset.t3 &&
+            s4Unknown <= preset.k
     }
 }

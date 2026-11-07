@@ -5,7 +5,9 @@ Provides embed_texts(texts, kind) used by every script that embeds text.
 kind is "passage" or "query"; the corresponding prefix is prepended.
 Tokenization: truncation max_length=384, padding per batch, attention mask.
 Pooling: mean pooling over the attention mask, then L2 normalization.
-Output dim is 384 (asserted). Batch size 16. Deterministic.
+Output dim is 384 (asserted). Batch size 1 (no padding within a batch).
+Deterministic on a given runner. The optional batch_size argument exists only
+for diagnostics that reproduce the old batch-16 behaviour.
 """
 from __future__ import annotations
 
@@ -23,7 +25,7 @@ TOKENIZER_PATH = os.path.join(MODEL_DIR, "tokenizer.json")
 
 MAX_LENGTH = 384
 EMBED_DIM = 384
-BATCH_SIZE = 16
+BATCH_SIZE = 1
 
 PASSAGE_PREFIX = "passage: "
 QUERY_PREFIX = "query: "
@@ -91,12 +93,15 @@ def _l2_normalize(vectors: np.ndarray) -> np.ndarray:
     return vectors / norms
 
 
-def embed_texts(texts: List[str], kind: str) -> np.ndarray:
+def embed_texts(texts: List[str], kind: str, batch_size: int | None = None) -> np.ndarray:
     """Embed a list of texts.
 
     Args:
         texts: list of raw text strings (no prefix).
         kind: "passage" or "query" — selects the prefix.
+        batch_size: optional override. Defaults to ``BATCH_SIZE`` (1, no
+            padding). Batch 16 is available only for K4b diagnostics that need
+            to reproduce the old padding-dependent behaviour.
 
     Returns:
         numpy array of shape [len(texts), 384], float32, L2-normalized.
@@ -104,10 +109,13 @@ def embed_texts(texts: List[str], kind: str) -> np.ndarray:
     session, tokenizer = _load()
     prefix = _prefix(kind)
     prefixed = [prefix + t for t in texts]
+    effective_batch_size = BATCH_SIZE if batch_size is None else batch_size
+    if effective_batch_size < 1:
+        raise ValueError(f"batch_size must be >= 1, got {effective_batch_size}")
 
     all_embeddings = []
-    for start in range(0, len(prefixed), BATCH_SIZE):
-        batch = prefixed[start:start + BATCH_SIZE]
+    for start in range(0, len(prefixed), effective_batch_size):
+        batch = prefixed[start:start + effective_batch_size]
         input_ids, attention_mask = _tokenize_batch(tokenizer, batch)
         outputs = session.run(
             None,

@@ -77,11 +77,15 @@ class GateContentStemsTest {
     }
 
     @Test
-    fun testDecisionBoundariesAreInclusive() {
-        val preset = GatePreset(t1 = 0.8375, t3 = 0.571429, k = 0)
-        assertTrue(GateDecision.accept(0.8375, 0.571429, 0, preset))
-        assertFalse(GateDecision.accept(0.8374999, 0.571429, 0, preset))
-        assertFalse(GateDecision.accept(0.8375, 0.5714289, 0, preset))
-        assertFalse(GateDecision.accept(0.8375, 0.571429, 1, preset))
+    fun testDecisionBoundariesUseEpsilon() {
+        // Midpoint-style thresholds, not equal to any observed value.
+        val preset = GatePreset(t1 = 0.8400005, t3 = 0.5357145, k = 0)
+        assertTrue(GateDecision.accept(0.8400005, 0.5357145, 0, preset))
+        // 1e-6 tolerance: values up to epsilon below the threshold are accepted.
+        assertTrue(GateDecision.accept(0.8400005 - 5e-7, 0.5357145, 0, preset))
+        assertFalse(GateDecision.accept(0.8400005 - 2e-6, 0.5357145, 0, preset))
+        assertTrue(GateDecision.accept(0.8400005, 0.5357145 - 5e-7, 0, preset))
+        assertFalse(GateDecision.accept(0.8400005, 0.5357145 - 2e-6, 0, preset))
+        assertFalse(GateDecision.accept(0.8400005, 0.5357145, 1, preset))
     }
 }

@@ -4,6 +4,7 @@ import com.medai.assistant.data.JdbcChunkRepository
 import com.medai.assistant.embedder.OnnxEmbedder
 import com.medai.assistant.search.DenseSearch
 import com.medai.assistant.tokenizer.Tokenizer
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -11,11 +12,14 @@ import java.util.Locale
 import kotlin.math.abs
 
 /**
- * K4 test (b): run the full Kotlin embedder + DenseSearch + gate-signal pipeline
- * on all 120 questions and compare its balanced/strict decisions with
+ * K4b test (b): run the full Kotlin embedder + DenseSearch + gate-signal
+ * pipeline on all 120 questions and compare its balanced/strict decisions with
  * `gate_reference.json`.
  *
- * Acceptance requirement: at least 112/120 decisions equal per preset.
+ * Acceptance requirements:
+ *  - max |s1_python - s1_kotlin| <= 1e-4 for all 120 questions;
+ *  - at least 119/120 decisions equal per preset;
+ *  - question IN 14 has s3 = 4/7 and the same decision in Python and Kotlin.
  */
 class GateDecisionParityTest {
 
@@ -30,9 +34,14 @@ class GateDecisionParityTest {
         val t1: Double,
         val absS1T1: Double,
         val s3: Double,
+        val s3Python: Double,
+        val t3: Double,
         val s4: Int,
         val reason: String
     )
+
+    private val s1Epsilon = 1e-4
+    private val minDecisionMatches = 119
 
     @Test
     fun testFullPipelineDecisionsMatchPythonReference() {
@@ -56,6 +65,12 @@ class GateDecisionParityTest {
                 "s1_kotlin,s1_python,t1,abs_s1_minus_t1,s3_kotlin,s3_python,t3,s4_kotlin,s4_python,k,reason"
         )
         val disagreements = mutableListOf<Disagreement>()
+        var maxS1Delta = 0.0
+        var s1DeltaRows = 0
+
+        var in14Row: GateReferenceRow? = null
+        var in14S3 = Double.NaN
+        val in14Decisions = mutableMapOf<String, Pair<Boolean, Boolean>>()
 
         JdbcGateDatabase(GateTestAssets.database).use { database ->
             for (row in reference) {
@@ -68,6 +83,15 @@ class GateDecisionParityTest {
                     database,
                     vocab
                 )
+
+                val s1Delta = abs(s1 - row.s1Top1)
+                maxS1Delta = maxOf(maxS1Delta, s1Delta)
+                s1DeltaRows++
+
+                if (row.cls == "IN" && row.id == 14) {
+                    in14Row = row
+                    in14S3 = signals.s3CovTop3
+                }
 
                 for ((presetName, preset, pythonDecisionGetter) in presets) {
                     val pythonDecision = pythonDecisionGetter(row)
@@ -88,6 +112,10 @@ class GateDecisionParityTest {
                         kotlinDecision,
                         row
                     )
+
+                    if (row.cls == "IN" && row.id == 14) {
+                        in14Decisions[presetName] = pythonDecision to kotlinDecision
+                    }
 
                     allRows.add(
                         listOf(
@@ -125,6 +153,8 @@ class GateDecisionParityTest {
                                 t1 = preset.t1,
                                 absS1T1 = absS1T1,
                                 s3 = signals.s3CovTop3,
+                                s3Python = row.s3CovTop3,
+                                t3 = preset.t3,
                                 s4 = signals.s4Unknown,
                                 reason = reason
                             )
@@ -133,6 +163,39 @@ class GateDecisionParityTest {
                 }
             }
         }
+
+        // IN 14 must expose s3 = 4/7 and must decide identically in both
+        // implementations for both presets.
+        val row14 = in14Row ?: error("IN 14 missing from gate_reference.json")
+        val expectedFourSevenths = 4.0 / 7.0
+        println(
+            "K4b IN 14: kotlin s3=${format(in14S3)} python s3=${format(row14.s3CovTop3)} " +
+                "4/7=${format(expectedFourSevenths)}"
+        )
+        assertEquals(
+            "IN 14 s3 must be 4/7 in the Kotlin pipeline",
+            expectedFourSevenths,
+            in14S3,
+            1e-9
+        )
+        assertEquals(
+            "IN 14 s3 must be 4/7 in the Python reference",
+            expectedFourSevenths,
+            row14.s3CovTop3,
+            1e-9
+        )
+        for ((presetName, decisions) in in14Decisions) {
+            println(
+                "K4b IN 14 $presetName: python=${decisions.first} kotlin=${decisions.second} " +
+                    "s3=${format(in14S3)}"
+            )
+            assertEquals(
+                "IN 14 must have the same decision in Python and Kotlin for $presetName",
+                decisions.first,
+                decisions.second
+            )
+        }
+        assertEquals("IN 14 must be evaluated for both presets", 2, in14Decisions.size)
 
         embedder.close()
         denseSearch.close()
@@ -148,30 +211,35 @@ class GateDecisionParityTest {
         val strictMatches = balancedTotal - strictDiffs.size
 
         println(
-            "K4 (b): balanced $balancedMatches/$balancedTotal, strict $strictMatches/$balancedTotal, " +
-                "disagreements=${disagreements.size}"
+            "K4b (b): max |s1_python - s1_kotlin| = ${format(maxS1Delta)} over $s1DeltaRows questions " +
+                "(threshold 1e-4); balanced $balancedMatches/$balancedTotal, " +
+                "strict $strictMatches/$balancedTotal, disagreements=${disagreements.size}"
         )
         if (disagreements.isEmpty()) {
-            println("K4 (b): no disagreements.")
+            println("K4b (b): no disagreements.")
         } else {
-            println("K4 (b) disagreement table:")
-            println("preset | cls | id | question | python | kotlin | s1 | t1 | abs(s1-t1) | s3 | s4 | reason")
+            println("K4b (b) disagreement table:")
+            println("preset | cls | id | question | python | kotlin | s1 | t1 | abs(s1-t1) | s3 | t3 | reason")
             for (d in disagreements) {
                 println(
                     "${d.preset} | ${d.cls} | ${d.id} | ${d.question} | ${d.pythonDecision} | " +
                         "${d.kotlinDecision} | ${format(d.s1)} | ${format(d.t1)} | ${format(d.absS1T1)} | " +
-                        "${format(d.s3)} | ${d.s4} | ${d.reason}"
+                        "${format(d.s3)} | ${format(d.t3)} | ${d.reason}"
                 )
             }
         }
 
         assertTrue(
-            "K4 (b) balanced decisions $balancedMatches/$balancedTotal must be >= 112",
-            balancedMatches >= 112
+            "K4b (b) max |s1_python - s1_kotlin| $maxS1Delta must be <= $s1Epsilon",
+            maxS1Delta <= s1Epsilon
         )
         assertTrue(
-            "K4 (b) strict decisions $strictMatches/$balancedTotal must be >= 112",
-            strictMatches >= 112
+            "K4b (b) balanced decisions $balancedMatches/$balancedTotal must be >= $minDecisionMatches",
+            balancedMatches >= minDecisionMatches
+        )
+        assertTrue(
+            "K4b (b) strict decisions $strictMatches/$balancedTotal must be >= $minDecisionMatches",
+            strictMatches >= minDecisionMatches
         )
     }
 
@@ -186,8 +254,8 @@ class GateDecisionParityTest {
         row: GateReferenceRow
     ): String {
         val failing = mutableListOf<String>()
-        if (s1 < preset.t1) failing.add("kotlin s1 < t1")
-        if (s3 < preset.t3) failing.add("kotlin s3 < t3")
+        if (s1 + GateDecision.EPSILON < preset.t1) failing.add("kotlin s1 < t1")
+        if (s3 + GateDecision.EPSILON < preset.t3) failing.add("kotlin s3 < t3")
         if (s4 > preset.k) failing.add("kotlin s4 > k")
         if (pythonDecision == kotlinDecision) {
             return if (kotlinDecision) "agree: accepted" else "agree: rejected"
@@ -198,8 +266,8 @@ class GateDecisionParityTest {
             "Kotlin rejected, Python accepted"
         }
         val pythonFailing = mutableListOf<String>()
-        if (row.s1Top1 < preset.t1) pythonFailing.add("python s1 < t1")
-        if (row.s3CovTop3 < preset.t3) pythonFailing.add("python s3 < t3")
+        if (row.s1Top1 + GateDecision.EPSILON < preset.t1) pythonFailing.add("python s1 < t1")
+        if (row.s3CovTop3 + GateDecision.EPSILON < preset.t3) pythonFailing.add("python s3 < t3")
         if (row.s4Unknown > preset.k) pythonFailing.add("python s4 > k")
         val kotlinPart = if (failing.isEmpty()) "none" else failing.joinToString("+")
         val pythonPart = if (pythonFailing.isEmpty()) "none" else pythonFailing.joinToString("+")
@@ -207,5 +275,5 @@ class GateDecisionParityTest {
             "python s1=${format(row.s1Top1)} s3=${format(row.s3CovTop3)} s4=${row.s4Unknown}"
     }
 
-    private fun format(value: Double): String = String.format(Locale.ROOT, "%.6f", value)
+    private fun format(value: Double): String = String.format(Locale.ROOT, "%.9f", value)
 }

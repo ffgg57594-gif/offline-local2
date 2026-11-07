@@ -70,7 +70,7 @@ def percentile(vals, p):
 
 
 def fmt_float(v):
-    return f"{v:.6f}"
+    return f"{v:.9f}"
 
 
 def fmt_int(v):
@@ -86,7 +86,7 @@ def build_rows(in_scope, out_of_scope, conn, embeddings, chunk_meta):
     """Measure every question; return list of row dicts."""
     in_order = list(in_scope) + list(out_of_scope)
     texts = [q["q"] for q in in_order]
-    vecs = embed_texts(texts, kind="query")
+    vecs = embed_texts(texts, kind="query", batch_size=1)
     embeddings_list = embeddings.tolist()
 
     text_by_cid = {c[0]: c[3] for c in chunk_meta}

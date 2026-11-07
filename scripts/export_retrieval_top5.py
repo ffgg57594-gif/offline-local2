@@ -125,7 +125,7 @@ def main():
 
     all_qs = list(in_scope) + list(out_of_scope)
     q_texts = [q["q"] for q in all_qs]
-    q_vecs = embed_texts(q_texts, kind="query")
+    q_vecs = embed_texts(q_texts, kind="query", batch_size=1)
 
     fieldnames = [
         "group", "cls", "id", "question",

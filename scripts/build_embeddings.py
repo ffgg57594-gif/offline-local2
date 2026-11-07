@@ -17,12 +17,17 @@ import json
 import os
 import sqlite3
 import sys
+import time
 
 import numpy as np
 
 DB_PATH = os.path.join("app", "src", "main", "assets", "books_knowledge.db")
 OUT_BIN = os.path.join("app", "src", "main", "assets", "embeddings.bin")
 OUT_META = os.path.join("app", "src", "main", "assets", "embeddings_meta.json")
+K4B_DIR = os.path.join("build", "reports", "k4b")
+DIAG_BIN16 = os.path.join(K4B_DIR, "embeddings_batch16.bin")
+DIAG_JSON = os.path.join(K4B_DIR, "embeddings_diagnostic.json")
+TIME_JSON = os.path.join(K4B_DIR, "embedding_step_time.json")
 
 EMBED_DIM = 384
 PASSAGE_PREFIX = "passage: "
@@ -91,8 +96,14 @@ def main():
     print(f"Truncated at 384 tokens: {truncated_count}")
     print(f"Longest tokenized length: {longest_token_length}")
 
-    # Embed all texts as passages.
-    embeddings = embed_texts(texts, kind="passage")  # [N, 384] float32
+    # Embed all texts as passages. K4b: batch size 1, no padding within a batch.
+    embed_start = time.perf_counter()
+    embeddings = embed_texts(texts, kind="passage", batch_size=1)  # [N, 384] float32
+    embedding_seconds = time.perf_counter() - embed_start
+    print(
+        f"Embedding step (batch_size=1): {embedding_seconds:.3f} s "
+        f"for {chunks_count} chunks"
+    )
 
     # Safety asserts.
     if embeddings.shape[0] != chunks_count:
@@ -139,6 +150,66 @@ def main():
     print(f"Wrote {OUT_BIN}: {file_size} bytes ({chunks_count} rows x {EMBED_DIM} dims)")
     print(f"Wrote {OUT_META}")
     print(f"Max row-norm deviation from 1.0: {norm_deviation:.6e}")
+
+    # K4b: quantify the old batch-16 padding behaviour over the full corpus.
+    # This does not touch the asset written above; it only writes a diagnostic
+    # matrix and summary under build/reports/k4b/.
+    print("\nK4b diagnostic: re-embedding all passages with the old batch size 16 ...")
+    batch16_start = time.perf_counter()
+    embeddings_batch16 = embed_texts(texts, kind="passage", batch_size=16)
+    batch16_seconds = time.perf_counter() - batch16_start
+
+    a = embeddings.astype(np.float64)
+    b = embeddings_batch16.astype(np.float64)
+    element_delta = np.abs(a - b)
+    dot = np.sum(a * b, axis=1)
+    norms_a = np.linalg.norm(a, axis=1)
+    norms_b = np.linalg.norm(b, axis=1)
+    cosines = dot / np.clip(norms_a * norms_b, 1e-12, None)
+
+    max_element_delta = float(np.max(element_delta))
+    min_cosine = float(np.min(cosines))
+    mean_cosine = float(np.mean(cosines))
+
+    os.makedirs(K4B_DIR, exist_ok=True)
+    np.ascontiguousarray(embeddings_batch16, dtype=np.float32).tofile(DIAG_BIN16)
+    diagnostic = {
+        "chunks": chunks_count,
+        "dim": EMBED_DIM,
+        "batch_size_new": 1,
+        "batch_size_old": 16,
+        "max_element_delta_batch1_vs_batch16": max_element_delta,
+        "min_cosine_batch1_vs_batch16": min_cosine,
+        "mean_cosine_batch1_vs_batch16": mean_cosine,
+        "embedding_step_seconds_batch1": embedding_seconds,
+        "embedding_step_seconds_batch16": batch16_seconds,
+        "batch16_bin": DIAG_BIN16,
+        "batch16_bin_sha256": sha256_file(DIAG_BIN16),
+        "batch1_bin_sha256": sha256_file(OUT_BIN),
+    }
+    with open(DIAG_JSON, "w", encoding="utf-8") as f:
+        json.dump(diagnostic, f, indent=2)
+        f.write("\n")
+    with open(TIME_JSON, "w", encoding="utf-8") as f:
+        json.dump(
+            {
+                "batch_size": 1,
+                "chunks": chunks_count,
+                "seconds": embedding_seconds,
+            },
+            f,
+            indent=2,
+        )
+        f.write("\n")
+
+    print(f"Passage embeddings compared: {chunks_count} chunks")
+    print(f"max element delta (batch 1 vs batch 16): {max_element_delta:.12f}")
+    print(f"min cosine (batch 1 vs batch 16): {min_cosine:.12f}")
+    print(f"mean cosine (batch 1 vs batch 16): {mean_cosine:.12f}")
+    print(f"batch 16 diagnostic embedding time: {batch16_seconds:.3f} s")
+    print(f"Wrote {DIAG_BIN16}")
+    print(f"Wrote {DIAG_JSON}")
+    print(f"Wrote {TIME_JSON}")
     print("Embeddings build complete.")
 
 
