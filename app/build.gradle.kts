@@ -64,6 +64,8 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.18.0")
+    // SQLite Android Bindings: FTS5 + porter tokenizer on device.
+    implementation("mil.nga:sqlite-android:3450200")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.xerial:sqlite-jdbc:3.45.3.0")
     testImplementation("com.microsoft.onnxruntime:onnxruntime:1.18.0")

@@ -10,6 +10,7 @@ app/src/main/assets/embeddings_meta.json
 app/src/main/assets/embedder_reference.json
 app/src/main/assets/models/
 app/src/main/assets/normalize_map.json
+app/src/main/assets/gate_vocab.json
 app/src/main/assets/fusion_config.json
 app/src/main/assets/config_calibrated.json
 
@@ -20,6 +21,8 @@ __pycache__/
 .logs.zip
 eval/chunks_for_golden.jsonl
 eval/gate_signals.csv
+eval/batch_padding.csv
+eval/batch_padding_summary.json
 app/src/test/resources/tokenizer_reference.json
 app/src/test/resources/retrieval_top5.csv
 eval/assets_small/
