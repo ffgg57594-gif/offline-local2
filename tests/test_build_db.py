@@ -260,8 +260,9 @@ def test_short_garbage_page_excluded():
 def test_manual_skip_file_works(tmp_path):
     skip_file = os.path.join(os.path.dirname(__file__), "..", "scripts", "skip_pages.json")
     with open(skip_file, "r", encoding="utf-8") as f:
-        import json as _json
-        data = _json.load(f)
+        original_text = f.read()
+    import json as _json
+    data = _json.loads(original_text)
     data["sample"] = [1]
     with open(skip_file, "w", encoding="utf-8") as f:
         _json.dump(data, f)
@@ -278,9 +279,10 @@ def test_manual_skip_file_works(tmp_path):
         assert manual_skips.get("sample") == [1]
         assert 1 in set(manual_skips.get("sample", []))
     finally:
-        data["sample"] = []
+        # Restore the tracked file byte-for-byte; this test must not leave the
+        # repository dirty.
         with open(skip_file, "w", encoding="utf-8") as f:
-            _json.dump(data, f)
+            f.write(original_text)
 
 
 def test_quality_guard_drops_garbage_chunk():

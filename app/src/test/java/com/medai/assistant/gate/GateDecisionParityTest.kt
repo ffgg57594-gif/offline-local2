@@ -12,13 +12,13 @@ import java.util.Locale
 import kotlin.math.abs
 
 /**
- * K4b test (b): run the full Kotlin embedder + DenseSearch + gate-signal
+ * K4c test (b): run the full Kotlin embedder + DenseSearch + gate-signal
  * pipeline on all 120 questions and compare its balanced/strict decisions with
  * `gate_reference.json`.
  *
  * Acceptance requirements:
  *  - max |s1_python - s1_kotlin| <= 1e-4 for all 120 questions;
- *  - at least 119/120 decisions equal per preset;
+ *  - 120/120 decisions equal per preset;
  *  - question IN 14 has s3 = 4/7 and the same decision in Python and Kotlin.
  */
 class GateDecisionParityTest {
@@ -41,7 +41,7 @@ class GateDecisionParityTest {
     )
 
     private val s1Epsilon = 1e-4
-    private val minDecisionMatches = 119
+    private val minDecisionMatches = 120
 
     @Test
     fun testFullPipelineDecisionsMatchPythonReference() {
@@ -169,7 +169,7 @@ class GateDecisionParityTest {
         val row14 = in14Row ?: error("IN 14 missing from gate_reference.json")
         val expectedFourSevenths = 4.0 / 7.0
         println(
-            "K4b IN 14: kotlin s3=${format(in14S3)} python s3=${format(row14.s3CovTop3)} " +
+            "K4c IN 14: kotlin s3=${format(in14S3)} python s3=${format(row14.s3CovTop3)} " +
                 "4/7=${format(expectedFourSevenths)}"
         )
         assertEquals(
@@ -186,7 +186,7 @@ class GateDecisionParityTest {
         )
         for ((presetName, decisions) in in14Decisions) {
             println(
-                "K4b IN 14 $presetName: python=${decisions.first} kotlin=${decisions.second} " +
+                "K4c IN 14 $presetName: python=${decisions.first} kotlin=${decisions.second} " +
                     "s3=${format(in14S3)}"
             )
             assertEquals(
@@ -211,14 +211,14 @@ class GateDecisionParityTest {
         val strictMatches = balancedTotal - strictDiffs.size
 
         println(
-            "K4b (b): max |s1_python - s1_kotlin| = ${format(maxS1Delta)} over $s1DeltaRows questions " +
+            "K4c (b): max |s1_python - s1_kotlin| = ${format(maxS1Delta)} over $s1DeltaRows questions " +
                 "(threshold 1e-4); balanced $balancedMatches/$balancedTotal, " +
                 "strict $strictMatches/$balancedTotal, disagreements=${disagreements.size}"
         )
         if (disagreements.isEmpty()) {
-            println("K4b (b): no disagreements.")
+            println("K4c (b): no disagreements.")
         } else {
-            println("K4b (b) disagreement table:")
+            println("K4c (b) disagreement table:")
             println("preset | cls | id | question | python | kotlin | s1 | t1 | abs(s1-t1) | s3 | t3 | reason")
             for (d in disagreements) {
                 println(
@@ -230,15 +230,15 @@ class GateDecisionParityTest {
         }
 
         assertTrue(
-            "K4b (b) max |s1_python - s1_kotlin| $maxS1Delta must be <= $s1Epsilon",
+            "K4c (b) max |s1_python - s1_kotlin| $maxS1Delta must be <= $s1Epsilon",
             maxS1Delta <= s1Epsilon
         )
         assertTrue(
-            "K4b (b) balanced decisions $balancedMatches/$balancedTotal must be >= $minDecisionMatches",
+            "K4c (b) balanced decisions $balancedMatches/$balancedTotal must be >= $minDecisionMatches",
             balancedMatches >= minDecisionMatches
         )
         assertTrue(
-            "K4b (b) strict decisions $strictMatches/$balancedTotal must be >= $minDecisionMatches",
+            "K4c (b) strict decisions $strictMatches/$balancedTotal must be >= $minDecisionMatches",
             strictMatches >= minDecisionMatches
         )
     }

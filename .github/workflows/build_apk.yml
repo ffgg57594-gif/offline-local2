@@ -130,31 +130,31 @@ jobs:
       - name: Collect K4 test results
         if: always()
         run: python scripts/collect_k4_test_results.py
-      - name: Print kotlin-parity sha256 (K4b)
+      - name: Print kotlin-parity sha256 (K4c)
         if: always()
         run: |
-          mkdir -p build/reports/k4b
+          mkdir -p build/reports/k4c
           for f in build/reports/parity/*.csv; do
             [ -e "$f" ] || continue
             sha256sum "$f"
-          done | tee build/reports/k4b/kotlin_parity_sha256.txt
-      - name: Upload kotlin-parity (K4b)
+          done | tee build/reports/k4c/kotlin_parity_sha256.txt
+      - name: Upload kotlin-parity (K4c)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: kotlin-parity
           path: build/reports/parity/*.csv
           if-no-files-found: warn
-      - name: K4b verify midpoints, IN14 and Kotlin parity
+      - name: K4c verify robust presets, IN14 and Kotlin parity
         if: always()
-        run: python scripts/k4b_verify.py
-      - name: Upload K4b reports
+        run: python scripts/k4c_verify.py
+      - name: Upload K4c reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: k4b-reports
+          name: k4c-reports
           path: |
-            build/reports/k4b/
+            build/reports/k4c/
             eval/gate_signals.csv
           if-no-files-found: warn
       - name: Upload parity reports

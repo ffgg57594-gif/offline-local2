@@ -1,36 +1,32 @@
 #!/usr/bin/env python3
-"""Stage 3.7c / K4b: Fit refusal gate presets (balanced, strict) and run repeated CV.
+"""Stage K4c: fit robust refusal-gate presets and write the app assets.
 
 Reads eval/gate_signals.csv and eval/label_fixes.json.
 
-K4b changes
+K4c changes
 -----------
-* Candidate thresholds are the midpoints between adjacent *observed* signal
-  values.  A threshold is never equal to an observed value.
-* The decision comparison uses the shared 1e-6 epsilon from gate_rule.py:
-  ``s1 + 1e-6 >= t1`` and ``s3 + 1e-6 >= t3``.
-* The previous (pre-K4b) presets are evaluated on the new data and reported.
-* The hard-coded balanced t1 override from Stage 3.7e is removed.
-
-Presets:
-  balanced: best OOS rejection with answerable acceptance >= 0.95
-  strict:   best OOS rejection with answerable acceptance >= 0.90
-Tie-breaking:
-  highest acceptance -> median t1 of the tied plateau.
+* Candidates are the t1 grid 0.82..0.88 step 0.0025, the observed s3 values,
+  and k in 0..3.
+* Each candidate is scored by its worst case over s1 shifts
+  d in (-0.005, 0, +0.005).
+* balanced: maximise worst-case OOS rejection with worst-case answerable
+  acceptance >= 0.90.
+* strict:   maximise worst-case OOS rejection with worst-case answerable
+  acceptance >= 0.85.
+* Ties pick the t1 centre of the tied plateau (see robust_gate.py).
+* The 1e-6 comparison epsilon from gate_rule.py is kept.
 
 Outputs:
   app/src/main/assets/gate_config.json
   app/src/main/assets/gate_reference.json
-  build/reports/k4b/gate_refit_report.json
+  build/reports/k4c/robust_fit_report.json
 """
-import csv
 import json
 import os
 import sys
 
-import numpy as np
-
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import robust_gate
 from gate_rule import EPSILON, accept
 
 CSV_PATH = os.path.join("eval", "gate_signals.csv")
@@ -38,19 +34,15 @@ FIXES_PATH = os.path.join("eval", "label_fixes.json")
 OLD_CONFIG_PATH = os.path.join("eval", "gate_config_old.json")
 CONFIG_OUT = os.path.join("app", "src", "main", "assets", "gate_config.json")
 REFERENCE_OUT = os.path.join("app", "src", "main", "assets", "gate_reference.json")
-REPORT_OUT = os.path.join("build", "reports", "k4b", "gate_refit_report.json")
+REPORT_OUT = os.path.join("build", "reports", "k4c", "robust_fit_report.json")
 
-# Pre-K4b presets, used only when eval/gate_config_old.json is absent.
+FLOORS = (("balanced", 0.90), ("strict", 0.85))
+
+# Pre-K3 presets, used only when eval/gate_config_old.json is absent.
 OLD_PRESETS_FALLBACK = {
     "balanced": {"t1": 0.8375, "t3": 0.571429, "k": 0},
     "strict": {"t1": 0.8525, "t3": 0.571429, "k": 0},
 }
-
-# Keep the chosen midpoint away from both observed values by at least this
-# much.  Kotlin and Python s1 differ by ~1e-6 on the CI runners; a 5e-6 gap
-# keeps rounding noise from flipping a decision while still satisfying the
-# strict midpoint rule.
-MIN_CANDIDATE_MARGIN = 5e-6
 
 
 def load_labeled_signals(csv_path=CSV_PATH, fixes_path=FIXES_PATH):
@@ -63,7 +55,7 @@ def load_labeled_signals(csv_path=CSV_PATH, fixes_path=FIXES_PATH):
                     fixes_by_id.add(int(fix["id"]))
 
     with open(csv_path, "r", encoding="utf-8") as f:
-        rows = list(csv.DictReader(f))
+        rows = list(__import__("csv").DictReader(f))
 
     for r in rows:
         cid = int(r["id"])
@@ -74,166 +66,6 @@ def load_labeled_signals(csv_path=CSV_PATH, fixes_path=FIXES_PATH):
             r["answerable"] = False
 
     return rows
-
-
-def midpoint_candidates(observed, min_margin=MIN_CANDIDATE_MARGIN):
-    """Midpoints between adjacent distinct observed values.
-
-    Candidates equal to any observed value are discarded.  Candidates whose
-    distance to both neighbours is below ``min_margin`` are preferred away
-    from; if that would leave no candidate, the margin requirement is relaxed.
-    """
-    vals = sorted(set(float(v) for v in observed))
-    all_midpoints = []
-    for a, b in zip(vals, vals[1:]):
-        m = (a + b) / 2.0
-        if all(abs(m - v) > 1e-12 for v in vals):
-            all_midpoints.append(m)
-    if not all_midpoints:
-        return []
-
-    def far_enough(m):
-        return min(abs(m - v) for v in vals) >= min_margin
-
-    preferred = [m for m in all_midpoints if far_enough(m)]
-    return preferred if preferred else all_midpoints
-
-
-def _pack(rows):
-    ans = [r for r in rows if r["answerable"]]
-    oos = [r for r in rows if not r["answerable"]]
-    return (
-        np.array([float(r["s1_top1"]) for r in ans], dtype=np.float64),
-        np.array([float(r["s3_cov_top3"]) for r in ans], dtype=np.float64),
-        np.array([float(r["s4_unknown"]) for r in ans], dtype=np.float64),
-        np.array([float(r["s1_top1"]) for r in oos], dtype=np.float64),
-        np.array([float(r["s3_cov_top3"]) for r in oos], dtype=np.float64),
-        np.array([float(r["s4_unknown"]) for r in oos], dtype=np.float64),
-        len(ans),
-        len(oos),
-    )
-
-
-def fit_preset(rows, floor=0.95, min_margin=MIN_CANDIDATE_MARGIN):
-    """Fit one preset and return ``(rej, acc_fraction, t1, t3, k)``.
-
-    Both thresholds are midpoints between adjacent observed values, so neither
-    can equal an observed value.
-    """
-    s1_ans, s3_ans, s4_ans, s1_oos, s3_oos, s4_oos, n_ans, n_oos = _pack(rows)
-    if n_ans == 0 or n_oos == 0:
-        raise ValueError("fit_preset requires both answerable and out-of-scope rows")
-
-    observed_s1 = np.concatenate([s1_ans, s1_oos])
-    observed_s3 = np.concatenate([s3_ans, s3_oos])
-    t1_grid = np.array(midpoint_candidates(observed_s1, min_margin), dtype=np.float64)
-    t3_grid = np.array(midpoint_candidates(observed_s3, min_margin), dtype=np.float64)
-    if len(t1_grid) == 0 or len(t3_grid) == 0:
-        raise ValueError("no midpoint candidates available")
-
-    k_grid = [0, 1, 2, 3]
-    best_rej = -1
-    best_acc = -1.0
-    tied_rules = []
-
-    # searchsorted works on each (k, t3) subset; the t1 grid is vectorised.
-    t1_shifted = t1_grid - EPSILON
-    for k in k_grid:
-        ans_k = s4_ans <= k
-        oos_k = s4_oos <= k
-        for t3 in t3_grid:
-            ans_ok3 = ans_k & (s3_ans + EPSILON >= t3)
-            oos_ok3 = oos_k & (s3_oos + EPSILON >= t3)
-            a_sel = np.sort(s1_ans[ans_ok3])
-            o_sel = np.sort(s1_oos[oos_ok3])
-
-            acc_counts = len(a_sel) - np.searchsorted(a_sel, t1_shifted, side="left")
-            # OOS rejected = all OOS minus those accepted by all three signals.
-            accepted_oos = len(o_sel) - np.searchsorted(o_sel, t1_shifted, side="left")
-            rej_counts = n_oos - accepted_oos
-            acc_fracs = acc_counts / float(n_ans)
-
-            valid = acc_fracs >= floor - 1e-12
-            if not valid.any():
-                continue
-            local_rej = int(np.max(rej_counts[valid]))
-            if local_rej < best_rej:
-                continue
-            for idx in np.nonzero(valid & (rej_counts == local_rej))[0]:
-                acc = float(acc_fracs[idx])
-                entry = (local_rej, acc, float(t1_grid[idx]), float(t3), int(k))
-                if local_rej > best_rej:
-                    best_rej = local_rej
-                    best_acc = acc
-                    tied_rules = [entry]
-                elif acc > best_acc + 1e-15:
-                    best_acc = acc
-                    tied_rules = [entry]
-                elif abs(acc - best_acc) <= 1e-15:
-                    tied_rules.append(entry)
-
-    if not tied_rules:
-        if min_margin > 0:
-            return fit_preset(rows, floor=floor, min_margin=0.0)
-        raise ValueError(f"no rule reaches floor {floor}")
-
-    # Plateau tie-breaker: median t1 of the tied plateau.
-    t1_vals = sorted(r[2] for r in tied_rules)
-    median_t1 = float(np.median(t1_vals))
-    chosen = min(tied_rules, key=lambda r: (abs(r[2] - median_t1), r[4], r[3]))
-    return chosen, tied_rules
-
-
-def run_cv(rows, n_splits=5, n_repeats=30, seed=7):
-    rng = np.random.RandomState(seed)
-    ans_idx = np.array([i for i, r in enumerate(rows) if r["answerable"]])
-    oos_idx = np.array([i for i, r in enumerate(rows) if not r["answerable"]])
-
-    results = {}
-    for floor, name in [(0.95, "balanced"), (0.90, "strict")]:
-        acc_list = []
-        rej_list = []
-        for rep in range(n_repeats):
-            ans_shuff = rng.permutation(ans_idx)
-            oos_shuff = rng.permutation(oos_idx)
-            ans_splits = np.array_split(ans_shuff, n_splits)
-            oos_splits = np.array_split(oos_shuff, n_splits)
-
-            for f in range(n_splits):
-                val_ans_set = set(int(i) for i in ans_splits[f])
-                val_oos_set = set(int(i) for i in oos_splits[f])
-
-                train_rows = [
-                    rows[i] for i in range(len(rows))
-                    if i not in val_ans_set and i not in val_oos_set
-                ]
-                val_ans_r = [rows[i] for i in val_ans_set]
-                val_oos_r = [rows[i] for i in val_oos_set]
-
-                chosen, _ = fit_preset(train_rows, floor=floor)
-                params = {"t1": chosen[2], "t3": chosen[3], "k": chosen[4]}
-
-                val_acc = sum(
-                    1 for r in val_ans_r
-                    if accept(float(r["s1_top1"]), float(r["s3_cov_top3"]),
-                              float(r["s4_unknown"]), params)
-                ) / len(val_ans_r)
-                val_rej = sum(
-                    1 for r in val_oos_r
-                    if not accept(float(r["s1_top1"]), float(r["s3_cov_top3"]),
-                                  float(r["s4_unknown"]), params)
-                ) / len(val_oos_r)
-
-                acc_list.append(val_acc)
-                rej_list.append(val_rej)
-
-        results[name] = {
-            "acc_mean": float(np.mean(acc_list)),
-            "acc_min": float(np.min(acc_list)),
-            "rej_mean": float(np.mean(rej_list)),
-            "rej_min": float(np.min(rej_list)),
-        }
-    return results
 
 
 def load_old_presets():
@@ -255,27 +87,67 @@ def evaluate_preset(rows, params):
     ans = [r for r in rows if r["answerable"]]
     oos = [r for r in rows if not r["answerable"]]
     accepted_ans = sum(
-        1 for r in ans
-        if accept(float(r["s1_top1"]), float(r["s3_cov_top3"]),
-                  float(r["s4_unknown"]), params)
+        1
+        for r in ans
+        if accept(
+            float(r["s1_top1"]),
+            float(r["s3_cov_top3"]),
+            float(r["s4_unknown"]),
+            params,
+        )
     )
     rejected_oos = sum(
-        1 for r in oos
-        if not accept(float(r["s1_top1"]), float(r["s3_cov_top3"]),
-                      float(r["s4_unknown"]), params)
+        1
+        for r in oos
+        if not accept(
+            float(r["s1_top1"]),
+            float(r["s3_cov_top3"]),
+            float(r["s4_unknown"]),
+            params,
+        )
     )
     return accepted_ans, len(ans), rejected_oos, len(oos)
 
 
-def find_interval(observed, threshold):
-    vals = sorted(set(float(v) for v in observed))
-    best = None
-    for a, b in zip(vals, vals[1:]):
-        mid = (a + b) / 2.0
-        dist = abs(mid - threshold)
-        if best is None or dist < best[0]:
-            best = (dist, a, b, mid)
-    return best
+def fit_preset(rows, floor):
+    """Compatibility wrapper returning ``(chosen, tied)`` tuples."""
+    return robust_gate.fit_preset(rows, floor)
+
+
+def candidate_json(candidate):
+    return {
+        "t1": candidate.t1,
+        "t3": candidate.t3,
+        "k": candidate.k,
+        "worst_acc_count": candidate.worst_acc_count,
+        "worst_rej_count": candidate.worst_rej_count,
+        "worst_acc": candidate.worst_acc,
+        "worst_rej": candidate.worst_rej,
+        "nominal_acc_count": candidate.nominal_acc_count,
+        "nominal_rej_count": candidate.nominal_rej_count,
+        "nominal_acc": candidate.nominal_acc,
+        "nominal_rej": candidate.nominal_rej,
+        "per_delta": [
+            {"d": d, "accepted_answerable": a, "rejected_oos": r}
+            for d, a, r in candidate.per_delta
+        ],
+    }
+
+
+def plateau_json(plateau):
+    return {
+        "tied_count": plateau["tied_count"],
+        "t1_min": plateau["t1_min"],
+        "t1_max": plateau["t1_max"],
+        "t1_width": plateau["t1_width"],
+        "t1_centre": plateau["t1_centre"],
+        "t1_unique": plateau["t1_unique"],
+        "t3_min": plateau["t3_min"],
+        "t3_max": plateau["t3_max"],
+        "t3_width": plateau["t3_width"],
+        "t3_unique": plateau["t3_unique"],
+        "worst_rej_count": plateau["worst_rej_count"],
+    }
 
 
 def main():
@@ -296,87 +168,70 @@ def main():
     assert ans_count == 63, f"expected 63 answerable rows, got {ans_count}"
     assert oos_count == 57, f"expected 57 out-of-scope rows, got {oos_count}"
 
-    # Single-signal cuts (diagnostic only).
-    ans_rows = [r for r in rows if r["answerable"]]
-    oos_rows = [r for r in rows if not r["answerable"]]
-    s1_ans = [float(r["s1_top1"]) for r in ans_rows]
-    s1_oos = [float(r["s1_top1"]) for r in oos_rows]
-    min_s1 = min(s1_ans)
-    rej_min_s1 = sum(1 for x in s1_oos if x < min_s1)
-    print(f"s1 100% answerable acceptance cut = {min_s1:.9f} -> rejects {rej_min_s1}/{len(oos_rows)}")
+    print("\nK4c robust fit")
+    print(f"  t1 grid: {robust_gate.T1_START}..{robust_gate.T1_END} "
+          f"step {robust_gate.T1_STEP}")
+    print(f"  t3 grid: {len(robust_gate.observed_s3(rows))} observed s3 values")
+    print(f"  k grid: {list(robust_gate.K_GRID)}")
+    print(f"  shift set: {list(robust_gate.FIT_DELTAS)}")
+    print(f"  comparison epsilon: {EPSILON:g}")
 
-    sorted_s1_ans = sorted(s1_ans)
-    s1_95_cut = sorted_s1_ans[3]
-    rej_s1_95 = sum(1 for x in s1_oos if x < s1_95_cut)
-    print(f"s1 95% answerable acceptance cut = {s1_95_cut:.9f} -> rejects {rej_s1_95}/{len(oos_rows)}")
+    candidates = robust_gate.build_candidates(rows)
+    print(f"  candidates evaluated: {len(candidates)}")
 
-    s3_ans = [float(r["s3_cov_top3"]) for r in ans_rows]
-    s3_oos = [float(r["s3_cov_top3"]) for r in oos_rows]
-    for val in sorted(set(s3_ans)):
-        acc = sum(1 for x in s3_ans if x >= val) / len(s3_ans)
-        rej = sum(1 for x in s3_oos if x < val)
-        if 0.94 <= acc <= 0.96:
-            print(f"s3 cut {val:.9f} (acc={acc:.4f}) -> rejects {rej}/{len(oos_rows)}")
-
-    s4_ans = [float(r["s4_unknown"]) for r in ans_rows]
-    s4_oos = [float(r["s4_unknown"]) for r in oos_rows]
-    acc_s4_0 = sum(1 for x in s4_ans if x <= 0) / len(s4_ans)
-    rej_s4_0 = sum(1 for x in s4_oos if x > 0)
-    print(f"s4 <= 0 cut (acc={acc_s4_0:.4f}) -> rejects {rej_s4_0}/{len(oos_rows)}")
-
-    print("\nThreshold candidates: midpoints between adjacent observed values "
-          "(never equal to an observed value).")
-    print(f"Comparison epsilon: {EPSILON:g}")
-
-    bal_chosen, bal_tied = fit_preset(rows, floor=0.95)
-    str_chosen, str_tied = fit_preset(rows, floor=0.90)
-
-    bal_params = {"t1": bal_chosen[2], "t3": bal_chosen[3], "k": int(bal_chosen[4])}
-    str_params = {"t1": str_chosen[2], "t3": str_chosen[3], "k": int(str_chosen[4])}
-
-    observed_s1 = [float(r["s1_top1"]) for r in rows]
-    observed_s3 = [float(r["s3_cov_top3"]) for r in rows]
-
-    def rule_details(params):
-        i1 = find_interval(observed_s1, params["t1"])
-        i3 = find_interval(observed_s3, params["t3"])
-        return {
-            "t1_interval": [i1[1], i1[2]],
-            "t1_midpoint": i1[3],
-            "t3_interval": [i3[1], i3[2]],
-            "t3_midpoint": i3[3],
-            "t1_equals_observed": any(abs(params["t1"] - v) <= 1e-12 for v in observed_s1),
-            "t3_equals_observed": any(abs(params["t3"] - v) <= 1e-12 for v in observed_s3),
+    selected = {}
+    report_presets = {}
+    for name, floor in FLOORS:
+        chosen, tied, plateau = robust_gate.select_preset(candidates, floor)
+        selected[name] = {
+            "t1": chosen.t1,
+            "t3": chosen.t3,
+            "k": chosen.k,
         }
-
-    bal_details = rule_details(bal_params)
-    str_details = rule_details(str_params)
-
-    print("\n=== FITTED PRESETS (K4b midpoints, epsilon applied) ===")
-    for name, params, chosen, details in (
-        ("balanced", bal_params, bal_chosen, bal_details),
-        ("strict", str_params, str_chosen, str_details),
-    ):
-        accepted, total_ans, rejected, total_oos = evaluate_preset(rows, params)
+        top = robust_gate.top_candidates(candidates, floor, limit=5)
+        report_presets[name] = {
+            "floor": floor,
+            **candidate_json(chosen),
+            "plateau": plateau_json(plateau),
+            "top5": [candidate_json(c) for c in top],
+        }
+        print(f"\n=== {name.upper()} (worst-case acceptance >= {floor:.2f}) ===")
         print(
-            f"{name}: t1={params['t1']:.9f} t3={params['t3']:.9f} k={params['k']} "
-            f"-> accepted {accepted}/{total_ans}, rejected {rejected}/{total_oos}"
+            f"chosen: t1={chosen.t1:.9f} t3={chosen.t3:.9f} k={chosen.k} | "
+            f"worst acc={chosen.worst_acc_count}/{chosen.n_answerable} "
+            f"({chosen.worst_acc:.6f}), "
+            f"worst rej={chosen.worst_rej_count}/{chosen.n_oos} "
+            f"({chosen.worst_rej:.6f}) | "
+            f"nominal acc={chosen.nominal_acc_count}/{chosen.n_answerable}, "
+            f"nominal rej={chosen.nominal_rej_count}/{chosen.n_oos}"
         )
         print(
-            f"  t1 midpoint of [{details['t1_interval'][0]:.9f}, "
-            f"{details['t1_interval'][1]:.9f}]; "
-            f"t3 midpoint of [{details['t3_interval'][0]:.9f}, "
-            f"{details['t3_interval'][1]:.9f}]"
+            f"plateau: t1 [{plateau['t1_min']:.9f}, {plateau['t1_max']:.9f}] "
+            f"width={plateau['t1_width']:.9f} (centre {plateau['t1_centre']:.9f}), "
+            f"t3 [{plateau['t3_min']:.9f}, {plateau['t3_max']:.9f}] "
+            f"width={plateau['t3_width']:.9f}, tied={plateau['tied_count']}"
         )
-        print(
-            f"  never equal to observed: t1={not details['t1_equals_observed']}, "
-            f"t3={not details['t3_equals_observed']}"
-        )
+        for d, a, r in chosen.per_delta:
+            print(
+                f"  d={d:+.4f}: accepted {a}/{chosen.n_answerable}, "
+                f"rejected {r}/{chosen.n_oos}"
+            )
+        print("  top 5 candidates:")
+        for rank, c in enumerate(top, 1):
+            print(
+                f"    {rank}. t1={c.t1:.9f} t3={c.t3:.9f} k={c.k} | "
+                f"worst acc={c.worst_acc_count}/{c.n_answerable} "
+                f"({c.worst_acc:.6f}), "
+                f"worst rej={c.worst_rej_count}/{c.n_oos} "
+                f"({c.worst_rej:.6f}) | "
+                f"nominal acc={c.nominal_acc_count}/{c.n_answerable}, "
+                f"nominal rej={c.nominal_rej_count}/{c.n_oos}"
+            )
 
-    # Old presets evaluated on the new signals.
+    # Old K3 presets evaluated on the same signals.
     old = load_old_presets()
     old_eval = {}
-    print("\n=== OLD (PRE-K4b) PRESETS ON NEW DATA ===")
+    print("\n=== OLD (K3) PRESETS ON THE SAME SIGNALS ===")
     for name, params in old.items():
         accepted, total_ans, rejected, total_oos = evaluate_preset(rows, params)
         old_eval[name] = {
@@ -391,17 +246,24 @@ def main():
             f"-> accepted {accepted}/{total_ans}, rejected {rejected}/{total_oos}"
         )
 
-    # CV.
-    print("\n=== 5-FOLD CV (30 repeats, seed 7) ===")
-    cv_res = run_cv(rows)
-    for name in ["balanced", "strict"]:
+    # Repeated 5-fold CV with robust refitting.
+    print("\n=== 5-FOLD CV (30 repeats, seed 7, robust refit) ===")
+    cv_res = robust_gate.run_cv(rows, FLOORS)
+    for name, _ in FLOORS:
         r = cv_res[name]
         print(
-            f"{name}: held-out acc mean={r['acc_mean']:.6f}, min={r['acc_min']:.6f} | "
-            f"held-out rej mean={r['rej_mean']:.6f}, min={r['rej_min']:.6f}"
+            f"{name}: nominal held-out acc mean={r['acc_mean']:.6f}, min={r['acc_min']:.6f} | "
+            f"rej mean={r['rej_mean']:.6f}, min={r['rej_min']:.6f}"
+        )
+        print(
+            f"  worst-case (d in {list(robust_gate.FIT_DELTAS)}): "
+            f"acc mean={r['worst_acc_mean']:.6f}, min={r['worst_acc_min']:.6f} | "
+            f"rej mean={r['worst_rej_mean']:.6f}, min={r['worst_rej_min']:.6f}"
         )
 
-    str_params["note"] = "sits on a slope; optional"
+    bal_params = dict(selected["balanced"])
+    str_params = dict(selected["strict"])
+    str_params["note"] = "robust K4c preset; optional"
 
     # Write assets/gate_config.json.
     os.makedirs(os.path.dirname(CONFIG_OUT), exist_ok=True)
@@ -425,9 +287,6 @@ def main():
         s4 = float(r["s4_unknown"])
         s5 = float(r["s5_rare_cov_top3"])
 
-        dec_bal = bool(accept(s1, s3, s4, bal_params))
-        dec_str = bool(accept(s1, s3, s4, str_params))
-
         gate_ref.append({
             "group": r["group"],
             "cls": r["cls"],
@@ -442,9 +301,9 @@ def main():
                 "s5_rare_cov_top3": s5,
             },
             "decisions": {
-                "balanced": dec_bal,
-                "strict": dec_str,
-            }
+                "balanced": bool(accept(s1, s3, s4, bal_params)),
+                "strict": bool(accept(s1, s3, s4, str_params)),
+            },
         })
 
     with open(REFERENCE_OUT, "w", encoding="utf-8") as f:
@@ -453,40 +312,24 @@ def main():
     print(f"Wrote {REFERENCE_OUT}")
 
     report = {
-        "stage": "K4b",
+        "stage": "K4c",
         "epsilon": EPSILON,
-        "candidate_rule": "midpoint between adjacent observed values; never equal to an observed value",
-        "min_candidate_margin": MIN_CANDIDATE_MARGIN,
+        "t1_grid": {
+            "start": robust_gate.T1_START,
+            "end": robust_gate.T1_END,
+            "step": robust_gate.T1_STEP,
+        },
+        "t3_grid": "observed s3 values",
+        "k_grid": list(robust_gate.K_GRID),
+        "fit_deltas": list(robust_gate.FIT_DELTAS),
         "answerable": ans_count,
         "out_of_scope": oos_count,
         "oos_class_counts": oos_by_cls,
-        "balanced": {
-            **bal_params,
-            **bal_details,
-            "accepted_answerable": int(round(bal_chosen[1] * ans_count)),
-            "total_answerable": ans_count,
-            "rejected_oos": bal_chosen[0],
-            "total_oos": oos_count,
-            "tied_plateau_size": len(bal_tied),
-        },
-        "strict": {
-            **str_params,
-            **str_details,
-            "accepted_answerable": int(round(str_chosen[1] * ans_count)),
-            "total_answerable": ans_count,
-            "rejected_oos": str_chosen[0],
-            "total_oos": oos_count,
-            "tied_plateau_size": len(str_tied),
-        },
-        "old_presets_on_new_data": old_eval,
+        "presets": report_presets,
+        "selected": selected,
+        "old_presets_on_same_signals": old_eval,
         "cv": cv_res,
     }
-    # Use the exact re-evaluated counts (epsilon applied) rather than the
-    # rounded search value.
-    for name, params in (("balanced", bal_params), ("strict", str_params)):
-        accepted, total_ans, rejected, total_oos = evaluate_preset(rows, params)
-        report[name]["accepted_answerable"] = accepted
-        report[name]["rejected_oos"] = rejected
     os.makedirs(os.path.dirname(REPORT_OUT), exist_ok=True)
     with open(REPORT_OUT, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2)
@@ -494,21 +337,26 @@ def main():
     print(f"Wrote {REPORT_OUT}")
 
     # Print in full: rejected answerable and accepted OOS.
-    for preset_name, params in [("balanced", bal_params), ("strict", str_params)]:
+    for preset_name, params in (("balanced", bal_params), ("strict", str_params)):
         rej_ans = []
         acc_oos = []
         for r in rows:
-            s1 = float(r["s1_top1"])
-            s3 = float(r["s3_cov_top3"])
-            s4 = float(r["s4_unknown"])
-            if accept(s1, s3, s4, params):
+            if accept(
+                float(r["s1_top1"]),
+                float(r["s3_cov_top3"]),
+                float(r["s4_unknown"]),
+                params,
+            ):
                 if not r["answerable"]:
                     acc_oos.append(r)
             elif r["answerable"]:
                 rej_ans.append(r)
 
         print("\n==========================================")
-        print(f"PRESET: {preset_name.upper()} (t1={params['t1']:.9f}, t3={params['t3']:.9f}, k={params['k']})")
+        print(
+            f"PRESET: {preset_name.upper()} "
+            f"(t1={params['t1']:.9f}, t3={params['t3']:.9f}, k={params['k']})"
+        )
         print(f"Answerable rejected: {len(rej_ans)}/{ans_count}")
         for r in rej_ans:
             print(
