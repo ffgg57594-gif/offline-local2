@@ -154,6 +154,15 @@ class MainActivity : ComponentActivity() {
                         withContext(Dispatchers.Main) {
                             gateInitError = e.message ?: e.javaClass.simpleName
                         }
+                    } catch (e: LinkageError) {
+                        // System.loadLibrary / native SQLite can fail with an
+                        // Error (UnsatisfiedLinkError) instead of an Exception.
+                        // The gate is optional: record the real error and keep
+                        // the rest of the app usable.
+                        Diagnostics.recordException(e)
+                        withContext(Dispatchers.Main) {
+                            gateInitError = e.message ?: e.javaClass.simpleName
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -619,6 +628,15 @@ fun DebugScreen(
                                                 // A gate failure must never hide the
                                                 // retrieval result; record it and
                                                 // fall back to the top-3 passages.
+                                                Diagnostics.recordException(e)
+                                                unavailable(
+                                                    e.message ?: e.javaClass.simpleName
+                                                )
+                                            } catch (e: LinkageError) {
+                                                // Native SQLite/stemming errors are
+                                                // Errors, not Exceptions. Keep the
+                                                // top-3 passages and show the real
+                                                // error in the banner.
                                                 Diagnostics.recordException(e)
                                                 unavailable(
                                                     e.message ?: e.javaClass.simpleName

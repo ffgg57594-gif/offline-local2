@@ -46,8 +46,10 @@ HYPHEN_LIKE_CHARS = [
 
 # Python tokenizer is ``re.compile(r"\w+")`` (Unicode-aware by default).
 PYTHON_TOKEN_PATTERN = r"\w+"
-# Java/Kotlin equivalent compiled with Pattern.UNICODE_CHARACTER_CLASS.
-KOTLIN_TOKEN_PATTERN = r"\w+"
+# Kotlin equivalent spelled out in ``Patterns.kt``: Android's ICU engine
+# rejects the JVM-only Unicode-character-class flag, so ``\w`` is expanded to
+# explicit Unicode property classes instead of relying on that flag.
+KOTLIN_TOKEN_PATTERN = r"[\p{L}\p{M}\p{N}_]+"
 POSSESSIVE_PATTERN = "[\x27\u2019]s\\b"
 
 

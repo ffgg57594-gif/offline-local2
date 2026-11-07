@@ -133,16 +133,31 @@ class JdbcGateDatabase(dbFile: File) : GateDatabase {
  * and the porter tokenizer (verified in CI).
  */
 class AndroidGateDatabase(dbFile: File) : GateDatabase {
-    private val db: SQLiteDatabase = SQLiteDatabase.openDatabase(
-        dbFile.absolutePath,
-        null,
-        SQLiteDatabase.OPEN_READONLY or SQLiteDatabase.NO_LOCALIZED_COLLATORS
-    )
-    private val stemDb: SQLiteDatabase = SQLiteDatabase.create(null as SQLiteDatabase.CursorFactory?)
+    private val db: SQLiteDatabase
+    private val stemDb: SQLiteDatabase
     private val stemCache = HashMap<String, String>()
     private val dfCache = HashMap<String, Int>()
 
+    private companion object {
+        /**
+         * SQLite Android Bindings ship FTS5 in `libsqliteX.so`, but the AAR
+         * does not load it automatically. `System.loadLibrary` must run before
+         * the first SQLite call; `lazy` makes it happen exactly once.
+         */
+        val nativeLoaded: Boolean by lazy {
+            System.loadLibrary("sqliteX")
+            true
+        }
+    }
+
     init {
+        check(nativeLoaded)
+        db = SQLiteDatabase.openDatabase(
+            dbFile.absolutePath,
+            null,
+            SQLiteDatabase.OPEN_READONLY or SQLiteDatabase.NO_LOCALIZED_COLLATORS
+        )
+        stemDb = SQLiteDatabase.create(null as SQLiteDatabase.CursorFactory?)
         stemDb.execSQL(
             "CREATE VIRTUAL TABLE gate_stem_helper USING fts5(x, tokenize='porter unicode61 remove_diacritics 2')"
         )
