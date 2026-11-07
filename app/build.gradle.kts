@@ -83,6 +83,8 @@ android {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.2")
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
@@ -93,6 +95,7 @@ dependencies {
     // SQLite Android Bindings: FTS5 + porter tokenizer on device.
     implementation("mil.nga:sqlite-android:3450200")
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
     testImplementation("org.xerial:sqlite-jdbc:3.45.3.0")
     testImplementation("com.microsoft.onnxruntime:onnxruntime:1.18.0")
 

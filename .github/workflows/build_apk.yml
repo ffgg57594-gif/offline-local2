@@ -312,6 +312,30 @@ jobs:
           done
           echo "| Total APK | $TOTAL |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+      - name: Assemble K5a report
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p build/reports/k5a
+          APK=$(ls app/build/outputs/apk/release/*.apk 2>/dev/null | head -1 || true)
+          if [ -z "$APK" ]; then
+            APK=$(ls app/build/outputs/apk/debug/*.apk 2>/dev/null | head -1 || true)
+          fi
+          python3 scripts/make_k5a_report.py \
+            --apk "$APK" \
+            --previous-release-tag build-153 \
+            --repo "$GITHUB_REPOSITORY" \
+            --run-url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --commit "$GITHUB_SHA" | tee build/reports/k5a/k5a_report.log
+          cat build/reports/k5a/k5a_report.md >> $GITHUB_STEP_SUMMARY
+      - name: Upload K5a reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k5a-reports
+          path: build/reports/k5a/
+          if-no-files-found: warn
       - name: K4d emulator/APK report
         if: always()
         run: |
@@ -369,5 +393,8 @@ jobs:
             build/reports/k4/k4_summary.json
             build/reports/k4/junit_tests.csv
             build/reports/k4/junit_summary.md
+            build/reports/k5a/k5a_report.md
+            build/reports/k5a/k5a_summary.json
+            build/reports/k5a/e2e_10.csv
             eval/batch_padding.csv
             eval/batch_padding_summary.json

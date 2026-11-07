@@ -87,6 +87,38 @@ class AndroidChunkRepository(
         }
     }
 
+    override fun getNeighbour(chunkId: Int, delta: Int): Chunk? {
+        if (delta == 0) return getById(chunkId)
+        val comparison = if (delta > 0) ">" else "<"
+        val order = if (delta > 0) "ASC" else "DESC"
+        val query = """
+            SELECT c.id, b.name, c.page, c.section, c.text
+            FROM chunks c
+            JOIN books b ON b.id = c.book_id
+            WHERE c.book_id = (SELECT book_id FROM chunks WHERE id = ?)
+              AND c.id $comparison ?
+            ORDER BY c.id $order
+            LIMIT 1
+        """.trimIndent()
+        val db = openDb()
+        try {
+            db.rawQuery(query, arrayOf(chunkId.toString(), chunkId.toString())).use { cursor ->
+                if (cursor.moveToFirst()) {
+                    return Chunk(
+                        id = cursor.getInt(0),
+                        bookName = cursor.getString(1),
+                        page = cursor.getInt(2),
+                        section = cursor.getString(3) ?: "",
+                        text = cursor.getString(4)
+                    )
+                }
+            }
+            return null
+        } finally {
+            db.close()
+        }
+    }
+
     override fun getAllPages(expectedCount: Int): IntArray {
         val db = openDb()
         try {

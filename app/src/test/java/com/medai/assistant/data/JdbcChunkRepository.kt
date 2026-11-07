@@ -89,6 +89,39 @@ class JdbcChunkRepository(
         return ids.mapNotNull { results[it] }
     }
 
+    override fun getNeighbour(chunkId: Int, delta: Int): Chunk? {
+        if (delta == 0) return getById(chunkId)
+        val comparison = if (delta > 0) ">" else "<"
+        val order = if (delta > 0) "ASC" else "DESC"
+        val query = """
+            SELECT c.id, b.name, c.page, c.section, c.text
+            FROM chunks c
+            JOIN books b ON b.id = c.book_id
+            WHERE c.book_id = (SELECT book_id FROM chunks WHERE id = ?)
+              AND c.id $comparison ?
+            ORDER BY c.id $order
+            LIMIT 1
+        """.trimIndent()
+        getConnection().use { conn ->
+            conn.prepareStatement(query).use { stmt ->
+                stmt.setInt(1, chunkId)
+                stmt.setInt(2, chunkId)
+                stmt.executeQuery().use { rs ->
+                    if (rs.next()) {
+                        return Chunk(
+                            id = rs.getInt(1),
+                            bookName = rs.getString(2),
+                            page = rs.getInt(3),
+                            section = rs.getString(4) ?: "",
+                            text = rs.getString(5)
+                        )
+                    }
+                }
+            }
+        }
+        return null
+    }
+
     override fun getAllPages(expectedCount: Int): IntArray {
         val pages = IntArray(expectedCount)
         val query = "SELECT id, page FROM chunks ORDER BY id ASC"
