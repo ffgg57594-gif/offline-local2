@@ -282,7 +282,7 @@ fun DebugScreen(onBack: () -> Unit) {
                         result.hits.forEachIndexed { index, item ->
                             Text(
                                 "#${index + 1} chunk ${item.hit.chunkId} | " +
-                                    "page ${item.hit.page} | ${fmt(item.hit.score)}",
+                                    "page ${item.hit.page} | ${fmt(item.hit.score.toDouble())}",
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.SemiBold
                             )
