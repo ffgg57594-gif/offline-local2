@@ -1,6 +1,7 @@
 package com.medai.assistant.gate
 
 import java.io.File
+import java.util.Locale
 
 data class GatePreset(
     val t1: Double,
@@ -18,7 +19,7 @@ data class GateConfig(
     val strict: GatePreset,
     val margin: Double
 ) {
-    fun preset(name: String): GatePreset = when (name.lowercase()) {
+    fun preset(name: String): GatePreset = when (name.lowercase(Locale.ROOT)) {
         "balanced" -> balanced
         "strict" -> strict
         else -> error("Unknown gate preset '$name' (expected balanced or strict)")

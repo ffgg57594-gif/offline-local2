@@ -1,9 +1,9 @@
 package com.medai.assistant.gate
 
+import com.medai.assistant.Patterns
 import java.io.File
 import java.text.Normalizer
 import java.util.Locale
-import java.util.regex.Pattern
 
 /**
  * Vocabulary and normalization rules for the refusal gate.
@@ -25,12 +25,12 @@ data class GateVocab(
     val ftsTokenizer: String,
     val unicodeForm: String = "NFKC"
 ) {
-    private val whitespacePattern: Regex = unicodeRegex("\\s+")
+    private val whitespacePattern: Regex = Patterns.WHITESPACE
     private val hyphenCharSet: Set<Char> = hyphenLikeChars.mapNotNull { it.firstOrNull() }.toSet()
     private val variantPatterns: List<Pair<Regex, String>> = variantMap.entries
         .sortedByDescending { it.key.length }
         .map { (source, target) ->
-            unicodeRegex("\\b" + Pattern.quote(source) + "\\b") to target
+            Patterns.variant(source) to target
         }
 
     /** Mirrors `text_normalize.normalize_text` exactly. */
@@ -88,12 +88,6 @@ data class GateVocab(
                 ?.map { it.asString() }
                 ?: emptyList()
 
-            val possessive = normalization["possessive_pattern"]?.asString()
-                ?: "['\u2019]s\\b"
-            val tokenPattern = normalization["token_pattern_kotlin"]?.asString()
-                ?: normalization["token_pattern_python"]?.asString()
-                ?: "\\w+"
-
             val hyphenCompounds = normalization["hyphen_compounds"]?.asObject()
                 ?.mapValues { (_, value) -> value.asArray().map { it.asString() } }
                 ?: emptyMap()
@@ -109,15 +103,12 @@ data class GateVocab(
                 variantMap = variantMap,
                 zeroWidthChars = zeroWidthChars,
                 hyphenLikeChars = hyphenLikeChars,
-                possessivePattern = unicodeRegex(possessive),
-                tokenPattern = unicodeRegex(tokenPattern),
+                possessivePattern = Patterns.POSSESSIVE,
+                tokenPattern = Patterns.TOKEN,
                 hyphenCompounds = hyphenCompounds,
                 ftsTokenizer = ftsTokenizer,
                 unicodeForm = unicodeForm
             )
         }
-
-        private fun unicodeRegex(pattern: String): Regex =
-            Pattern.compile(pattern, Pattern.UNICODE_CHARACTER_CLASS).toRegex()
     }
 }

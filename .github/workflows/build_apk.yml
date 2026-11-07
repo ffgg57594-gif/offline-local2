@@ -11,6 +11,10 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+      - name: K4d job start timestamp
+        run: echo "K4D_JOB_START=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -58,6 +62,8 @@ jobs:
             eval/retrieval_top5.meta.json
       - name: Make reference vectors
         run: python scripts/make_reference_vectors.py
+      - name: Make tokenizer reference (K4d)
+        run: python scripts/make_tokenizer_reference.py
       - name: Benchmark embedder latency
         run: python scripts/benchmark_embedder.py
       - name: Print candidate alternates
@@ -115,6 +121,21 @@ jobs:
         with:
           name: gate-signals-csv
           path: eval/gate_signals.csv
+      - name: K4d regex guard (Android ICU)
+        run: |
+          mkdir -p build/reports/k4d
+          {
+            echo "=== BEFORE: HEAD~1 app/src/main ==="
+            git grep -n -E 'UNICODE_CHARACTER_CLASS|\(\?U' HEAD~1 -- app/src/main || echo "(no matches)"
+            echo ""
+            echo "=== AFTER: working tree app/src/main ==="
+            grep -rnI -E 'UNICODE_CHARACTER_CLASS|\(\?U' app/src/main || echo "(no matches)"
+          } | tee build/reports/k4d/regex_grep.txt
+          if grep -rqI -E 'UNICODE_CHARACTER_CLASS|\(\?U' app/src/main; then
+            echo "FAIL: Android-incompatible regex flag found in app/src/main" | tee -a build/reports/k4d/regex_grep.txt
+            exit 1
+          fi
+          echo "PASS: no UNICODE_CHARACTER_CLASS and no inline (?U in app/src/main" | tee -a build/reports/k4d/regex_grep.txt
       - name: Gradle cache
         uses: actions/cache@v4
         with:
@@ -130,6 +151,12 @@ jobs:
       - name: Collect K4 test results
         if: always()
         run: python scripts/collect_k4_test_results.py
+      - name: Stage androidTest reference assets (K4d)
+        run: |
+          mkdir -p app/src/androidTest/assets
+          cp app/src/test/resources/tokenizer_reference.json app/src/androidTest/assets/tokenizer_reference.json
+          cp eval/retrieval_top5.csv app/src/androidTest/assets/retrieval_top5.csv
+          ls -l app/src/androidTest/assets
       - name: Print kotlin-parity sha256 (K4c)
         if: always()
         run: |
@@ -163,7 +190,87 @@ jobs:
         with:
           name: parity-reports
           path: build/reports/parity/
+      - name: K4d stop Gradle daemons to free RAM for emulator
+        run: ./gradlew --stop
+      - name: K4d free runner disk space for ~150 MB app
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc || true
+          df -h /
+          free -h
+      - name: K4d enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: K4d emulator start timestamp
+        run: echo "K4D_EMULATOR_START=$(date +%s)" >> "$GITHUB_ENV"
+      - name: K4d emulator boot + connectedDebugAndroidTest
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_5
+          disable-animations: true
+          emulator-boot-timeout: 1200
+          emulator-options: >-
+            -no-window -gpu swiftshader_indirect -no-snapshot -noaudio
+            -no-boot-anim -camera-back none -camera-front none
+            -partition-size 4096 -memory 3072 -wipe-data
+          script: |
+            set -e
+            mkdir -p build/reports/k4d
+            adb wait-for-device
+            until [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; do
+              sleep 2
+            done
+            BOOT_OBSERVED=$(date +%s)
+            {
+              echo "boot_completed_at_epoch=$BOOT_OBSERVED"
+              echo "emulator_boot_seconds=$((BOOT_OBSERVED - ${K4D_EMULATOR_START:-$BOOT_OBSERVED}))"
+              echo "model=$(adb shell getprop ro.product.model | tr -d '\r')"
+              echo "device=$(adb shell getprop ro.product.device | tr -d '\r')"
+              echo "api=$(adb shell getprop ro.build.version.sdk | tr -d '\r')"
+              echo "release=$(adb shell getprop ro.build.version.release | tr -d '\r')"
+              echo "abi=$(adb shell getprop ro.product.cpu.abi | tr -d '\r')"
+              echo "abilist=$(adb shell getprop ro.product.cpu.abilist | tr -d '\r')"
+            } | tee build/reports/k4d/device_info.txt
+            adb shell df -h /data | tee -a build/reports/k4d/device_info.txt
+            free -h | tee -a build/reports/k4d/device_info.txt
+            df -h . | tee -a build/reports/k4d/device_info.txt
+            TEST_START=$(date +%s)
+            ./gradlew connectedDebugAndroidTest --no-daemon --stacktrace
+            TEST_END=$(date +%s)
+            echo "connected_test_seconds=$((TEST_END - TEST_START))" | tee -a build/reports/k4d/device_info.txt
+      - name: K4d collect androidTest results
+        if: always()
+        run: python scripts/collect_androidtest_results.py
+      - name: K4d print debug APK ABI
+        if: always()
+        run: |
+          mkdir -p build/reports/k4d
+          APK=$(ls app/build/outputs/apk/debug/*.apk 2>/dev/null | head -1 || true)
+          if [ -n "$APK" ]; then
+            LIBS=$(unzip -l "$APK" | awk '{print $4}' | grep '^lib/' | cut -d/ -f2 | sort -u | tr '\n' ' ')
+            {
+              echo "debug_apk=$APK"
+              echo "debug_apk_abi_directories=$LIBS"
+            } | tee build/reports/k4d/abi.txt
+            case " $LIBS " in
+              *" arm64-v8a "*) ;;
+              *) echo "debug APK is missing arm64-v8a - FAIL"; exit 1 ;;
+            esac
+            case " $LIBS " in
+              *" x86_64 "*) ;;
+              *) echo "debug APK is missing x86_64 (emulator) - FAIL"; exit 1 ;;
+            esac
+          else
+            echo "debug_apk=NOT FOUND" | tee build/reports/k4d/abi.txt
+            exit 1
+          fi
       - name: Assemble release
+        # Same-job guard: if the emulator step group failed, no release is built.
+        if: success()
         run: ./gradlew assembleRelease
       - name: Sign APK
         env:
@@ -196,6 +303,11 @@ jobs:
           # K4: arm64-v8a only
           LIBS=$(unzip -l "$APK" | awk '{print $4}' | grep '^lib/' | cut -d/ -f2 | sort -u | tr '\n' ' ')
           echo "APK ABI directories: $LIBS"
+          mkdir -p build/reports/k4d
+          {
+            echo "release_apk=$APK"
+            echo "release_apk_abi_directories=$LIBS"
+          } >> build/reports/k4d/abi.txt
           if [ "$LIBS" != "arm64-v8a " ]; then echo "APK is not arm64-v8a only - FAIL"; exit 1; fi
           # K4: no INTERNET permission
           AAPT=$(ls "$ANDROID_HOME"/build-tools/*/aapt | sort -V | tail -1)
@@ -220,6 +332,17 @@ jobs:
           done
           echo "| Total APK | $TOTAL |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+      - name: K4d emulator/APK report
+        if: always()
+        run: |
+          set -o pipefail
+          python3 scripts/k4d_report.py \
+            --repo "$GITHUB_REPOSITORY" \
+            --current-tag "build-${{ github.run_number }}" \
+            --job-start-epoch "${K4D_JOB_START:-0}" | tee build/reports/k4d/k4d_report.log
+          cat build/reports/k4d/k4d_report.md >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "K4d total job seconds: $(( $(date +%s) - ${K4D_JOB_START:-$(date +%s)} ))" | tee -a build/reports/k4d/device_info.txt
       - name: Assemble K4 report
         if: always()
         run: |
@@ -242,6 +365,13 @@ jobs:
             build/reports/parity/gate_python_definitions.txt
             eval/batch_padding.csv
             eval/batch_padding_summary.json
+      - name: Upload K4d reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k4d-reports
+          path: build/reports/k4d/
+          if-no-files-found: warn
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:

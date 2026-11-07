@@ -1,5 +1,7 @@
 package com.medai.assistant.data
 
+import com.medai.assistant.Patterns
+
 data class ManifestAsset(
     val name: String,
     val size: Long,
@@ -15,13 +17,12 @@ data class ManifestData(
 object ManifestParser {
     fun parse(jsonString: String): ManifestData {
         // Pure Kotlin JSON parser for standard manifests without android.os/org.json JVM stub issues
-        val chunkCount = Regex("\"chunk_count\"\\s*:\\s*(\\d+)").find(jsonString)?.groupValues?.get(1)?.toInt() ?: 0
-        val chunkTextsSha256 = Regex("\"chunk_texts_sha256\"\\s*:\\s*\"([^\"]+)\"").find(jsonString)?.groupValues?.get(1) ?: ""
+        val chunkCount = Patterns.MANIFEST_CHUNK_COUNT.find(jsonString)?.groupValues?.get(1)?.toInt() ?: 0
+        val chunkTextsSha256 = Patterns.MANIFEST_CHUNK_TEXT_SHA.find(jsonString)?.groupValues?.get(1) ?: ""
 
         val assets = mutableListOf<ManifestAsset>()
         // Match each asset block: { "name": ..., "size": ..., "sha256": ... }
-        val assetBlockRegex = Regex("\\{\\s*\"name\"\\s*:\\s*\"([^\"]+)\"\\s*,\\s*\"size\"\\s*:\\s*(\\d+)\\s*,\\s*\"sha256\"\\s*:\\s*\"([^\"]+)\"\\s*\\}")
-        assetBlockRegex.findAll(jsonString).forEach { match ->
+        Patterns.MANIFEST_ASSET_BLOCK.findAll(jsonString).forEach { match ->
             val name = match.groupValues[1]
             val size = match.groupValues[2].toLong()
             val sha256 = match.groupValues[3]

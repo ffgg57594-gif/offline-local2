@@ -137,19 +137,39 @@ def main() -> int:
             "build/reports/k4/junit_tests.csv",
         ),
         (
-            "On-device FTS5 MATCH button",
-            "BUILT, NOT EXECUTED ON A DEVICE",
-            "Compiled into the APK; CI has no Android device",
+            "Tokenizer 416-case parity on device",
+            "REAL: androidTest on API 34 x86_64 emulator",
+            "build/reports/k4d/android_test_results.csv (DeviceTokenizerParityTest)",
+        ),
+        (
+            "Embedder 24-vector parity on device",
+            "REAL: androidTest on API 34 x86_64 emulator",
+            "build/reports/k4d/android_test_results.csv (DeviceEmbedderParityTest)",
+        ),
+        (
+            "Gate stems/s3/s4 120/120 parity on device",
+            "REAL: androidTest on API 34 x86_64 emulator",
+            "build/reports/k4d/android_test_results.csv (DeviceGateStemsParityTest, DeviceGateContentStemsTest)",
+        ),
+        (
+            "Full pipeline balanced/strict 120/120 on device",
+            "REAL: androidTest on API 34 x86_64 emulator",
+            "build/reports/k4d/android_test_results.csv (DevicePipelineParityTest)",
+        ),
+        (
+            "On-device FTS5 MATCH on the real 1185-chunk DB",
+            "REAL: androidTest on API 34 x86_64 emulator",
+            "build/reports/k4d/android_test_results.csv (DeviceFts5Test)",
         ),
         (
             "Debug gate screen (balanced/strict toggle)",
             "BUILT, NOT EXECUTED ON A DEVICE",
-            "Compiled into the APK; CI has no Android device",
+            "Gate/pipeline logic is exercised by androidTest, but the Compose UI itself is not driven on the emulator",
         ),
         (
             "APK install/run on an ARM64 phone",
             "NOT EXECUTED",
-            "CI builds and signs the APK only",
+            "The emulator is x86_64; the arm64-v8a release APK is only built, signed and inspected in CI",
         ),
     ]
 

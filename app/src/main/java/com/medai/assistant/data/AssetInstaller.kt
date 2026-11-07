@@ -11,6 +11,7 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.security.MessageDigest
+import java.util.Locale
 
 sealed interface InstallState {
     data object Idle : InstallState
@@ -57,13 +58,7 @@ class AssetInstaller(
         val sha256: String
     )
 
-    private val bigAssetExtensions = listOf(".db", ".bin", ".onnx", ".json")
-
-    private fun isBigAsset(name: String): Boolean {
-        return name == "books_knowledge.db" ||
-                name == "embeddings.bin" ||
-                name.startsWith("models/")
-    }
+    private fun isBigAsset(name: String): Boolean = isBigAssetName(name)
 
     suspend fun install(): File = withContext(Dispatchers.IO) {
         try {
@@ -175,10 +170,48 @@ class AssetInstaller(
     }
 
     companion object {
+        private fun isBigAssetName(name: String): Boolean {
+            return name == "books_knowledge.db" ||
+                    name == "embeddings.bin" ||
+                    name.startsWith("models/")
+        }
+
+        /**
+         * Re-hashes every installed big asset and compares it with the manifest.
+         * Returns "PASS (n files)" or a compact "FAIL: ..." string for the
+         * diagnostics report.
+         */
+        fun verifyInstalledAssets(installDir: File, manifestText: String): String {
+            val manifest = ManifestParser.parse(manifestText)
+            val problems = mutableListOf<String>()
+            var checked = 0
+            for (asset in manifest.assets) {
+                if (!isBigAssetName(asset.name)) continue
+                checked++
+                val file = File(installDir, asset.name)
+                if (!file.exists()) {
+                    problems.add("${asset.name}: missing")
+                    continue
+                }
+                if (file.length() != asset.size) {
+                    problems.add("${asset.name}: size ${file.length()} != ${asset.size}")
+                    continue
+                }
+                if (computeFileSha256(file) != asset.sha256) {
+                    problems.add("${asset.name}: sha256 mismatch")
+                }
+            }
+            return if (problems.isEmpty()) {
+                "PASS ($checked files)"
+            } else {
+                "FAIL: " + problems.joinToString("; ")
+            }
+        }
+
         fun computeSha256(bytes: ByteArray): String {
             val md = MessageDigest.getInstance("SHA-256")
             val digest = md.digest(bytes)
-            return digest.joinToString("") { "%02x".format(it) }
+            return digest.joinToString("") { String.format(Locale.ROOT, "%02x", it) }
         }
 
         fun computeFileSha256(file: File): String {
@@ -191,7 +224,7 @@ class AssetInstaller(
                     md.update(buffer, 0, read)
                 }
             }
-            return md.digest().joinToString("") { "%02x".format(it) }
+            return md.digest().joinToString("") { String.format(Locale.ROOT, "%02x", it) }
         }
     }
 }

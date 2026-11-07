@@ -1,5 +1,6 @@
 package com.medai.assistant.tokenizer
 
+import com.medai.assistant.Patterns
 import java.io.File
 import java.io.FileInputStream
 import java.io.InputStream
@@ -423,7 +424,7 @@ class Tokenizer private constructor(
             }
         }
         val nfkc = java.text.Normalizer.normalize(sb.toString(), java.text.Normalizer.Form.NFKC)
-        return nfkc.replace(Regex(" {2,}"), " ")
+        return nfkc.replace(Patterns.DOUBLE_SPACE, " ")
     }
 
     /**
@@ -511,7 +512,7 @@ class Tokenizer private constructor(
                 i += charCount
             }
             // Replace {2,} spaces with single space
-            return sb.toString().replace(Regex(" {2,}"), " ")
+            return sb.toString().replace(Patterns.DOUBLE_SPACE, " ")
         }
     }
 

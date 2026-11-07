@@ -12,6 +12,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
@@ -22,6 +25,7 @@ import com.medai.assistant.data.Chunk
 import com.medai.assistant.data.ChunkRepository
 import com.medai.assistant.data.ContextAssetSource
 import com.medai.assistant.data.InstallState
+import com.medai.assistant.diagnostics.Diagnostics
 import com.medai.assistant.embedder.OnnxEmbedder
 import com.medai.assistant.gate.AndroidGateDatabase
 import com.medai.assistant.gate.GateConfig
@@ -32,6 +36,7 @@ import com.medai.assistant.gate.GateVocab
 import com.medai.assistant.search.DenseSearch
 import com.medai.assistant.search.SearchResult
 import com.medai.assistant.tokenizer.Tokenizer
+import com.medai.assistant.ui.SettingsSheet
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -63,9 +68,19 @@ class MainActivity : ComponentActivity() {
         installer = AssetInstaller(targetBaseDir = filesDir, assetSource = assetSource)
 
         lifecycleScope.launch {
+            Diagnostics.installStatus = "installing"
             try {
                 val installedDir = installer.install()
+                Diagnostics.installStatus = "READY (${installedDir.name})"
                 withContext(Dispatchers.IO) {
+                    val manifestText = assetSource.getManifestText()
+                    Diagnostics.assetHashCheck = try {
+                        AssetInstaller.verifyInstalledAssets(installedDir, manifestText)
+                    } catch (e: Exception) {
+                        Diagnostics.recordException(e)
+                        "ERROR: ${e.message ?: e.javaClass.simpleName}"
+                    }
+
                     val dbFile = File(installedDir, "books_knowledge.db")
                     var repo: ChunkRepository? = null
                     var pagesArray = IntArray(1185)
@@ -80,9 +95,9 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    // Load tokenizer
-                    val tokBin = File(installedDir, "tokenizer.bin")
-                    val tokJson = File(installedDir, "tokenizer.json")
+                    // Installed big assets keep the manifest's relative path.
+                    val tokBin = File(installedDir, "models/embedder/tokenizer.bin")
+                    val tokJson = File(installedDir, "models/embedder/tokenizer.json")
                     val tok = if (tokBin.exists()) {
                         Tokenizer.fromBinaryFile(tokBin)
                     } else if (tokJson.exists()) {
@@ -93,13 +108,14 @@ class MainActivity : ComponentActivity() {
                     }
 
                     // Load ONNX Embedder
-                    val modelFile = File(installedDir, "model_quantized.onnx")
+                    val modelFile = File(installedDir, "models/embedder/model_quantized.onnx")
                     if (modelFile.exists() && tok != null) {
                         val emb = OnnxEmbedder(modelFile, tok)
                         val loadTime = emb.loadTimeMs
                         withContext(Dispatchers.Main) {
                             embedder = emb
                             modelLoadTimeMs = loadTime
+                            Diagnostics.modelLoadMs = loadTime
                         }
                     }
 
@@ -134,13 +150,15 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     } catch (e: Exception) {
+                        Diagnostics.recordException(e)
                         withContext(Dispatchers.Main) {
                             gateInitError = e.message ?: e.javaClass.simpleName
                         }
                     }
                 }
             } catch (e: Exception) {
-                // InstallState.Failed is already set by installer
+                Diagnostics.installStatus = "FAILED: ${e.message ?: e.javaClass.simpleName}"
+                Diagnostics.recordException(e)
             }
         }
 
@@ -185,7 +203,9 @@ data class SearchTiming(
     val tokenizeMs: Long,
     val embedMs: Long,
     val searchMs: Long,
-    val totalMs: Long
+    val totalMs: Long,
+    /** -1 when the refusal-gate signals were not part of this request. */
+    val gateSignalsMs: Long = -1L
 )
 
 data class BenchmarkSummary(
@@ -207,7 +227,10 @@ data class GateUiResult(
     val stems: List<String>,
     val unknownStems: List<String>,
     val top3ChunkIds: List<Int>,
-    val accepted: Boolean
+    val accepted: Boolean,
+    val gateAvailable: Boolean,
+    val gateError: String?,
+    val top3: List<Pair<SearchResult, Chunk?>>
 )
 
 const val GATE_REJECTION_SENTENCE = "هذه المعلومة غير مذكورة في الكتب الطبية المدمجة في التطبيق."
@@ -263,13 +286,36 @@ fun DebugScreen(
     var ftsError by remember { mutableStateOf<String?>(null) }
 
     val coroutineScope = rememberCoroutineScope()
+    val appContext = LocalContext.current
+    val clipboard = LocalClipboardManager.current
+    var showSettings by remember { mutableStateOf(false) }
     val isReady = repository != null && tokenizer != null && embedder != null && denseSearch != null
-    val isGateReady = isReady && gateVocab != null && gateConfig != null && gateDatabase != null
+
+    if (showSettings) {
+        SettingsSheet(
+            onDismiss = { showSettings = false },
+            onCopyDiagnostics = {
+                val report = try {
+                    Diagnostics.buildReport(appContext)
+                } catch (e: Exception) {
+                    Diagnostics.recordException(e)
+                    "تعذّر إنشاء تقرير التشخيص: ${e.message ?: e.javaClass.simpleName}"
+                }
+                clipboard.setText(AnnotatedString(report))
+                showSettings = false
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("MedAI Debug / K4") },
+                actions = {
+                    TextButton(onClick = { showSettings = true }) {
+                        Text("الإعدادات")
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -349,11 +395,17 @@ fun DebugScreen(
                                 try {
                                     val (resultsWithChunks, timing) = withContext(Dispatchers.Default) {
                                         val t0 = System.nanoTime()
-                                        // embedQuery already prepends "query: " internally
-                                        val emb = embedder!!.embedQuery(queryText)
+                                        // Measure the tokenizer separately for the
+                                        // diagnostics report (embedQuery tokenizes again).
+                                        tokenizer!!.encode(
+                                            OnnxEmbedder.QUERY_PREFIX + queryText,
+                                            OnnxEmbedder.MAX_LENGTH
+                                        )
                                         val t1 = System.nanoTime()
-                                        val hits = denseSearch!!.search(emb, k = 3)
+                                        val emb = embedder!!.embedQuery(queryText)
                                         val t2 = System.nanoTime()
+                                        val hits = denseSearch!!.search(emb, k = 3)
+                                        val t3 = System.nanoTime()
 
                                         val withChunks = hits.map { hit ->
                                             val chunk = repository?.getById(hit.chunkId)
@@ -361,16 +413,18 @@ fun DebugScreen(
                                         }
 
                                         val tm = SearchTiming(
-                                            tokenizeMs = 0L,
-                                            embedMs = (t1 - t0) / 1_000_000,
-                                            searchMs = (t2 - t1) / 1_000_000,
-                                            totalMs = (t2 - t0) / 1_000_000
+                                            tokenizeMs = (t1 - t0) / 1_000_000,
+                                            embedMs = (t2 - t1) / 1_000_000,
+                                            searchMs = (t3 - t2) / 1_000_000,
+                                            totalMs = (t3 - t0) / 1_000_000
                                         )
                                         Pair(withChunks, tm)
                                     }
                                     searchResults = resultsWithChunks
                                     searchTiming = timing
+                                    Diagnostics.recordTimings(queryText, timing)
                                 } catch (e: Exception) {
+                                    Diagnostics.recordException(e)
                                     searchError = e.message ?: "Search failed"
                                 } finally {
                                     isSearching = false
@@ -407,7 +461,7 @@ fun DebugScreen(
                     searchResults.forEachIndexed { idx, (hit, chunk) ->
                         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                         Text(
-                            "#${idx + 1} Chunk ID ${hit.chunkId} | Page ${hit.page} | Score ${String.format("%.4f", hit.score)}",
+                            "#${idx + 1} Chunk ID ${hit.chunkId} | Page ${hit.page} | Score ${String.format(Locale.ROOT, "%.4f", hit.score)}",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold
                         )
@@ -435,7 +489,32 @@ fun DebugScreen(
                     )
 
                     if (gateInitError != null) {
-                        Text("Gate init error: $gateInitError", color = MaterialTheme.colorScheme.error)
+                        Surface(
+                            shape = MaterialTheme.shapes.small,
+                            color = MaterialTheme.colorScheme.errorContainer,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(10.dp),
+                                verticalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                Text(
+                                    "تعذّر تشغيل فلتر الرفض",
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                                Text(
+                                    gateInitError ?: "",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                                Text(
+                                    "ما زال البحث الدلالي يعمل ويعرض أقرب 3 مقاطع.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                            }
+                        }
                     }
 
                     OutlinedTextField(
@@ -459,51 +538,119 @@ fun DebugScreen(
 
                     Button(
                         onClick = {
-                            if (!isGateReady || gateRunning) return@Button
+                            if (!isReady || gateRunning) return@Button
                             gateRunning = true
                             gateError = null
                             coroutineScope.launch {
                                 try {
-                                    val result = withContext(Dispatchers.Default) {
+                                    val (result, timing) = withContext(Dispatchers.Default) {
                                         val question = gateQuestion
+                                        val t0 = System.nanoTime()
+                                        tokenizer!!.encode(
+                                            OnnxEmbedder.QUERY_PREFIX + question,
+                                            OnnxEmbedder.MAX_LENGTH
+                                        )
+                                        val t1 = System.nanoTime()
                                         val emb = embedder!!.embedQuery(question)
+                                        val t2 = System.nanoTime()
                                         val hits = denseSearch!!.search(emb, k = 3)
-                                        val signals = GateSignals.compute(
-                                            question,
-                                            hits.map { it.chunkId },
-                                            gateDatabase!!,
-                                            gateVocab!!
-                                        )
-                                        val preset = gateConfig!!.preset(gatePresetName)
+                                        val t3 = System.nanoTime()
+                                        val top3 = hits.map { hit ->
+                                            Pair(hit, repository?.getById(hit.chunkId))
+                                        }
                                         val s1 = hits.firstOrNull()?.score?.toDouble() ?: 0.0
-                                        GateUiResult(
-                                            preset = gatePresetName,
-                                            s1 = s1,
-                                            s3 = signals.s3CovTop3,
-                                            s4 = signals.s4Unknown,
-                                            t1 = preset.t1,
-                                            t3 = preset.t3,
-                                            k = preset.k,
-                                            stems = signals.stems,
-                                            unknownStems = signals.unknownStems,
-                                            top3ChunkIds = signals.top3ChunkIds,
-                                            accepted = GateDecision.accept(
-                                                s1,
-                                                signals.s3CovTop3,
-                                                signals.s4Unknown,
-                                                preset
+                                        val selectedPreset = gatePresetName
+                                        val vocab = gateVocab
+                                        val config = gateConfig
+                                        val database = gateDatabase
+
+                                        fun unavailable(errorText: String): GateUiResult =
+                                            GateUiResult(
+                                                preset = selectedPreset,
+                                                s1 = s1,
+                                                s3 = 0.0,
+                                                s4 = 0,
+                                                t1 = 0.0,
+                                                t3 = 0.0,
+                                                k = 0,
+                                                stems = emptyList(),
+                                                unknownStems = emptyList(),
+                                                top3ChunkIds = hits.map { it.chunkId },
+                                                accepted = false,
+                                                gateAvailable = false,
+                                                gateError = errorText,
+                                                top3 = top3
                                             )
+
+                                        val gateStarted = System.nanoTime()
+                                        val gateResultForRequest = if (
+                                            vocab != null && config != null && database != null
+                                        ) {
+                                            try {
+                                                val signals = GateSignals.compute(
+                                                    question,
+                                                    hits.map { it.chunkId },
+                                                    database,
+                                                    vocab
+                                                )
+                                                val preset = config.preset(selectedPreset)
+                                                GateUiResult(
+                                                    preset = selectedPreset,
+                                                    s1 = s1,
+                                                    s3 = signals.s3CovTop3,
+                                                    s4 = signals.s4Unknown,
+                                                    t1 = preset.t1,
+                                                    t3 = preset.t3,
+                                                    k = preset.k,
+                                                    stems = signals.stems,
+                                                    unknownStems = signals.unknownStems,
+                                                    top3ChunkIds = signals.top3ChunkIds,
+                                                    accepted = GateDecision.accept(
+                                                        s1,
+                                                        signals.s3CovTop3,
+                                                        signals.s4Unknown,
+                                                        preset
+                                                    ),
+                                                    gateAvailable = true,
+                                                    gateError = null,
+                                                    top3 = top3
+                                                )
+                                            } catch (e: Exception) {
+                                                // A gate failure must never hide the
+                                                // retrieval result; record it and
+                                                // fall back to the top-3 passages.
+                                                Diagnostics.recordException(e)
+                                                unavailable(
+                                                    e.message ?: e.javaClass.simpleName
+                                                )
+                                            }
+                                        } else {
+                                            unavailable(
+                                                gateInitError ?: "فلتر الرفض غير مهيأ"
+                                            )
+                                        }
+                                        val gateSignalsMs =
+                                            (System.nanoTime() - gateStarted) / 1_000_000
+                                        val tm = SearchTiming(
+                                            tokenizeMs = (t1 - t0) / 1_000_000,
+                                            embedMs = (t2 - t1) / 1_000_000,
+                                            searchMs = (t3 - t2) / 1_000_000,
+                                            totalMs = (t3 - t0) / 1_000_000,
+                                            gateSignalsMs = gateSignalsMs
                                         )
+                                        gateResultForRequest to tm
                                     }
                                     gateResult = result
+                                    Diagnostics.recordTimings(gateQuestion, timing)
                                 } catch (e: Exception) {
+                                    Diagnostics.recordException(e)
                                     gateError = e.message ?: "Gate check failed"
                                 } finally {
                                     gateRunning = false
                                 }
                             }
                         },
-                        enabled = isGateReady && !gateRunning && gateQuestion.isNotBlank()
+                        enabled = isReady && !gateRunning && gateQuestion.isNotBlank()
                     ) {
                         Text(if (gateRunning) "Checking..." else "Run gate check")
                     }
@@ -515,37 +662,80 @@ fun DebugScreen(
                     gateResult?.let { r ->
                         Surface(
                             shape = MaterialTheme.shapes.small,
-                            color = MaterialTheme.colorScheme.primaryContainer,
+                            color = if (r.gateAvailable) {
+                                MaterialTheme.colorScheme.primaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.errorContainer
+                            },
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Text(
-                                    "DECISION: ${if (r.accepted) "ACCEPT" else "REJECT"} (preset ${r.preset})",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    "s1 = ${String.format(Locale.ROOT, "%.6f", r.s1)}  (t1 = ${String.format(Locale.ROOT, "%.6f", r.t1)})",
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                                Text(
-                                    "s3 = ${String.format(Locale.ROOT, "%.6f", r.s3)}  (t3 = ${String.format(Locale.ROOT, "%.6f", r.t3)})",
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                                Text("s4 = ${r.s4}  (k = ${r.k})", style = MaterialTheme.typography.bodySmall)
-                                Text("top-3 chunk ids: ${r.top3ChunkIds.joinToString(", ")}", style = MaterialTheme.typography.bodySmall)
-                                Text("stems (${r.stems.size}): ${r.stems.joinToString(" ")}", style = MaterialTheme.typography.bodySmall)
-                                Text(
-                                    "unknown stems (${r.unknownStems.size}): " +
-                                        if (r.unknownStems.isEmpty()) "(none)" else r.unknownStems.joinToString(" "),
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                                if (!r.accepted) {
+                                if (!r.gateAvailable) {
                                     Text(
-                                        GATE_REJECTION_SENTENCE,
-                                        style = MaterialTheme.typography.bodyMedium,
+                                        "تعذّر تشغيل فلتر الرفض",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onErrorContainer
+                                    )
+                                    Text(
+                                        r.gateError ?: "",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onErrorContainer
+                                    )
+                                    Text(
+                                        "أقرب 3 نتائج من البحث الدلالي:",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onErrorContainer
+                                    )
+                                } else {
+                                    Text(
+                                        "DECISION: ${if (r.accepted) "ACCEPT" else "REJECT"} (preset ${r.preset})",
+                                        style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold
                                     )
+                                    Text(
+                                        "s1 = ${String.format(Locale.ROOT, "%.6f", r.s1)}  (t1 = ${String.format(Locale.ROOT, "%.6f", r.t1)})",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                    Text(
+                                        "s3 = ${String.format(Locale.ROOT, "%.6f", r.s3)}  (t3 = ${String.format(Locale.ROOT, "%.6f", r.t3)})",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                    Text("s4 = ${r.s4}  (k = ${r.k})", style = MaterialTheme.typography.bodySmall)
+                                    Text("top-3 chunk ids: ${r.top3ChunkIds.joinToString(", ")}", style = MaterialTheme.typography.bodySmall)
+                                    Text("stems (${r.stems.size}): ${r.stems.joinToString(" ")}", style = MaterialTheme.typography.bodySmall)
+                                    Text(
+                                        "unknown stems (${r.unknownStems.size}): " +
+                                            if (r.unknownStems.isEmpty()) "(none)" else r.unknownStems.joinToString(" "),
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                    if (!r.accepted) {
+                                        Text(
+                                            GATE_REJECTION_SENTENCE,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+
+                                r.top3.forEachIndexed { index, (hit, chunk) ->
+                                    HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
+                                    Text(
+                                        "#${index + 1} Chunk ${hit.chunkId} | page ${hit.page} | " +
+                                            String.format(Locale.ROOT, "%.4f", hit.score),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    chunk?.let { c ->
+                                        Text(
+                                            "${c.bookName}${if (c.section.isNotBlank()) " — ${c.section}" else ""}",
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                        Text(
+                                            if (c.text.length > 180) c.text.take(180) + "..." else c.text,
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -576,6 +766,7 @@ fun DebugScreen(
                                     }
                                     ftsRowCount = count
                                 } catch (e: Exception) {
+                                    Diagnostics.recordException(e)
                                     ftsError = e.message ?: "FTS5 check failed"
                                 } finally {
                                     ftsRunning = false
@@ -658,6 +849,7 @@ fun DebugScreen(
                                     benchmarkSummary = summary
                                     benchmarkStatus = "Benchmark complete (${summary.runsCount} runs)."
                                 } catch (e: Exception) {
+                                    Diagnostics.recordException(e)
                                     benchmarkStatus = "Benchmark error: ${e.message}"
                                 } finally {
                                     isBenchmarking = false

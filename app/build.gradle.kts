@@ -14,7 +14,15 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk { abiFilters += "arm64-v8a" }
+        val buildTimeUtc = java.text.SimpleDateFormat(
+            "yyyy-MM-dd'T'HH:mm:ss'Z'",
+            java.util.Locale.ROOT
+        ).apply {
+            timeZone = java.util.TimeZone.getTimeZone("UTC")
+        }.format(java.util.Date())
+        buildConfigField("String", "BUILD_TIME", "\"$buildTimeUtc\"")
     }
 
     signingConfigs {
@@ -30,6 +38,14 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Instrumented tests run on an x86_64 API 34 emulator. Release
+            // stays arm64-v8a only through defaultConfig above.
+            ndk {
+                abiFilters.clear()
+                abiFilters.addAll(listOf("arm64-v8a", "x86_64"))
+            }
+        }
         release {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
@@ -69,4 +85,10 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.xerial:sqlite-jdbc:3.45.3.0")
     testImplementation("com.microsoft.onnxruntime:onnxruntime:1.18.0")
+
+    // K4d device (emulator) parity suite.
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test:core:1.6.1")
+    androidTestImplementation("androidx.test:rules:1.6.1")
 }

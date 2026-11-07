@@ -30,6 +30,7 @@ class OnnxEmbedder(
         const val EMBED_DIM = 384
         const val MAX_LENGTH = 384
         const val QUERY_PREFIX = "query: "
+        const val PASSAGE_PREFIX = "passage: "
 
         /**
          * Pure function: Mean pooling over attention mask.
@@ -120,8 +121,16 @@ class OnnxEmbedder(
      * Prepend "query: ", truncate at 384 tokens, run ONNX inference,
      * apply mean pooling over attention mask, and L2 normalize.
      */
-    fun embedQuery(question: String): FloatArray {
-        val text = QUERY_PREFIX + question
+    fun embedQuery(question: String): FloatArray = embedWithPrefix(QUERY_PREFIX, question)
+
+    /**
+     * Embeds a passage. Only used by parity tests and future indexing tools;
+     * the app embeds queries at runtime.
+     */
+    fun embedPassage(passage: String): FloatArray = embedWithPrefix(PASSAGE_PREFIX, passage)
+
+    private fun embedWithPrefix(prefix: String, question: String): FloatArray {
+        val text = prefix + question
         val encoded = tokenizer.encode(text, MAX_LENGTH)
 
         val seqLen = encoded.ids.size
