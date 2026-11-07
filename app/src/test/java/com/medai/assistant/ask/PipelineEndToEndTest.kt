@@ -43,8 +43,14 @@ class PipelineEndToEndTest {
     @Test
     fun pipelineMatchesGoldenAndPythonReferenceForTenQuestions() {
         val golden = loadGolden(goldenFile)
-        val references = GateReference.load(GateTestAssets.reference).associateBy { it.id }
+        // Both reference files contain 60 in-scope and 60 out-of-scope rows, and
+        // each group numbers its questions from 1. Golden ids 1..10 are the
+        // in-scope questions, so filter the group before keying by id.
+        val references = GateReference.load(GateTestAssets.reference)
+            .filter { it.group == "in" }
+            .associateBy { it.id }
         val retrieval = GateTestAssets.parseCsv(GateTestAssets.retrievalCsv)
+            .filter { it["group"] == "in" }
             .associateBy { it.getValue("id").toInt() }
 
         val repository = JdbcChunkRepository(GateTestAssets.database)
