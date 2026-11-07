@@ -220,30 +220,7 @@ jobs:
             -no-boot-anim -camera-back none -camera-front none
             -partition-size 4096 -memory 3072 -wipe-data
           script: |
-            set -e
-            mkdir -p build/reports/k4d
-            adb wait-for-device
-            until [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; do
-              sleep 2
-            done
-            BOOT_OBSERVED=$(date +%s)
-            {
-              echo "boot_completed_at_epoch=$BOOT_OBSERVED"
-              echo "emulator_boot_seconds=$((BOOT_OBSERVED - ${K4D_EMULATOR_START:-$BOOT_OBSERVED}))"
-              echo "model=$(adb shell getprop ro.product.model | tr -d '\r')"
-              echo "device=$(adb shell getprop ro.product.device | tr -d '\r')"
-              echo "api=$(adb shell getprop ro.build.version.sdk | tr -d '\r')"
-              echo "release=$(adb shell getprop ro.build.version.release | tr -d '\r')"
-              echo "abi=$(adb shell getprop ro.product.cpu.abi | tr -d '\r')"
-              echo "abilist=$(adb shell getprop ro.product.cpu.abilist | tr -d '\r')"
-            } | tee build/reports/k4d/device_info.txt
-            adb shell df -h /data | tee -a build/reports/k4d/device_info.txt
-            free -h | tee -a build/reports/k4d/device_info.txt
-            df -h . | tee -a build/reports/k4d/device_info.txt
-            TEST_START=$(date +%s)
-            ./gradlew connectedDebugAndroidTest --no-daemon --stacktrace
-            TEST_END=$(date +%s)
-            echo "connected_test_seconds=$((TEST_END - TEST_START))" | tee -a build/reports/k4d/device_info.txt
+            bash scripts/run_k4d_emulator.sh
       - name: K4d collect androidTest results
         if: always()
         run: python scripts/collect_androidtest_results.py
