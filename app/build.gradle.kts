@@ -1,3 +1,8 @@
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -16,12 +21,12 @@ android {
         versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk { abiFilters += "arm64-v8a" }
-        val buildTimeUtc = java.text.SimpleDateFormat(
+        val buildTimeUtc = SimpleDateFormat(
             "yyyy-MM-dd'T'HH:mm:ss'Z'",
-            java.util.Locale.ROOT
+            Locale.ROOT
         ).apply {
-            timeZone = java.util.TimeZone.getTimeZone("UTC")
-        }.format(java.util.Date())
+            timeZone = TimeZone.getTimeZone("UTC")
+        }.format(Date())
         buildConfigField("String", "BUILD_TIME", "\"$buildTimeUtc\"")
     }
 
@@ -47,6 +52,11 @@ android {
             }
         }
         release {
+            // Keep the shipped APK arm64-v8a only even though debug adds x86_64.
+            ndk {
+                abiFilters.clear()
+                abiFilters.add("arm64-v8a")
+            }
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
