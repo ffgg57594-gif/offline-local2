@@ -350,7 +350,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: k4d-reports
-          path: build/reports/k4d/
+          path: |
+            build/reports/k4d/
+            app/build/outputs/androidTest-results/
           if-no-files-found: warn
       - name: Upload artifact
         uses: actions/upload-artifact@v4
