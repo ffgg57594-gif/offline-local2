@@ -49,6 +49,10 @@ DB_PATH = os.path.join("app", "src", "main", "assets", "books_knowledge.db")
 EMBEDDINGS_BIN = os.path.join("app", "src", "main", "assets", "embeddings.bin")
 EMBEDDINGS_META = os.path.join("app", "src", "main", "assets", "embeddings_meta.json")
 OUT_CSV = os.path.join("eval", "gate_signals.csv")
+# Exact query vectors used to compute the reference signals. Staged into the
+# instrumented-test APK so the on-device pipeline test can reproduce s1 with a
+# 1e-3 tolerance while the embedder itself is covered by its own vector test.
+QUERY_VECTORS_OUT = os.path.join("eval", "gate_query_vectors.csv")
 
 SIGNALS = ["s1_top1", "s2_margin", "s3_cov_top3", "s4_unknown", "s5_rare_cov_top3"]
 FLOAT_FIELDS = SIGNALS
@@ -102,11 +106,13 @@ def build_rows(in_scope, out_of_scope, conn, embeddings, chunk_meta):
                 target_by_id[obj["id"]] = obj.get("target_chunk_id")
 
     rows = []
+    vector_rows = []
     running = 0
     for group, qs in ((IN_GROUP, in_scope), (OUT_GROUP, out_of_scope)):
         for q in qs:
             vec = vecs[running]
             running += 1
+            vector_rows.append((group, q["id"], vec))
             sig = compute_signals(
                 q["q"],
                 conn=conn,
@@ -131,7 +137,26 @@ def build_rows(in_scope, out_of_scope, conn, embeddings, chunk_meta):
                 "key_terms": q.get("key_terms") or [],
                 "top1_text": text_by_cid.get(top1[0], ""),
             })
+    write_query_vectors(vector_rows)
     return rows
+
+
+def write_query_vectors(vector_rows):
+    """Write the exact query vectors behind `gate_reference.json`.
+
+    The on-device pipeline test replays these vectors through DenseSearch and
+    the refusal gate, so its s1 comparison isolates the ranking/gating port
+    (1e-3). The on-device embedder has separate 24-vector cosine parity.
+    """
+    header = ["group", "id"] + [f"v{i}" for i in range(384)]
+    with open(QUERY_VECTORS_OUT, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f, lineterminator="\n")
+        writer.writerow(header)
+        for group, question_id, vec in vector_rows:
+            writer.writerow(
+                [group, int(question_id)] + [repr(float(x)) for x in vec]
+            )
+    print(f"Wrote {QUERY_VECTORS_OUT} with {len(vector_rows)} vectors")
 
 
 def output_a_table(rows):

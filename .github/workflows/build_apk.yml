@@ -156,6 +156,7 @@ jobs:
           mkdir -p app/src/androidTest/assets
           cp app/src/test/resources/tokenizer_reference.json app/src/androidTest/assets/tokenizer_reference.json
           cp eval/retrieval_top5.csv app/src/androidTest/assets/retrieval_top5.csv
+          cp eval/gate_query_vectors.csv app/src/androidTest/assets/gate_query_vectors.csv
           ls -l app/src/androidTest/assets
       - name: K4d compile debug + androidTest APKs
         run: ./gradlew assembleDebug assembleDebugAndroidTest --stacktrace

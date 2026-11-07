@@ -21,6 +21,8 @@ __pycache__/
 .logs.zip
 eval/chunks_for_golden.jsonl
 eval/gate_signals.csv
+eval/gate_query_vectors.csv
+app/src/androidTest/assets/
 eval/batch_padding.csv
 eval/batch_padding_summary.json
 app/src/test/resources/tokenizer_reference.json
