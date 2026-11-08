@@ -103,8 +103,14 @@ adb shell svc power stayon true || true
 IME_PID=""
 for _ in $(seq 1 30); do
   adb shell ime set "$IME_ID" >/dev/null 2>&1 || true
-  IME_PID=$(adb shell pidof com.google.android.inputmethod.latin | tr -d '\r')
-  [ -n "$IME_PID" ] && break
+  # toybox `pidof` exits 1 when no process matches; with `set -o pipefail`
+  # that would abort the whole script on the first retry, so swallow it.
+  IME_PID=$(adb shell pidof com.google.android.inputmethod.latin 2>/dev/null | tr -d '\r' || true)
+  # A bare `[ ... ] && break` returns 1 on the first empty pid and, with
+  # `set -e`, aborts this script before the emulator tests even start.
+  if [ -n "$IME_PID" ]; then
+    break
+  fi
   sleep 1
 done
 if [ -z "$IME_PID" ]; then
@@ -114,7 +120,7 @@ if [ -z "$IME_PID" ]; then
     -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1 || true
   sleep 3
   adb shell input keyevent KEYCODE_HOME || true
-  IME_PID=$(adb shell pidof com.google.android.inputmethod.latin | tr -d '\r')
+  IME_PID=$(adb shell pidof com.google.android.inputmethod.latin 2>/dev/null | tr -d '\r' || true)
 fi
 # Let the IME process come back and read show_ime_with_hard_keyboard before the
 # first field is focused; otherwise the first showSoftInput() can race startup.
@@ -131,7 +137,7 @@ adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
   echo "imes=$(adb shell ime list -s | tr -d '\r' | tr '\n' ' ')"
   echo "default_input_method=$(adb shell settings get secure default_input_method | tr -d '\r')"
   echo "show_ime_with_hard_keyboard=$(adb shell settings get secure show_ime_with_hard_keyboard | tr -d '\r')"
-  echo "current_ime=$(adb shell dumpsys input_method | grep -m1 'mCurMethodId' | tr -d '\r')"
+  echo "current_ime=$(adb shell dumpsys input_method 2>/dev/null | grep -m1 'mCurMethodId' | tr -d '\r' || true)"
 } | tee -a "$REPORT_DIR/device_info.txt"
 
 TEST_START=$(date +%s)
