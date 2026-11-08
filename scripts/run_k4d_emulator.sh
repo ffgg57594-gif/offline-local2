@@ -75,16 +75,32 @@ pull_internal_dir() {
 }
 
 # AVDs expose a hardware keyboard, which suppresses the soft IME. K5b case 10
-# asserts that the input sits above a real IME inset, so force the IME on.
+# asserts that the input sits above a real IME inset, so force the IME on and
+# restart Gboard so it re-reads the setting instead of a cached value from boot.
+IME_ID=com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME
 adb shell settings put secure show_ime_with_hard_keyboard 1 || true
+adb shell settings put secure default_input_method "$IME_ID" || true
+adb shell am force-stop com.google.android.inputmethod.latin || true
+adb shell ime enable "$IME_ID" || true
+adb shell ime set "$IME_ID" || true
+# Let the IME process come back and read show_ime_with_hard_keyboard before the
+# first field is focused; otherwise the first showSoftInput() can race startup.
+sleep 5
+adb shell wm dismiss-keyguard || true
+adb shell input keyevent KEYCODE_WAKEUP || true
 {
   echo "imes=$(adb shell ime list -s | tr -d '\r' | tr '\n' ' ')"
+  echo "default_input_method=$(adb shell settings get secure default_input_method | tr -d '\r')"
   echo "show_ime_with_hard_keyboard=$(adb shell settings get secure show_ime_with_hard_keyboard | tr -d '\r')"
+  echo "current_ime=$(adb shell dumpsys input_method | grep -m1 'mCurMethodId' | tr -d '\r')"
 } | tee -a "$REPORT_DIR/device_info.txt"
 
 TEST_START=$(date +%s)
 set +e
-./gradlew connectedDebugAndroidTest --no-daemon --stacktrace
+# Keep the debug APKs installed after the run: AGP otherwise uninstalls them,
+# which deletes the app's internal files before the artifact pull below.
+./gradlew connectedDebugAndroidTest --no-daemon --stacktrace \
+  -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true
 TEST_STATUS=$?
 set -e
 TEST_END=$(date +%s)

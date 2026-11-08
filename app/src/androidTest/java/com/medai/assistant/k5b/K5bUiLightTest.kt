@@ -2,6 +2,7 @@ package com.medai.assistant.k5b
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.doubleClick
@@ -11,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.requestFocus
 import com.medai.assistant.ask.AskState
 import com.medai.assistant.ask.GATE_REFUSAL_SENTENCE
 import com.medai.assistant.ask.Passage
@@ -231,6 +233,8 @@ class K5bUiLightTest : K5bUiTestBase() {
     @Test
     fun case10FourLineInputGrowsAndStaysAboveKeyboard() {
         composeRule.onNodeWithTag("ask_input").performClick()
+        composeRule.onNodeWithTag("ask_input").requestFocus()
+        composeRule.onNodeWithTag("ask_input").assertIsFocused()
         val singleLineHeight = composeRule.onNodeWithTag("ask_input")
             .fetchSemanticsNode().size.height
         composeRule.onNodeWithTag("ask_input").performTextInput(

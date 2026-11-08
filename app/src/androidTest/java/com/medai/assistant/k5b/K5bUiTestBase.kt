@@ -15,6 +15,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.requestFocus
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.ViewModelProvider
@@ -200,13 +201,16 @@ abstract class K5bUiTestBase {
     }
 
     protected fun showKeyboard() {
+        composeRule.waitForIdle()
         composeRule.activityRule.scenario.onActivity { activity ->
             val imm = activity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            activity.window.decorView.requestFocus()
             val target = activity.currentFocus ?: activity.window.decorView
+            target.requestFocus()
             imm.showSoftInput(target, InputMethodManager.SHOW_IMPLICIT)
             imm.showSoftInput(target, InputMethodManager.SHOW_FORCED)
         }
-        var deadline = System.currentTimeMillis() + 8_000
+        var deadline = System.currentTimeMillis() + 20_000
         while (System.currentTimeMillis() < deadline && !imeVisible()) {
             Thread.sleep(200)
         }
@@ -214,7 +218,17 @@ abstract class K5bUiTestBase {
             // A focused Compose field normally opens the IME on tap; retry once
             // after the composition has settled.
             composeRule.onNodeWithTag("ask_input").performClick()
-            deadline = System.currentTimeMillis() + 8_000
+            composeRule.onNodeWithTag("ask_input").requestFocus()
+            composeRule.waitForIdle()
+            composeRule.activityRule.scenario.onActivity { activity ->
+                val imm =
+                    activity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                imm.showSoftInput(
+                    activity.currentFocus ?: activity.window.decorView,
+                    InputMethodManager.SHOW_FORCED
+                )
+            }
+            deadline = System.currentTimeMillis() + 20_000
             while (System.currentTimeMillis() < deadline && !imeVisible()) {
                 Thread.sleep(200)
             }
