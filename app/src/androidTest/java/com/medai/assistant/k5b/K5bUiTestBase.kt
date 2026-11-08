@@ -1,6 +1,7 @@
 package com.medai.assistant.k5b
 
 import android.content.Context
+import android.os.ParcelFileDescriptor
 import android.view.inputmethod.InputMethodManager
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -172,7 +173,39 @@ abstract class K5bUiTestBase {
 
     protected fun screenshot(name: String) {
         composeRule.waitForIdle()
+        awaitNoSystemErrorDialog(name)
         K5bArtifacts.screenshot(context, name)
+    }
+
+    /**
+     * Refuses to save a PNG that shows a system "isn't responding" dialog. If
+     * one is up, close it and fail with the window title instead of shipping a
+     * polluted screenshot as visual evidence.
+     */
+    private fun awaitNoSystemErrorDialog(name: String) {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        fun focusedWindow(): String {
+            val pfd = instrumentation.uiAutomation
+                .executeShellCommand("dumpsys window | grep -m2 mCurrentFocus")
+            return ParcelFileDescriptor.AutoCloseInputStream(pfd)
+                .bufferedReader().use { it.readText() }.trim()
+        }
+        fun isError(focus: String): Boolean =
+            focus.contains("Application Not Responding", ignoreCase = true) ||
+                focus.contains("Application Error", ignoreCase = true) ||
+                focus.contains("ErrorDialog", ignoreCase = true)
+
+        val deadline = System.currentTimeMillis() + 10_000
+        var focus = focusedWindow()
+        while (System.currentTimeMillis() < deadline) {
+            if (!isError(focus)) return
+            instrumentation.uiAutomation.executeShellCommand(
+                "am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS"
+            ).close()
+            Thread.sleep(500)
+            focus = focusedWindow()
+        }
+        throw AssertionError("screenshot $name blocked by a system dialog: $focus")
     }
 
     protected fun hasTagPrefix(prefix: String): SemanticsMatcher =

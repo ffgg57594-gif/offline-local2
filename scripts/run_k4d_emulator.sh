@@ -13,6 +13,13 @@ mkdir -p "$REPORT_DIR"
 
 adb wait-for-device
 
+# Headless emulators can ANR the launcher while the model loads; the modal
+# "isn't responding" dialog steals window focus (so the IME never shows) and
+# covers every screenshot. Suppress system error dialogs from the first moment.
+adb shell settings put global hide_error_dialogs 1 || true
+adb shell settings put global show_first_crash_dialog 0 || true
+adb shell settings put secure anr_show_background 0 || true
+
 BOOT_DEADLINE=$(( $(date +%s) + 900 ))
 until [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; do
   if [ "$(date +%s)" -ge "$BOOT_DEADLINE" ]; then
@@ -23,6 +30,8 @@ until [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1"
 done
 
 BOOT_OBSERVED=$(date +%s)
+# Re-apply the dialog suppression now that the settings provider is up.
+adb shell settings put global hide_error_dialogs 1 || true
 {
   echo "boot_completed_at_epoch=$BOOT_OBSERVED"
   echo "emulator_boot_seconds=$((BOOT_OBSERVED - ${K4D_EMULATOR_START:-$BOOT_OBSERVED}))"
@@ -112,6 +121,10 @@ fi
 sleep 5
 adb shell wm dismiss-keyguard || true
 adb shell input keyevent KEYCODE_WAKEUP || true
+# The launcher is not needed by the instrumented tests. Stop it so a late ANR
+# cannot put a system dialog back on top of the app.
+adb shell am force-stop com.google.android.apps.nexuslauncher || true
+adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
 {
   echo "ime_pid=${IME_PID:-none}"
   echo "screen_off_timeout=$(adb shell settings get system screen_off_timeout | tr -d '\r')"
