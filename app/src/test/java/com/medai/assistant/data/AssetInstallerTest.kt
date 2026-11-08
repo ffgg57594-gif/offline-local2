@@ -1,5 +1,6 @@
 package com.medai.assistant.data
 
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -211,12 +212,52 @@ class AssetInstallerTest {
     fun testReportsProgressDuringCopy() = runBlocking {
         val dummyBin = ByteArray(500 * 1024) { 42 } // 500 KB
         val fakeFiles = mapOf("embeddings.bin" to dummyBin)
-        val source = FakeAssetSource(fakeFiles)
+        val base = FakeAssetSource(fakeFiles)
+        val releaseEof = CompletableDeferred<Unit>()
+        // StateFlow conflates values. Hold the stream just before EOF until the
+        // collector has seen the final Copying state, so install() cannot
+        // replace it with Ready before the assertion runs.
+        val source = object : AssetSource {
+            override fun open(fileName: String): InputStream {
+                val delegate = base.open(fileName)
+                return object : java.io.FilterInputStream(delegate) {
+                    private var waited = false
+
+                    private fun waitForCollector() {
+                        if (!waited) {
+                            waited = true
+                            runBlocking { releaseEof.await() }
+                        }
+                    }
+
+                    override fun read(): Int {
+                        val value = super.read()
+                        if (value == -1) waitForCollector()
+                        return value
+                    }
+
+                    override fun read(b: ByteArray, off: Int, len: Int): Int {
+                        val count = super.read(b, off, len)
+                        if (count == -1) waitForCollector()
+                        return count
+                    }
+                }
+            }
+
+            override fun getManifestText(): String = base.getManifestText()
+
+            override fun getAvailableFreeSpace(): Long = base.getAvailableFreeSpace()
+        }
         val installer = AssetInstaller(targetBaseDir, source)
 
         val states = mutableListOf<InstallState>()
         val job = launch {
-            installer.installState.collect { states.add(it) }
+            installer.installState.collect { state ->
+                states.add(state)
+                if (state is InstallState.Copying && state.doneBytes == state.totalBytes) {
+                    releaseEof.complete(Unit)
+                }
+            }
         }
 
         installer.install()
