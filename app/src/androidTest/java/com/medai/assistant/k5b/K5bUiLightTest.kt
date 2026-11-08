@@ -172,6 +172,7 @@ class K5bUiLightTest : K5bUiTestBase() {
     fun case04CitationSheetPinnedHeaderFooterAndNavigation() {
         val state = submitWithSendButton("What causes bacterial vaginosis?")
         assertTrue("expected Results, got $state", state is AskState.Results)
+        waitForResultsScrollToSettle()
         // Use the longest of the three passages so the sheet really scrolls and
         // the top/bottom screenshots are guaranteed to show different content.
         val top = (state as AskState.Results).top3.maxByOrNull { it.text.length }
@@ -184,10 +185,8 @@ class K5bUiLightTest : K5bUiTestBase() {
         val citation = PassageText.citation(top.bookName, top.page)
 
         // The longest passage is not necessarily the first card, so scroll its
-        // citation chip into the viewport before injecting the tap.
-        composeRule.onNodeWithTag("citation_${top.chunkId}")
-            .performScrollTo()
-            .performClick()
+        // citation chip into the viewport before opening the sheet.
+        openCitationSheet(top.chunkId)
         composeRule.waitUntil(30_000) {
             composeRule.onAllNodesWithText("المقطع الكامل").fetchSemanticsNodes().isNotEmpty()
         }

@@ -3,6 +3,7 @@ package com.medai.assistant.k5b
 import android.content.Context
 import android.os.ParcelFileDescriptor
 import android.view.inputmethod.InputMethodManager
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
@@ -14,6 +15,8 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
@@ -162,6 +165,37 @@ abstract class K5bUiTestBase {
             Thread.sleep(100)
         }
         throw AssertionError("search did not finish within ${timeoutMs}ms")
+    }
+
+    /**
+     * The results screen re-issues bringIntoView at 350 ms and 850 ms after the
+     * answer arrives (it survives the IME hide animation). Let those settle
+     * before scrolling to a lower card, otherwise the automatic scroll and the
+     * test scroll can race and the citation tap lands on the wrong card.
+     */
+    protected fun waitForResultsScrollToSettle() {
+        Thread.sleep(1_100)
+        composeRule.waitForIdle()
+    }
+
+    /**
+     * Scrolls a citation chip into view and opens the passage sheet. A real
+     * touch tap is tried first; on the headless emulator the results list
+     * re-issues bringIntoView after the IME hides, which can move the chip
+     * between the scroll and the tap, so fall back to the chip's accessibility
+     * OnClick action instead of hanging for 30 s on a missed tap.
+     */
+    protected fun openCitationSheet(chunkId: String) {
+        val citation = composeRule.onNodeWithTag("citation_$chunkId").performScrollTo()
+        citation.performClick()
+        val shown = runCatching {
+            composeRule.waitUntil(10_000) {
+                composeRule.onAllNodesWithText("المقطع الكامل").fetchSemanticsNodes().isNotEmpty()
+            }
+        }.isSuccess
+        if (!shown) {
+            citation.performSemanticsAction(SemanticsActions.OnClick)
+        }
     }
 
     protected fun openSettings() {
