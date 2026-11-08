@@ -604,6 +604,7 @@ private fun ErrorCard(message: String, onRetry: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ResultList(
     passages: List<Passage>,
