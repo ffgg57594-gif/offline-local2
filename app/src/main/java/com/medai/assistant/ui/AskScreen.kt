@@ -1009,12 +1009,14 @@ private fun PassageSheet(
                         modifier = Modifier
                             .weight(1f)
                             .heightIn(min = 48.dp)
-                            .testTag("sheet_prev")
+                            .testTag("sheet_prev"),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
                     ) {
                         Text(
                             neighbourLabel("السابق", previous),
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.labelMedium
                         )
                     }
                     OutlinedButton(
@@ -1023,12 +1025,14 @@ private fun PassageSheet(
                         modifier = Modifier
                             .weight(1f)
                             .heightIn(min = 48.dp)
-                            .testTag("sheet_next")
+                            .testTag("sheet_next"),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
                     ) {
                         Text(
                             neighbourLabel("التالي", next),
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.labelMedium
                         )
                     }
                 }
