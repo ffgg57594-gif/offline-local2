@@ -60,8 +60,22 @@ class DesignGalleryTest {
         }
 
         composeRule.waitForIdle()
-        Thread.sleep(400)
+        Thread.sleep(600)
         captureScreenshot(name)
+    }
+
+    private fun isBitmapBlank(bitmap: Bitmap): Boolean {
+        val sampleColor = bitmap.getPixel(bitmap.width / 2, bitmap.height / 2)
+        val stepX = (bitmap.width / 12).coerceAtLeast(1)
+        val stepY = (bitmap.height / 12).coerceAtLeast(1)
+        for (y in stepY until bitmap.height - stepY step stepY) {
+            for (x in stepX until bitmap.width - stepX step stepX) {
+                if (bitmap.getPixel(x, y) != sampleColor) {
+                    return false
+                }
+            }
+        }
+        return true
     }
 
     private fun captureScreenshot(name: String) {
@@ -71,7 +85,13 @@ class DesignGalleryTest {
         val dir = File(context.filesDir, "design-gallery")
         dir.mkdirs()
 
-        val raw: Bitmap = instrumentation.uiAutomation.takeScreenshot()
+        var raw: Bitmap = instrumentation.uiAutomation.takeScreenshot()
+        if (isBitmapBlank(raw)) {
+            Thread.sleep(800)
+            raw.recycle()
+            raw = instrumentation.uiAutomation.takeScreenshot()
+        }
+
         val maxWidth = 900
         val bitmap = if (raw.width > maxWidth) {
             val height = (raw.height.toLong() * maxWidth / raw.width).toInt().coerceAtLeast(1)

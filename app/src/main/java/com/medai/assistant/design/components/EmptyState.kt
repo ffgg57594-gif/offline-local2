@@ -245,7 +245,9 @@ fun EmptyState(
                 ) {
                     Text(
                         text = item.question,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            textDirection = androidx.compose.ui.text.style.TextDirection.Content
+                        ),
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f)

@@ -95,7 +95,8 @@ fun InputBar(
                         .testTag("input_field"),
                     textStyle = MaterialTheme.typography.bodyMedium.copy(
                         color = MaterialTheme.colorScheme.onSurface,
-                        fontFamily = DesignFonts.ArabicUiFamily
+                        fontFamily = DesignFonts.ArabicUiFamily,
+                        textDirection = androidx.compose.ui.text.style.TextDirection.Content
                     ),
                     maxLines = 4,
                     cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
