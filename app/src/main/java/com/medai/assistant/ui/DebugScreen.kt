@@ -586,7 +586,7 @@ private fun stats(name: String, values: List<Long>): StageStats {
 
 private fun writeBenchmarkCsv(context: android.content.Context, benchmark: DebugBenchmark) {
     try {
-        val dir = context.getExternalFilesDir("reports") ?: context.filesDir
+        val dir = File(context.filesDir, "reports")
         dir.mkdirs()
         val rows = ArrayList<String>()
         rows.add("stage,p50_ms,p95_ms,max_ms,runs")

@@ -10,13 +10,16 @@ import java.io.FileOutputStream
 object K5bArtifacts {
 
     fun reportsDir(context: Context): File {
-        val dir = context.getExternalFilesDir("reports") ?: context.filesDir
+        // Internal app storage: CI pulls it with `adb exec-out run-as`, which
+        // always works for this debuggable build even when API 34 scoped
+        // storage hides /sdcard/Android/data from the adb shell user.
+        val dir = File(context.filesDir, "reports")
         dir.mkdirs()
         return dir
     }
 
     fun screenshotsDir(context: Context): File {
-        val dir = context.getExternalFilesDir("ui-screenshots") ?: File(context.filesDir, "ui-screenshots")
+        val dir = File(context.filesDir, "ui-screenshots")
         dir.mkdirs()
         return dir
     }
