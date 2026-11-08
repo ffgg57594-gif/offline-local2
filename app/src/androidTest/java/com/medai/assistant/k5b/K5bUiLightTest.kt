@@ -201,7 +201,7 @@ class K5bUiLightTest : K5bUiTestBase() {
         // Walk forward once, then back twice: the footer buttons must really
         // navigate (and be re-enabled after each load).
         composeRule.onNodeWithTag("sheet_next").performClick()
-        waitForSheetPositionText(expectedPosition(next.chunkId))
+        waitForSheetPositionText(expectedPosition(next.id))
         waitForSheetNavigationEnabled()
         waitForSheetCitation(PassageText.citation(next.bookName, next.page))
 
@@ -211,7 +211,7 @@ class K5bUiLightTest : K5bUiTestBase() {
         waitForSheetCitation(citation)
 
         composeRule.onNodeWithTag("sheet_prev").performClick()
-        waitForSheetPositionText(expectedPosition(previous.chunkId))
+        waitForSheetPositionText(expectedPosition(previous.id))
         waitForSheetCitation(PassageText.citation(previous.bookName, previous.page))
 
         composeRule.onNodeWithTag("sheet_close").performClick()
