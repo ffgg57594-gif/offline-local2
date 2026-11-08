@@ -20,6 +20,7 @@ class K5cUiFontScaleSheetTest : K5bUiTestBase() {
     fun citationSheetTopAndBottomFont13Light() {
         val state = submitWithSendButton("What causes bacterial vaginosis?")
         assertTrue("expected Results, got $state", state is AskState.Results)
+        composeRule.waitForIdle()
         waitForResultsScrollToSettle()
         val top = (state as AskState.Results).top3.maxByOrNull { it.text.length }
             ?: error("the device pipeline returned no passages")
