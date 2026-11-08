@@ -88,6 +88,10 @@ def main() -> int:
 
     os.makedirs(OUT_DIR, exist_ok=True)
 
+    if args.apk and "release" in args.apk and os.path.exists(args.apk):
+        import verify_release_no_gallery
+        verify_release_no_gallery.check_apk(args.apk)
+
     tests = read_csv(JUNIT_CSV)
     e2e = read_csv(E2E_CSV)
     config = read_json(CONFIG_JSON) or {}

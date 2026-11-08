@@ -185,7 +185,7 @@ abstract class K5bUiTestBase {
      * between the scroll and the tap, so fall back to the chip's accessibility
      * OnClick action instead of hanging for 30 s on a missed tap.
      */
-    protected fun openCitationSheet(chunkId: String) {
+    protected fun openCitationSheet(chunkId: Any) {
         val citation = composeRule.onNodeWithTag("citation_$chunkId").performScrollTo()
         citation.performClick()
         val shown = runCatching {

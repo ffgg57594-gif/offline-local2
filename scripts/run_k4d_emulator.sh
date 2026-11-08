@@ -156,11 +156,17 @@ echo "connected_test_exit_code=$TEST_STATUS" | tee -a "$REPORT_DIR/device_info.t
 # report explains the failure and the screenshots still prove what rendered.
 pull_internal_dir reports "$K5B_DIR"
 pull_internal_dir ui-screenshots "$K5B_DIR/ui-screenshots"
+pull_internal_dir design-gallery "build/reports/design-gallery"
+if [ -d "build/reports/design-gallery" ]; then
+  cp -a build/reports/design-gallery/*.png "$K5B_DIR/ui-screenshots/" 2>/dev/null || true
+fi
 
 {
   echo "pulled_k5b_report_files=$(find "$K5B_DIR" -maxdepth 1 -type f | wc -l)"
   echo "pulled_screenshots=$(find "$K5B_DIR/ui-screenshots" -type f -name '*.png' 2>/dev/null | wc -l)"
   echo "pulled_screenshot_bytes=$(du -sb "$K5B_DIR/ui-screenshots" 2>/dev/null | awk '{print $1}')"
+  echo "pulled_gallery_screenshots=$(find build/reports/design-gallery -type f -name '*.png' 2>/dev/null | wc -l)"
+  echo "pulled_gallery_bytes=$(du -sb build/reports/design-gallery 2>/dev/null | awk '{print $1}')"
 } | tee -a "$REPORT_DIR/device_info.txt"
 
 exit "$TEST_STATUS"

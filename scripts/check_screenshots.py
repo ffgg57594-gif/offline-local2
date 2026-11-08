@@ -102,7 +102,16 @@ def main() -> int:
         with open(summary, "a", encoding="utf-8") as fh:
             fh.write("## K5c screenshot hashes\n\n")
             fh.write("```\n" + text + "```\n\n")
-    return 0 if ok else 1
+
+    # STAGE UI-A: Design Gallery verification
+    gallery_script = ROOT / "scripts/check_gallery_screenshots.py"
+    gallery_ok = True
+    if gallery_script.exists():
+        import check_gallery_screenshots
+        gallery_code = check_gallery_screenshots.main()
+        gallery_ok = (gallery_code == 0)
+
+    return 0 if (ok and gallery_ok) else 1
 
 
 if __name__ == "__main__":
