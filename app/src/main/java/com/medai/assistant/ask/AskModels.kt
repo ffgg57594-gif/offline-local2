@@ -14,6 +14,11 @@ data class Passage(
     val page: Int,
     val section: String,
     val text: String,
+    /** Cosine score; shown only in diagnostics mode. */
+    val score: Double = 0.0,
+    /** 1-based position inside the book and the book chunk count. */
+    val positionInBook: Int = 0,
+    val totalInBook: Int = 0,
     /** Ranges in [text] that share a gate content stem with the question. */
     val highlightRanges: List<IntRange> = emptyList()
 )

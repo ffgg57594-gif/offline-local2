@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.medai.assistant.SearchTiming
+import com.medai.assistant.data.BookInfo
 import com.medai.assistant.data.Chunk
 import com.medai.assistant.diagnostics.Diagnostics
 import com.medai.assistant.runtime.AppGraph
@@ -12,6 +13,8 @@ import com.medai.assistant.runtime.LoadedResources
 import com.medai.assistant.settings.AppSettings
 import com.medai.assistant.settings.SettingsRepository
 import com.medai.assistant.settings.settingsDataStore
+import com.medai.assistant.ui.UiOverrides
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -78,24 +81,39 @@ class AskViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     suspend fun neighbour(chunkId: Int, delta: Int): Passage? {
-        val chunk = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            AppGraph.requireResources().repository.getNeighbour(chunkId, delta)
+        val pair = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val repo = AppGraph.requireResources().repository
+            val chunk = repo.getNeighbour(chunkId, delta) ?: return@withContext null
+            val position = repo.getPositionInBook(chunk.id) ?: (0 to 0)
+            chunk to position
         } ?: return null
-        return chunk.toPassage(rank = 0)
+        return pair.first.toPassage(
+            rank = 0,
+            position = pair.second.first,
+            total = pair.second.second
+        )
     }
 
-    private fun Chunk.toPassage(rank: Int): Passage = Passage(
+    suspend fun bookInfo(): BookInfo? =
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            AppGraph.requireResources().repository.primaryBook()
+        }
+
+    private fun Chunk.toPassage(rank: Int, position: Int = 0, total: Int = 0): Passage = Passage(
         chunkId = id,
         rank = rank,
         bookName = bookName,
         page = page,
         section = section,
-        text = text
+        text = displayText,
+        positionInBook = position,
+        totalInBook = total
     )
 
     private inner class AppGraphEngine : AskEngine {
         override suspend fun answer(question: String, preset: String): AskAnswer {
             Diagnostics.searchCount += 1
+            if (UiOverrides.searchDelayMs > 0) delay(UiOverrides.searchDelayMs)
             val resources = AppGraph.requireResources()
             val answer = resources.toEngine().answer(question, preset)
             Diagnostics.recordTimings(

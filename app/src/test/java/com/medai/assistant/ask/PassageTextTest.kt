@@ -8,15 +8,21 @@ import org.junit.Test
 class PassageTextTest {
 
     @Test
-    fun citationReplacesUnderscoresWithSpaces() {
+    fun citationUsesDisplayTitleAndExplicitIsolates() {
         assertEquals(
-            "[المصدر: book one - صفحة 42]",
+            "المصدر: \u2068book one\u2069 صفحة 42",
             PassageText.citation("book_one", 42)
         )
         assertEquals(
-            "[المصدر: Williams Obstetrics - صفحة 1185]",
+            "المصدر: \u2068Williams Obstetrics\u2069 صفحة 1185",
             PassageText.citation("Williams_Obstetrics", 1185)
         )
+        assertEquals(
+            "المصدر: \u2068Obstetrics and Gynecology Textbook\u2069 صفحة 261",
+            PassageText.citation("425_OBG_clean_single_pages", 261)
+        )
+        assertFalse(PassageText.citation("425_OBG_clean_single_pages", 261).contains("["))
+        assertFalse(PassageText.citation("425_OBG_clean_single_pages", 261).contains("]"))
     }
 
     @Test

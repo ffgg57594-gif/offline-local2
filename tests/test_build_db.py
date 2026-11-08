@@ -290,3 +290,28 @@ def test_quality_guard_drops_garbage_chunk():
     assert bk.letter_ratio(chunk_text) < 0.6
     good_text = "This is a normal medical sentence about hypertension treatment."
     assert bk.letter_ratio(good_text) >= 0.6
+
+
+def test_display_text_replaces_bullets_pua_and_collapses_spaces():
+    raw = "A \u25fe  B\u2022C\ue000D  E \u25aa F"
+    shown = bk.display_text(raw)
+    assert "\u25fe" not in shown
+    assert "\u25aa" not in shown
+    assert "\ue000" not in shown
+    # U+2022 is the replacement bullet and is expected in the output.
+    assert "\u2022" in shown
+    assert "• " in shown
+    assert "  " not in shown
+    assert bk.has_bad_display_char(shown) is False
+
+
+def test_display_text_never_contains_private_use_or_unassigned():
+    samples = [
+        "Bullet \u25fe item",
+        "Private \ue123 char",
+        "Unassigned \u0378 char",
+        "Diamond \u25c6 and dot \u2219",
+    ]
+    for raw in samples:
+        shown = bk.display_text(raw)
+        assert not bk.has_bad_display_char(shown), repr(shown)

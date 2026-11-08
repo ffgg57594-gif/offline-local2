@@ -15,7 +15,9 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.requestFocus
+import androidx.compose.ui.test.swipeUp
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.ViewModelProvider
@@ -59,6 +61,7 @@ abstract class K5bUiTestBase {
     fun clearUiOverrides() {
         UiOverrides.forceDark = null
         UiOverrides.fontScale = null
+        UiOverrides.searchDelayMs = 0L
     }
 
     protected fun viewModel(): AskViewModel =
@@ -84,10 +87,16 @@ abstract class K5bUiTestBase {
 
     private fun resetToBalanced() {
         val repository = SettingsRepository(composeRule.activity.settingsDataStore)
-        runBlocking { repository.setPreset("balanced") }
+        runBlocking {
+            repository.setPreset("balanced")
+            // K5c: diagnostics mode must not leak between test classes; some
+            // cases toggle it and the next class could otherwise show cosine.
+            repository.setShowTimings(false)
+        }
         Thread.sleep(250)
         composeRule.waitUntil(30_000) {
-            viewModel().settings.value.preset == "balanced"
+            viewModel().settings.value.preset == "balanced" &&
+                !viewModel().settings.value.showTimings
         }
     }
 
@@ -198,6 +207,40 @@ abstract class K5bUiTestBase {
 
     protected fun rootHeightPx(): Float {
         return composeRule.onRoot().fetchSemanticsNode().size.height.toFloat()
+    }
+
+    /** Waits until the soft keyboard inset is gone (after Send / chip tap). */
+    protected fun waitForImeHidden(timeoutMs: Long = 20_000) {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (System.currentTimeMillis() < deadline && imeVisible()) {
+            Thread.sleep(100)
+        }
+        assertTrue("the soft keyboard must be hidden after Send", !imeVisible())
+    }
+
+    /** Asserts that a node is fully inside the scrolling area above the input. */
+    protected fun assertFullyVisibleAboveInput(tag: String) {
+        composeRule.onNodeWithTag(tag).assertIsDisplayed()
+        val bounds = composeRule.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot
+        val inputTop = composeRule.onNodeWithTag("ask_input")
+            .fetchSemanticsNode().boundsInRoot.top
+        assertTrue(
+            "node $tag starts outside the visible area: $bounds",
+            bounds.top >= -1f && bounds.left >= -1f
+        )
+        assertTrue(
+            "node $tag bottom ${bounds.bottom} is below the input bar top $inputTop",
+            bounds.bottom <= inputTop + 2f
+        )
+    }
+
+    protected fun scrollSheetToBottom() {
+        repeat(8) {
+            composeRule.onNodeWithTag("sheet_body").performTouchInput {
+                swipeUp(durationMillis = 250)
+            }
+            composeRule.waitForIdle()
+        }
     }
 
     protected fun showKeyboard() {

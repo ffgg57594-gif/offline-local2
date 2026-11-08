@@ -1,5 +1,6 @@
 package com.medai.assistant.ask
 
+import com.medai.assistant.BookTitles
 import com.medai.assistant.Patterns
 import java.util.Locale
 
@@ -12,9 +13,17 @@ data class TruncatedText(
 object PassageText {
     const val MAX_PREVIEW_CHARS = 350
 
-    /** Exact citation line required by the product specification. */
+    /**
+     * Citation with explicit bidi isolation.
+     *
+     * The Latin title is wrapped in FSI (U+2068) / PDI (U+2069) so an RTL
+     * paragraph keeps the visual order "المصدر:" -> title -> "صفحة N" instead
+     * of letting the bidi algorithm move the page number or add stray brackets.
+     * The raw asset name is replaced by the display title from [BookTitles].
+     */
     fun citation(bookName: String, page: Int): String {
-        return "[المصدر: ${bookName.replace('_', ' ')} - صفحة $page]"
+        val title = BookTitles.display(bookName)
+        return "المصدر: \u2068$title\u2069 صفحة $page"
     }
 
     /**

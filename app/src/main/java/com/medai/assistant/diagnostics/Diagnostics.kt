@@ -49,6 +49,10 @@ object Diagnostics {
     @Volatile
     var lastQuestion: String = ""
 
+    /** Raw asset name shown only in diagnostics, never in the UI. */
+    @Volatile
+    var lastBookRawName: String = ""
+
     @Synchronized
     fun recordException(t: Throwable) {
         val writer = StringWriter()
@@ -119,6 +123,7 @@ object Diagnostics {
             sb.appendLine("last_question_timings=not run")
         } else {
             sb.appendLine("last_question=${lastQuestion.replace('\n', ' ')}")
+            sb.appendLine("last_book_raw=${lastBookRawName}")
             sb.appendLine("last_tokenize_ms=${timings.tokenizeMs}")
             sb.appendLine("last_embed_ms=${timings.embedMs}")
             sb.appendLine("last_search_ms=${timings.searchMs}")

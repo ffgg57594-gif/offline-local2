@@ -140,6 +140,8 @@ def main() -> int:
     screenshot_ui_classes = {
         "com.medai.assistant.k5b.K5bUiDarkScreenshotsTest",
         "com.medai.assistant.k5b.K5bUiFontScaleDarkTest",
+        "com.medai.assistant.k5b.K5cUiFontScaleSheetTest",
+        "com.medai.assistant.k5b.K5cUiStatesTest",
     }
     ui_rows = [
         row for row in tests
@@ -165,19 +167,22 @@ def main() -> int:
     screenshot_bytes = sum(path.stat().st_size for path in screenshots)
     under_25mb = screenshot_bytes < 25 * 1024 * 1024
     screenshot_names = {path.name for path in screenshots}
+    # K5c: one distinct screenshot per required state.
     expected_screenshots = [
-        "state1_empty_light",
-        "state3_results_light",
-        "state4_sheet_light",
-        "state5_refusal_light",
-        "state1_empty_dark",
-        "state3_results_dark",
-        "state4_sheet_dark",
-        "state5_refusal_dark",
-        "state1_empty_font1.3_dark",
-        "state3_results_font1.3_dark",
-        "state4_sheet_font1.3_dark",
-        "state5_refusal_font1.3_dark",
+        "01_empty_light",
+        "02_empty_dark",
+        "03_results_light_keyboard_closed",
+        "04_results_dark_keyboard_closed",
+        "05_results_font13_dark",
+        "06_sheet_top_light",
+        "07_sheet_bottom_light",
+        "08_sheet_top_font13_light",
+        "09_sheet_bottom_font13_light",
+        "10_refusal_collapsed_light",
+        "11_refusal_expanded_light",
+        "12_loading_searching_light",
+        "13_settings_strict_light",
+        "14_long_english_passage_light",
     ]
     missing_screenshots = [
         name for name in expected_screenshots if f"{name}.png" not in screenshot_names
@@ -436,7 +441,7 @@ def main() -> int:
     lines.append("")
     lines.append("### Screenshot artifact")
     lines.append("")
-    lines.append("- Artifact name: **ui-screenshots** (GitHub Actions stores it as a zip)")
+    lines.append("- Artifact name: **ui-screenshots-v2** (GitHub Actions stores it as a zip)")
     lines.append(f"- Files: **{len(screenshots)}**, total **{human_bytes(screenshot_bytes)}**")
     lines.append(f"- Under 25 MiB: **{'YES' if under_25mb else 'NO'}**")
     lines.append("")

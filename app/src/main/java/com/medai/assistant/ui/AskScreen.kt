@@ -1,29 +1,48 @@
 package com.medai.assistant.ui
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -38,6 +57,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -48,10 +68,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -59,14 +84,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.medai.assistant.BookTitles
+import com.medai.assistant.R
 import com.medai.assistant.ask.AskState
 import com.medai.assistant.ask.AskTiming
 import com.medai.assistant.ask.AskViewModel
 import com.medai.assistant.ask.Passage
 import com.medai.assistant.ask.PassageText
+import com.medai.assistant.data.BookInfo
+import com.medai.assistant.diagnostics.Diagnostics
 import com.medai.assistant.settings.AppSettings
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 /** Four real golden questions used by the empty state (golden ids 44, 41, 42, 43). */
 val EXAMPLE_QUESTIONS = listOf(
@@ -76,7 +108,18 @@ val EXAMPLE_QUESTIONS = listOf(
     "What options are available for emergency contraception?"
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
+private val EXAMPLE_ICONS = listOf(
+    Icons.Filled.Search,
+    Icons.Filled.DateRange,
+    Icons.Filled.Warning,
+    Icons.Filled.FavoriteBorder
+)
+
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    ExperimentalComposeUiApi::class,
+    ExperimentalFoundationApi::class
+)
 @Composable
 fun AskScreen(
     viewModel: AskViewModel,
@@ -88,19 +131,61 @@ fun AskScreen(
     var input by rememberSaveable { mutableStateOf("") }
     var showSettings by rememberSaveable { mutableStateOf(false) }
     var sheetPassage by remember { mutableStateOf<Passage?>(null) }
+    var expandedRefusalQuestion by rememberSaveable { mutableStateOf<String?>(null) }
+    var bookInfo by remember { mutableStateOf<BookInfo?>(null) }
 
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val clipboard = LocalClipboardManager.current
+    val appContext = LocalContext.current.applicationContext
+    val focusManager = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    val scrollState = rememberScrollState()
+    val firstCardRequester = remember { BringIntoViewRequester() }
+
     val copy: (String) -> Unit = { text ->
         clipboard.setText(AnnotatedString(text))
-        scope.launch { snackbar.showSnackbar("تم نسخ النص") }
+        scope.launch { snackbar.showSnackbar("تم النسخ") }
+    }
+    val dismissKeyboard: () -> Unit = {
+        focusManager.clearFocus(force = true)
+        keyboard?.hide()
     }
     val submit: () -> Unit = {
         val question = input.trim()
-        if (question.isNotEmpty()) viewModel.ask(question)
+        if (question.isNotEmpty()) {
+            // K5c item 1: Send always clears focus and hides the IME before the
+            // results list takes over the screen.
+            dismissKeyboard()
+            viewModel.ask(question)
+        }
     }
     val canSubmit = state !is AskState.Installing && state !is AskState.LoadingModel
+
+    LaunchedEffect(state) {
+        if (state is AskState.Ready && bookInfo == null) {
+            bookInfo = viewModel.bookInfo()
+        }
+    }
+
+    val resultQuestion = when (val current = state) {
+        is AskState.Results -> current.question
+        is AskState.Rejected ->
+            if (expandedRefusalQuestion == current.question) current.question else null
+        else -> null
+    }
+    // K5c item 1: after the IME closes, pull the first result card fully into
+    // the visible area instead of leaving it under the keyboard edge.
+    LaunchedEffect(resultQuestion) {
+        if (resultQuestion != null) {
+            // The IME hide animation changes the viewport twice; bring the card
+            // into view after it settles as well.
+            delay(350)
+            runCatching { firstCardRequester.bringIntoView() }
+            delay(500)
+            runCatching { firstCardRequester.bringIntoView() }
+        }
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -147,37 +232,43 @@ fun AskScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             when (val current = state) {
                 is AskState.Installing -> InstallingCard(current)
                 is AskState.LoadingModel -> LoadingModelCard()
-                is AskState.Ready -> EmptyState(onExample = { input = it })
-                is AskState.Searching -> SearchingCard(
-                    question = current.question,
-                    onCancel = viewModel::cancel
-                )
-                is AskState.Results -> {
-                    QuestionHeader(current.question)
-                    if (settings.showTimings) TimingLine(current.timings)
-                    current.top3.forEach { passage ->
-                        ResultCard(
-                            passage = passage,
-                            onCitationClick = { sheetPassage = it },
-                            onCopy = copy
-                        )
+                is AskState.Ready -> EmptyState(
+                    bookInfo = bookInfo,
+                    onExample = { question ->
+                        dismissKeyboard()
+                        input = question
                     }
+                )
+                is AskState.Searching -> {
+                    QuestionBubble(current.question)
+                    SearchingCard(current.question, viewModel::cancel)
+                }
+                is AskState.Results -> {
+                    QuestionBubble(current.question)
+                    if (settings.showTimings) TimingLine(current.timings)
+                    ResultList(
+                        passages = current.top3,
+                        showDiagnostics = settings.showTimings,
+                        firstCardRequester = firstCardRequester,
+                        onCitationClick = { sheetPassage = it },
+                        onCopy = copy
+                    )
                 }
                 is AskState.Rejected -> {
-                    QuestionHeader(current.question)
+                    QuestionBubble(current.question)
                     if (settings.showTimings) TimingLine(current.timings)
                     RefusalCard(current.refusal)
-                    var expanded by rememberSaveable(current.question) { mutableStateOf(false) }
+                    val expanded = expandedRefusalQuestion == current.question
                     if (!expanded) {
                         OutlinedButton(
-                            onClick = { expanded = true },
+                            onClick = { expandedRefusalQuestion = current.question },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .heightIn(min = 48.dp)
@@ -187,18 +278,18 @@ fun AskScreen(
                         }
                     } else {
                         TextButton(
-                            onClick = { expanded = false },
+                            onClick = { expandedRefusalQuestion = null },
                             modifier = Modifier.heightIn(min = 48.dp)
                         ) {
                             Text("إخفاء أقرب النتائج")
                         }
-                        current.top3.forEach { passage ->
-                            ResultCard(
-                                passage = passage,
-                                onCitationClick = { sheetPassage = it },
-                                onCopy = copy
-                            )
-                        }
+                        ResultList(
+                            passages = current.top3,
+                            showDiagnostics = settings.showTimings,
+                            firstCardRequester = firstCardRequester,
+                            onCitationClick = { sheetPassage = it },
+                            onCopy = copy
+                        )
                     }
                 }
                 is AskState.Error -> ErrorCard(
@@ -214,6 +305,9 @@ fun AskScreen(
             settings = settings,
             onPreset = viewModel::setPreset,
             onShowTimings = viewModel::setShowTimings,
+            onCopyReport = {
+                copy(Diagnostics.buildReport(appContext))
+            },
             onDismiss = { showSettings = false }
         )
     }
@@ -235,7 +329,11 @@ private fun InstallingCard(state: AskState.Installing) {
     } else {
         0f
     }
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("installing_state")
+    ) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -267,7 +365,11 @@ private fun InstallingCard(state: AskState.Installing) {
 
 @Composable
 private fun LoadingModelCard() {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("loading_model_state")
+    ) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -275,7 +377,7 @@ private fun LoadingModelCard() {
         ) {
             CircularProgressIndicator()
             Text(
-                "جارٍ تحميل النموذج...",
+                "جارٍ تحميل النموذج…",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -289,52 +391,119 @@ private fun LoadingModelCard() {
 }
 
 @Composable
-private fun EmptyState(onExample: (String) -> Unit) {
+private fun EmptyState(bookInfo: BookInfo?, onExample: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
-            "اسأل عن أي موضوع في كتاب النساء والتوليد المدمج في التطبيق.",
-            style = MaterialTheme.typography.bodyLarge
+            "اسأل عن كتابك الطبي",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
         )
+        Text(
+            "الإجابات من الكتاب المدمج فقط، دون اتصال بالإنترنت.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        bookInfo?.let { info ->
+            Text(
+                "الكتاب المدمج: ${BookTitles.display(info.rawName)} " +
+                    "(${info.pages} صفحة)",
+                modifier = Modifier.testTag("embedded_book_line"),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         Text(
             "أسئلة أمثلة",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
         EXAMPLE_QUESTIONS.forEachIndexed { index, question ->
-            OutlinedButton(
-                onClick = { onExample(question) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 48.dp)
-                    .testTag("example_$index")
-            ) {
-                Text(
-                    question,
-                    modifier = Modifier.fillMaxWidth(),
-                    style = MaterialTheme.typography.labelLarge.copy(
-                        textDirection = TextDirection.Ltr
-                    ),
-                    textAlign = TextAlign.Left
-                )
-            }
+            ExampleCard(
+                question = question,
+                iconIndex = index,
+                testTag = "example_$index",
+                onClick = { onExample(question) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun ExampleCard(
+    question: String,
+    iconIndex: Int,
+    testTag: String,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(testTag)
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                imageVector = EXAMPLE_ICONS[iconIndex % EXAMPLE_ICONS.size],
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                question,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    textDirection = TextDirection.Ltr
+                ),
+                textAlign = TextAlign.Left
+            )
         }
     }
 }
 
 @Composable
 private fun SearchingCard(question: String, onCancel: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("searching_state")
+    ) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp
+                )
+                Text(
+                    "جارٍ البحث…",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
             LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             Text(
-                "جارٍ البحث...",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                question,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    textDirection = if (PassageText.isMostlyLatin(question)) {
+                        TextDirection.Ltr
+                    } else {
+                        TextDirection.Rtl
+                    }
+                )
             )
-            Text(question, style = MaterialTheme.typography.bodyMedium)
             TextButton(
                 onClick = onCancel,
                 modifier = Modifier.heightIn(min = 48.dp)
@@ -346,14 +515,32 @@ private fun SearchingCard(question: String, onCancel: () -> Unit) {
 }
 
 @Composable
-private fun QuestionHeader(question: String) {
-    Text(
-        question,
-        style = MaterialTheme.typography.titleMedium.copy(
-            textDirection = TextDirection.Content
-        ),
-        fontWeight = FontWeight.Bold
-    )
+private fun QuestionBubble(question: String) {
+    val ltr = PassageText.isMostlyLatin(question)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        // Start is the right side in this RTL app: the user's message sits at
+        // the chat start side, while its own text direction comes from the text.
+        horizontalArrangement = Arrangement.Start
+    ) {
+        Surface(
+            modifier = Modifier
+                .widthIn(max = 330.dp)
+                .testTag("question_bubble"),
+            shape = RoundedCornerShape(18.dp),
+            color = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        ) {
+            Text(
+                question,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    textDirection = if (ltr) TextDirection.Ltr else TextDirection.Rtl
+                ),
+                textAlign = if (ltr) TextAlign.Left else TextAlign.Right
+            )
+        }
+    }
 }
 
 @Composable
@@ -418,66 +605,201 @@ private fun ErrorCard(message: String, onRetry: () -> Unit) {
 }
 
 @Composable
+private fun ResultList(
+    passages: List<Passage>,
+    showDiagnostics: Boolean,
+    firstCardRequester: BringIntoViewRequester,
+    onCitationClick: (Passage) -> Unit,
+    onCopy: (String) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        passages.forEachIndexed { index, passage ->
+            if (index > 0) {
+                HorizontalDivider(
+                    thickness = 1.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
+                )
+            }
+            ResultCard(
+                passage = passage,
+                showDiagnostics = showDiagnostics,
+                modifier = if (index == 0) {
+                    Modifier.bringIntoViewRequester(firstCardRequester)
+                } else {
+                    Modifier
+                },
+                onCitationClick = onCitationClick,
+                onCopy = onCopy
+            )
+        }
+    }
+}
+
+@Composable
+private fun RankChip(rank: Int, chunkId: Int) {
+    Surface(
+        modifier = Modifier
+            .heightIn(min = 24.dp)
+            .testTag("rank_chip_$chunkId"),
+        shape = RoundedCornerShape(50),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+    ) {
+        Text(
+            "#$rank",
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+}
+
+@Composable
+private fun PageChip(page: Int, chunkId: Int) {
+    Surface(
+        modifier = Modifier
+            .heightIn(min = 28.dp)
+            .testTag("page_chip_$chunkId"),
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+    ) {
+        Text(
+            "ص $page",
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun CitationText(
+    passage: Passage,
+    testTag: String,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
+) {
+    val text = PassageText.citation(passage.bookName, passage.page)
+    val base = modifier
+        .fillMaxWidth()
+        .testTag(testTag)
+        .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+        .padding(vertical = 6.dp)
+    Text(
+        text = text,
+        modifier = base,
+        style = MaterialTheme.typography.labelLarge.copy(
+            // Explicit RTL paragraph + FSI/PDI around the Latin title.
+            textDirection = TextDirection.Rtl
+        ),
+        color = MaterialTheme.colorScheme.primary,
+        textAlign = TextAlign.Start
+    )
+}
+
+@Composable
 private fun ResultCard(
     passage: Passage,
+    showDiagnostics: Boolean,
+    modifier: Modifier = Modifier,
     onCitationClick: (Passage) -> Unit,
     onCopy: (String) -> Unit
 ) {
     var expanded by rememberSaveable(passage.chunkId) { mutableStateOf(false) }
+    var copied by rememberSaveable(passage.chunkId) { mutableStateOf(false) }
     val preview = remember(passage.text) { PassageText.truncateAtWord(passage.text) }
     val shown = if (expanded) passage.text else preview.text
     val ranges = remember(shown, passage.highlightRanges) {
         passage.highlightRanges.filter { it.first >= 0 && it.last < shown.length }
     }
 
+    LaunchedEffect(copied) {
+        if (copied) {
+            delay(2000)
+            copied = false
+        }
+    }
+
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .testTag("result_card_${passage.chunkId}")
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    "#${passage.rank}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    PassageText.citation(passage.bookName, passage.page),
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { onCitationClick(passage) }
-                        .heightIn(min = 48.dp)
-                        .testTag("citation_${passage.chunkId}")
-                        .padding(vertical = 12.dp),
-                    style = MaterialTheme.typography.labelLarge.copy(
-                        textDirection = TextDirection.Content
-                    ),
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-            PassageBody(shown, ranges, "passage_body_${passage.chunkId}")
-            if (preview.truncated) {
-                TextButton(
-                    onClick = { expanded = !expanded },
-                    modifier = Modifier.heightIn(min = 48.dp)
-                ) {
-                    Text(if (expanded) "عرض أقل" else "عرض المزيد")
+                RankChip(passage.rank, passage.chunkId)
+                PageChip(passage.page, passage.chunkId)
+                Spacer(modifier = Modifier.weight(1f))
+                if (showDiagnostics) {
+                    Text(
+                        String.format(Locale.ROOT, "cos %.4f", passage.score),
+                        modifier = Modifier.testTag("score_${passage.chunkId}"),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
-            HorizontalDivider()
-            TextButton(
-                onClick = { onCopy(passage.text) },
-                modifier = Modifier.heightIn(min = 48.dp)
+            CitationText(
+                passage = passage,
+                testTag = "citation_${passage.chunkId}",
+                onClick = { onCitationClick(passage) }
+            )
+            PassageBody(shown, ranges, "passage_body_${passage.chunkId}")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("نسخ النص")
+                if (preview.truncated) {
+                    TextButton(
+                        onClick = { expanded = !expanded },
+                        modifier = Modifier
+                            .heightIn(min = 40.dp)
+                            .testTag("expand_${passage.chunkId}"),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+                    ) {
+                        Text(if (expanded) "عرض أقل" else "عرض المزيد")
+                    }
+                } else {
+                    Spacer(modifier = Modifier.width(1.dp))
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    if (copied) {
+                        Text(
+                            "تم النسخ",
+                            modifier = Modifier.testTag("copy_feedback_${passage.chunkId}"),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            onCopy(passage.text)
+                            copied = true
+                        },
+                        modifier = Modifier
+                            .size(40.dp)
+                            .testTag("copy_result_${passage.chunkId}")
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_copy),
+                            contentDescription = "نسخ",
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
             }
         }
     }
@@ -541,7 +863,7 @@ private fun AskInputBar(
                 modifier = Modifier
                     .weight(1f)
                     .testTag("ask_input"),
-                placeholder = { Text("اكتب سؤالك الطبي...") },
+                placeholder = { Text("اكتب سؤالك الطبي…") },
                 minLines = 1,
                 maxLines = 4,
                 textStyle = LocalTextStyle.current.copy(
@@ -576,9 +898,13 @@ private fun PassageSheet(
     var previous by remember { mutableStateOf<Passage?>(null) }
     var next by remember { mutableStateOf<Passage?>(null) }
     var loading by remember { mutableStateOf(true) }
+    var copied by remember { mutableStateOf(false) }
+    val bodyScroll = rememberScrollState()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     LaunchedEffect(current.chunkId) {
         loading = true
+        bodyScroll.scrollTo(0)
         previous = try {
             onNeighbour(current.chunkId, -1)
         } catch (_: Throwable) {
@@ -591,71 +917,157 @@ private fun PassageSheet(
         }
         loading = false
     }
+    LaunchedEffect(copied) {
+        if (copied) {
+            delay(2000)
+            copied = false
+        }
+    }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                // Leaves the results card visible behind the scrim and keeps
+                // the pinned header/footer inside the 1.3x font budget.
+                .fillMaxHeight(0.85f)
         ) {
-            Text(
-                "المقطع الكامل",
-                modifier = Modifier.testTag("sheet_title"),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                PassageText.citation(current.bookName, current.page),
-                modifier = Modifier.testTag("sheet_citation"),
-                style = MaterialTheme.typography.labelLarge.copy(
-                    textDirection = TextDirection.Content
-                ),
-                color = MaterialTheme.colorScheme.primary
-            )
-            PassageBody(current.text, emptyList(), "sheet_body_${current.chunkId}")
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedButton(
-                    onClick = { previous?.let { current = it } },
-                    enabled = previous != null && !loading,
-                    modifier = Modifier
-                        .weight(1f)
-                        .heightIn(min = 48.dp)
-                        .testTag("sheet_prev")
-                ) {
-                    Text("السابق")
-                }
-                OutlinedButton(
-                    onClick = { next?.let { current = it } },
-                    enabled = next != null && !loading,
-                    modifier = Modifier
-                        .weight(1f)
-                        .heightIn(min = 48.dp)
-                        .testTag("sheet_next")
-                ) {
-                    Text("التالي")
-                }
-            }
-            Button(
-                onClick = { onCopy(current.text) },
+            // Pinned header: title, citation, position and close are outside the
+            // scrolling body so they stay visible at font scale 1.3.
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 48.dp)
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Text("نسخ النص")
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "المقطع الكامل",
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("sheet_title"),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.testTag("sheet_close")
+                    ) {
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = "إغلاق",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+                CitationText(
+                    passage = current,
+                    testTag = "sheet_citation"
+                )
+                Text(
+                    positionLine(current),
+                    modifier = Modifier.testTag("sheet_position"),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-            TextButton(
-                onClick = onDismiss,
+            HorizontalDivider()
+            Column(
                 modifier = Modifier
-                    .heightIn(min = 48.dp)
-                    .testTag("sheet_close")
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(bodyScroll)
+                    .padding(horizontal = 24.dp, vertical = 12.dp)
+                    .testTag("sheet_body")
             ) {
-                Text("إغلاق")
+                PassageBody(current.text, emptyList(), "sheet_body_${current.chunkId}")
+                // Reading room at the end keeps the last line clear of the
+                // pinned footer and lets the scroll reach a real bottom.
+                Spacer(modifier = Modifier.height(96.dp))
+            }
+            HorizontalDivider()
+            // Pinned footer: both navigation buttons are always visible.
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { previous?.let { current = it } },
+                        enabled = previous != null && !loading,
+                        modifier = Modifier
+                            .weight(1f)
+                            .heightIn(min = 48.dp)
+                            .testTag("sheet_prev")
+                    ) {
+                        Text(
+                            neighbourLabel("السابق", previous),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    OutlinedButton(
+                        onClick = { next?.let { current = it } },
+                        enabled = next != null && !loading,
+                        modifier = Modifier
+                            .weight(1f)
+                            .heightIn(min = 48.dp)
+                            .testTag("sheet_next")
+                    ) {
+                        Text(
+                            neighbourLabel("التالي", next),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    TextButton(
+                        onClick = {
+                            onCopy(current.text)
+                            copied = true
+                        },
+                        modifier = Modifier.heightIn(min = 44.dp)
+                    ) {
+                        Text("نسخ النص")
+                    }
+                    if (copied) {
+                        Text(
+                            "تم النسخ",
+                            modifier = Modifier.testTag("sheet_copy_feedback"),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
             }
         }
     }
+}
+
+private fun positionLine(passage: Passage): String {
+    return if (passage.positionInBook > 0 && passage.totalInBook > 0) {
+        "فقرة ${passage.positionInBook} من ${passage.totalInBook} في الكتاب"
+    } else {
+        "فقرة غير معروفة في الكتاب"
+    }
+}
+
+private fun neighbourLabel(label: String, passage: Passage?): String {
+    return if (passage != null) "$label · ص ${passage.page}" else label
 }

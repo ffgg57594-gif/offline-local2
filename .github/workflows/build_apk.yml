@@ -32,6 +32,10 @@ jobs:
         run: pytest tests
       - name: Build knowledge DB
         run: python scripts/build_knowledge_db.py
+      - name: K5c validate display_text column
+        run: python scripts/validate_display_text.py
+      - name: K5c dark-theme contrast (WCAG AA)
+        run: python scripts/check_contrast.py
       - name: Build normalization map
         run: python scripts/text_normalize.py
       - name: Generate gate vocabulary (K4)
@@ -225,6 +229,9 @@ jobs:
       - name: K4d collect androidTest results
         if: always()
         run: python scripts/collect_androidtest_results.py
+      - name: K5c screenshot uniqueness and sha256
+        if: always()
+        run: python scripts/check_screenshots.py
       - name: K4d print debug APK ABI
         if: always()
         run: |
@@ -336,13 +343,14 @@ jobs:
             build/reports/k5b/*.csv
             build/reports/k5b/*.txt
             build/reports/k5b/*.log
+            build/reports/k5c/
             build/reports/k4d/android_test_results.csv
           if-no-files-found: warn
-      - name: Upload K5b UI screenshots
+      - name: Upload K5c UI screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ui-screenshots
+          name: ui-screenshots-v2
           path: build/reports/k5b/ui-screenshots/
           if-no-files-found: warn
       - name: Assemble K5a report

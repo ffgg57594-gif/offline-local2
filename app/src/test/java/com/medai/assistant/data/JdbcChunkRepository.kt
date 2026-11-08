@@ -31,7 +31,8 @@ class JdbcChunkRepository(
 
     override fun getById(id: Int): Chunk? {
         val query = """
-            SELECT c.id, b.name, c.page, c.section, c.text
+            SELECT c.id, b.name, c.page, c.section,
+                   c.text, COALESCE(c.display_text, c.text)
             FROM chunks c
             JOIN books b ON b.id = c.book_id
             WHERE c.id = ?
@@ -47,7 +48,8 @@ class JdbcChunkRepository(
                             bookName = rs.getString(2),
                             page = rs.getInt(3),
                             section = rs.getString(4) ?: "",
-                            text = rs.getString(5)
+                            text = rs.getString(5),
+                            displayText = rs.getString(6)
                         )
                     }
                 }
@@ -60,7 +62,8 @@ class JdbcChunkRepository(
         if (ids.isEmpty()) return emptyList()
         val placeholders = ids.joinToString(",") { "?" }
         val query = """
-            SELECT c.id, b.name, c.page, c.section, c.text
+            SELECT c.id, b.name, c.page, c.section,
+                   c.text, COALESCE(c.display_text, c.text)
             FROM chunks c
             JOIN books b ON b.id = c.book_id
             WHERE c.id IN ($placeholders)
@@ -79,7 +82,8 @@ class JdbcChunkRepository(
                             bookName = rs.getString(2),
                             page = rs.getInt(3),
                             section = rs.getString(4) ?: "",
-                            text = rs.getString(5)
+                            text = rs.getString(5),
+                            displayText = rs.getString(6)
                         )
                         results[chunk.id] = chunk
                     }
@@ -94,7 +98,8 @@ class JdbcChunkRepository(
         val comparison = if (delta > 0) ">" else "<"
         val order = if (delta > 0) "ASC" else "DESC"
         val query = """
-            SELECT c.id, b.name, c.page, c.section, c.text
+            SELECT c.id, b.name, c.page, c.section,
+                   c.text, COALESCE(c.display_text, c.text)
             FROM chunks c
             JOIN books b ON b.id = c.book_id
             WHERE c.book_id = (SELECT book_id FROM chunks WHERE id = ?)
@@ -113,7 +118,55 @@ class JdbcChunkRepository(
                             bookName = rs.getString(2),
                             page = rs.getInt(3),
                             section = rs.getString(4) ?: "",
-                            text = rs.getString(5)
+                            text = rs.getString(5),
+                            displayText = rs.getString(6)
+                        )
+                    }
+                }
+            }
+        }
+        return null
+    }
+
+    override fun getPositionInBook(chunkId: Int): Pair<Int, Int>? {
+        val query = """
+            SELECT
+              (SELECT COUNT(*) FROM chunks x
+                 WHERE x.book_id = c.book_id AND x.id <= c.id) AS position,
+              (SELECT COUNT(*) FROM chunks x WHERE x.book_id = c.book_id) AS total
+            FROM chunks c
+            WHERE c.id = ?
+        """.trimIndent()
+        getConnection().use { conn ->
+            conn.prepareStatement(query).use { stmt ->
+                stmt.setInt(1, chunkId)
+                stmt.executeQuery().use { rs ->
+                    if (rs.next()) {
+                        return rs.getInt(1) to rs.getInt(2)
+                    }
+                }
+            }
+        }
+        return null
+    }
+
+    override fun primaryBook(): BookInfo? {
+        val query = """
+            SELECT b.name, b.pages, COUNT(c.id)
+            FROM books b
+            LEFT JOIN chunks c ON c.book_id = b.id
+            GROUP BY b.id
+            ORDER BY b.id
+            LIMIT 1
+        """.trimIndent()
+        getConnection().use { conn ->
+            conn.createStatement().use { stmt ->
+                stmt.executeQuery(query).use { rs ->
+                    if (rs.next()) {
+                        return BookInfo(
+                            rawName = rs.getString(1),
+                            pages = rs.getInt(2),
+                            chunks = rs.getInt(3)
                         )
                     }
                 }
@@ -181,5 +234,21 @@ class JdbcChunkRepository(
             }
         }
         return null
+    }
+
+    fun getAllDisplayTextsOrdered(): List<Pair<Int, String>> {
+        val list = mutableListOf<Pair<Int, String>>()
+        getConnection().use { conn ->
+            conn.createStatement().use { stmt ->
+                stmt.executeQuery(
+                    "SELECT id, COALESCE(display_text, text) FROM chunks ORDER BY id"
+                ).use { rs ->
+                    while (rs.next()) {
+                        list.add(rs.getInt(1) to rs.getString(2))
+                    }
+                }
+            }
+        }
+        return list
     }
 }

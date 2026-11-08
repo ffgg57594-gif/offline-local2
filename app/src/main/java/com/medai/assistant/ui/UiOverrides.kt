@@ -14,4 +14,12 @@ object UiOverrides {
 
     @Volatile
     var fontScale: Float? = null
+
+    /**
+     * Test-only delay before a real search runs, so the instrumented suite can
+     * capture the genuine "جارٍ البحث…" state instead of racing a fast answer.
+     * Zero in production.
+     */
+    @Volatile
+    var searchDelayMs: Long = 0L
 }

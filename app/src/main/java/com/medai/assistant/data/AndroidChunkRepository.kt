@@ -33,7 +33,8 @@ class AndroidChunkRepository(
         val db = openDb()
         try {
             val query = """
-                SELECT c.id, b.name, c.page, c.section, c.text
+                SELECT c.id, b.name, c.page, c.section,
+                       c.text, COALESCE(c.display_text, c.text)
                 FROM chunks c
                 JOIN books b ON b.id = c.book_id
                 WHERE c.id = ?
@@ -45,7 +46,8 @@ class AndroidChunkRepository(
                         bookName = cursor.getString(1),
                         page = cursor.getInt(2),
                         section = cursor.getString(3) ?: "",
-                        text = cursor.getString(4)
+                        text = cursor.getString(4),
+                        displayText = cursor.getString(5)
                     )
                 }
             }
@@ -61,7 +63,8 @@ class AndroidChunkRepository(
         try {
             val placeholders = ids.joinToString(",") { "?" }
             val query = """
-                SELECT c.id, b.name, c.page, c.section, c.text
+                SELECT c.id, b.name, c.page, c.section,
+                       c.text, COALESCE(c.display_text, c.text)
                 FROM chunks c
                 JOIN books b ON b.id = c.book_id
                 WHERE c.id IN ($placeholders)
@@ -75,7 +78,8 @@ class AndroidChunkRepository(
                         bookName = cursor.getString(1),
                         page = cursor.getInt(2),
                         section = cursor.getString(3) ?: "",
-                        text = cursor.getString(4)
+                        text = cursor.getString(4),
+                        displayText = cursor.getString(5)
                     )
                     results[chunk.id] = chunk
                 }
@@ -92,7 +96,8 @@ class AndroidChunkRepository(
         val comparison = if (delta > 0) ">" else "<"
         val order = if (delta > 0) "ASC" else "DESC"
         val query = """
-            SELECT c.id, b.name, c.page, c.section, c.text
+            SELECT c.id, b.name, c.page, c.section,
+                   c.text, COALESCE(c.display_text, c.text)
             FROM chunks c
             JOIN books b ON b.id = c.book_id
             WHERE c.book_id = (SELECT book_id FROM chunks WHERE id = ?)
@@ -109,7 +114,56 @@ class AndroidChunkRepository(
                         bookName = cursor.getString(1),
                         page = cursor.getInt(2),
                         section = cursor.getString(3) ?: "",
-                        text = cursor.getString(4)
+                        text = cursor.getString(4),
+                        displayText = cursor.getString(5)
+                    )
+                }
+            }
+            return null
+        } finally {
+            db.close()
+        }
+    }
+
+    override fun getPositionInBook(chunkId: Int): Pair<Int, Int>? {
+        val query = """
+            SELECT
+              (SELECT COUNT(*) FROM chunks x
+                 WHERE x.book_id = c.book_id AND x.id <= c.id) AS position,
+              (SELECT COUNT(*) FROM chunks x WHERE x.book_id = c.book_id) AS total
+            FROM chunks c
+            WHERE c.id = ?
+        """.trimIndent()
+        val db = openDb()
+        try {
+            db.rawQuery(query, arrayOf(chunkId.toString())).use { cursor ->
+                if (cursor.moveToFirst()) {
+                    return cursor.getInt(0) to cursor.getInt(1)
+                }
+            }
+            return null
+        } finally {
+            db.close()
+        }
+    }
+
+    override fun primaryBook(): BookInfo? {
+        val query = """
+            SELECT b.name, b.pages, COUNT(c.id)
+            FROM books b
+            LEFT JOIN chunks c ON c.book_id = b.id
+            GROUP BY b.id
+            ORDER BY b.id
+            LIMIT 1
+        """.trimIndent()
+        val db = openDb()
+        try {
+            db.rawQuery(query, null).use { cursor ->
+                if (cursor.moveToFirst()) {
+                    return BookInfo(
+                        rawName = cursor.getString(0),
+                        pages = cursor.getInt(1),
+                        chunks = cursor.getInt(2)
                     )
                 }
             }

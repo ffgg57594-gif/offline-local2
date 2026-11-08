@@ -6,7 +6,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -14,7 +17,13 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -22,10 +31,11 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.medai.assistant.settings.AppSettings
+import kotlinx.coroutines.delay
 
 /**
- * The only settings allowed by K5a: refusal-gate preset and whether the
- * per-question timing line is visible.
+ * The only settings allowed by K5a/K5c: refusal-gate preset, whether timings
+ * and cosine scores are visible, and the diagnostics report copy action.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,12 +43,23 @@ fun SettingsSheet(
     settings: AppSettings,
     onPreset: (String) -> Unit,
     onShowTimings: (Boolean) -> Unit,
+    onCopyReport: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var copied by remember { mutableStateOf(false) }
+    LaunchedEffect(copied) {
+        if (copied) {
+            delay(2000)
+            copied = false
+        }
+    }
+
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -56,14 +77,14 @@ fun SettingsSheet(
             )
             PresetRow(
                 label = "متوازن",
-                description = "يقبل أسئلة أكثر مع الحفاظ على رفض ما ليس في الكتب.",
+                description = "يقبل أسئلة أكثر مع الحفاظ على رفض ما ليس في الكتاب.",
                 selected = settings.preset == AppSettings.BALANCED,
                 onSelect = { onPreset(AppSettings.BALANCED) },
                 testTag = "preset_balanced"
             )
             PresetRow(
                 label = "صارم",
-                description = "يرفض أكثر عندما لا تكون الإجابة واضحة في الكتب.",
+                description = "يرفض أكثر عندما لا تكون الإجابة واضحة في الكتاب.",
                 selected = settings.preset == AppSettings.STRICT,
                 onSelect = { onPreset(AppSettings.STRICT) },
                 testTag = "preset_strict"
@@ -83,14 +104,28 @@ fun SettingsSheet(
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        "يعرض زمن التحليل والبحث أسفل كل سؤال.",
+                        "وضع التشخيص: يعرض زمن البحث ودرجة التشابه.",
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
                 Switch(
                     checked = settings.showTimings,
-                    onCheckedChange = onShowTimings
+                    onCheckedChange = onShowTimings,
+                    modifier = Modifier.testTag("show_timings_switch")
                 )
+            }
+
+            Button(
+                onClick = {
+                    onCopyReport()
+                    copied = true
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .testTag("copy_diagnostics")
+            ) {
+                Text(if (copied) "تم النسخ" else "نسخ تقرير التشخيص")
             }
             TextButton(
                 onClick = onDismiss,

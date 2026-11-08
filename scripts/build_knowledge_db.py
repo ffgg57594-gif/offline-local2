@@ -19,6 +19,23 @@ OUT_DB = os.path.join("app", "src", "main", "assets", "books_knowledge.db")
 SKIP_FILE = os.path.join("scripts", "skip_pages.json")
 
 ZERO_WIDTH = "\u200b\u200c\u200d\ufeff"
+
+# Display-only cleanup for the Tofu squares that some PDF fonts leave behind.
+# These code points are bullet glyphs or private-use/unassigned characters.
+# The searchable ``text`` column is never changed; only ``display_text``.
+# Input glyphs that we replace with the standard bullet U+2022.
+DISPLAY_BULLET_CODEPOINTS = {
+    0x2022, 0x2023, 0x2043, 0x2219, 0x25A0, 0x25A1, 0x25AA, 0x25AB,
+    0x25CF, 0x25CB, 0x25E6, 0x25FE, 0x25FD, 0x25FC, 0x25FB,
+}
+
+# PDF tofu glyphs that must not survive in the display column. U+2022 itself
+# is allowed because it is the replacement character.
+DISPLAY_FORBIDDEN_CODEPOINTS = {
+    0x2043, 0x2219, 0x25A0, 0x25A1, 0x25AA, 0x25AB,
+    0x25CF, 0x25CB, 0x25E6, 0x25FE, 0x25FD, 0x25FC, 0x25FB,
+}
+
 _TOC_LABELS = {"contents", "table of contents", "المحتويات", "الفهرس"}
 _DOT_LEADER = re.compile(r"\.{3,}|\u2026")
 _PAGE_NUMBER_TAIL = re.compile(r".+\s+\d{1,4}\s*$")
@@ -61,6 +78,46 @@ def normalize_search_text(text):
     text = text.lower()
     text = re.sub(r"[\u2010\u2011\u2012\u2013\u2014\u2212]", "-", text)
     return text
+
+
+def is_replaceable_display_char(ch):
+    """True for input glyphs that the display pass should replace."""
+    cp = ord(ch)
+    if cp in DISPLAY_BULLET_CODEPOINTS:
+        return True
+    return unicodedata.category(ch) in ("Co", "Cn", "Cs")
+
+
+def is_bad_display_char(ch):
+    """True for Tofu/private-use/unassigned chars after the display pass.
+
+    U+2022 (the inserted standard bullet) is deliberately allowed.
+    """
+    cp = ord(ch)
+    if cp in DISPLAY_FORBIDDEN_CODEPOINTS:
+        return True
+    return unicodedata.category(ch) in ("Co", "Cn", "Cs")
+
+
+def display_text(text):
+    """Return a UI-only copy of ``text`` with Tofu squares removed.
+
+    Bullet glyphs, private-use characters and unassigned code points become
+    the standard bullet ``• ``. Runs of spaces are collapsed. The original
+    ``text`` (and therefore ``chunk_texts_sha256``) is left untouched.
+    """
+    out = []
+    for ch in text:
+        out.append("• " if is_replaceable_display_char(ch) else ch)
+    cleaned = "".join(out)
+    cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
+    cleaned = re.sub(r" *\n *", "\n", cleaned)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+    return cleaned.strip()
+
+
+def has_bad_display_char(text):
+    return any(is_bad_display_char(ch) for ch in text)
 
 
 def dehyphenate(text):
@@ -293,7 +350,7 @@ def build_db(pdf_paths):
     conn = sqlite3.connect(OUT_DB)
     cur = conn.cursor()
     cur.execute("CREATE TABLE books(id INTEGER PRIMARY KEY, name TEXT, sha256 TEXT, pages INTEGER)")
-    cur.execute("CREATE TABLE chunks(id INTEGER PRIMARY KEY, book_id INTEGER, page INTEGER, section TEXT, text TEXT, search_text TEXT, word_count INTEGER)")
+    cur.execute("CREATE TABLE chunks(id INTEGER PRIMARY KEY, book_id INTEGER, page INTEGER, section TEXT, text TEXT, display_text TEXT, search_text TEXT, word_count INTEGER)")
     cur.execute("CREATE VIRTUAL TABLE chunks_fts USING fts5(search_text, content='chunks', content_rowid='id', tokenize='porter unicode61 remove_diacritics 2')")
     cur.execute("CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT)")
 
@@ -301,6 +358,8 @@ def build_db(pdf_paths):
     total_chunks_before_guard = 0
     total_chunks_after_guard = 0
     total_dropped = 0
+    display_changed = 0
+    display_bad = 0
     books_rows = []
     summary_rows = []
 
@@ -395,9 +454,14 @@ def build_db(pdf_paths):
 
         for page, section, text, wc in kept_chunks:
             search_text = normalize_search_text(text)
+            shown = display_text(text)
+            if shown != text:
+                display_changed += 1
+            if has_bad_display_char(shown):
+                display_bad += 1
             cur.execute(
-                "INSERT INTO chunks(id, book_id, page, section, text, search_text, word_count) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (chunk_id, book_id, page, section, text, search_text, wc),
+                "INSERT INTO chunks(id, book_id, page, section, text, display_text, search_text, word_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (chunk_id, book_id, page, section, text, shown, search_text, wc),
             )
             cur.execute("INSERT INTO chunks_fts(rowid, search_text) VALUES (?, ?)", (chunk_id, search_text))
             chunk_id += 1
@@ -437,6 +501,8 @@ def build_db(pdf_paths):
     cur.execute("INSERT INTO meta(key, value) VALUES ('chunks_before_guard', ?)", (total_chunks_before_guard,))
     cur.execute("INSERT INTO meta(key, value) VALUES ('chunks_after_guard', ?)", (total_chunks_after_guard,))
     cur.execute("INSERT INTO meta(key, value) VALUES ('chunks_dropped_guard', ?)", (total_dropped,))
+    cur.execute("INSERT INTO meta(key, value) VALUES ('display_text_changed', ?)", (display_changed,))
+    cur.execute("INSERT INTO meta(key, value) VALUES ('display_text_bad', ?)", (display_bad,))
 
     conn.commit()
     conn.close()
@@ -449,11 +515,19 @@ def build_db(pdf_paths):
         lines.append(f"| {name} | {pg} | {pwt} | {cb} | {ca} | {avg} | {dr} | {sk} |")
     table = "\n".join(lines)
     print(table)
+    print(
+        f"display_text_changed={display_changed}/{total_chunks_after_guard} "
+        f"display_text_bad={display_bad}"
+    )
     step_summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if step_summary:
         with open(step_summary, "a", encoding="utf-8") as f:
             f.write("## Book knowledge DB build summary\n\n")
             f.write(table + "\n\n")
+            f.write(
+                f"display_text_changed={display_changed}/{total_chunks_after_guard}, "
+                f"display_text_bad={display_bad}\n\n"
+            )
 
 
 def main():

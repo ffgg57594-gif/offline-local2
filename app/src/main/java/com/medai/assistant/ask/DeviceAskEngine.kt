@@ -2,6 +2,7 @@ package com.medai.assistant.ask
 
 import com.medai.assistant.data.Chunk
 import com.medai.assistant.data.ChunkRepository
+import com.medai.assistant.diagnostics.Diagnostics
 import com.medai.assistant.embedder.OnnxEmbedder
 import com.medai.assistant.gate.GateConfig
 import com.medai.assistant.gate.GateDatabase
@@ -69,15 +70,21 @@ class DeviceAskEngine(
             val passages = top3Hits.mapIndexedNotNull { index, hit ->
                 val chunk = chunks.firstOrNull { it.id == hit.chunkId }
                     ?: return@mapIndexedNotNull null
+                val shown = chunk.displayText
+                val (position, total) = repository.getPositionInBook(chunk.id) ?: (0 to 0)
+                Diagnostics.lastBookRawName = chunk.bookName
                 Passage(
                     chunkId = chunk.id,
                     rank = index + 1,
                     bookName = chunk.bookName,
                     page = chunk.page,
                     section = chunk.section,
-                    text = chunk.text,
+                    text = shown,
+                    score = hit.score.toDouble(),
+                    positionInBook = position,
+                    totalInBook = total,
                     highlightRanges = PassageText.highlightRanges(
-                        text = chunk.text,
+                        text = shown,
                         stems = signals.stems,
                         stemmer = { token -> gateDatabase.stem(token.lowercase(Locale.ROOT)) }
                     )

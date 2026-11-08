@@ -113,4 +113,31 @@ class ChunkRepositoryTest {
         assertEquals(61, chunks[1].id)
         assertEquals(780, chunks[2].id)
     }
+
+    @Test
+    fun testDisplayTextHasNoPrivateUseOrUnassignedCodePoints() {
+        val rows = repository.getAllDisplayTextsOrdered()
+        assertEquals(1185, rows.size)
+        var changed = 0
+        val bad = mutableListOf<String>()
+        for ((id, text) in rows) {
+            if (text.isEmpty()) bad.add("chunk $id is empty")
+            text.codePoints().forEach { cp ->
+                val type = Character.getType(cp)
+                if (type == Character.PRIVATE_USE.toInt() ||
+                    type == Character.UNASSIGNED.toInt() ||
+                    type == Character.SURROGATE.toInt()
+                ) {
+                    bad.add("chunk $id has U+%04X".format(cp))
+                }
+            }
+        }
+        for (id in 1..1185) {
+            val raw = repository.getById(id)?.text
+            val shown = rows[id - 1].second
+            if (raw != null && raw != shown) changed++
+        }
+        println("display_text changed chunks: $changed/${rows.size}")
+        assertTrue("display_text bad code points: ${bad.take(10)}", bad.isEmpty())
+    }
 }
