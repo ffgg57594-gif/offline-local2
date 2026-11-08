@@ -183,7 +183,11 @@ class K5bUiLightTest : K5bUiTestBase() {
             ?: error("missing next chunk")
         val citation = PassageText.citation(top.bookName, top.page)
 
-        composeRule.onNodeWithTag("citation_${top.chunkId}").performClick()
+        // The longest passage is not necessarily the first card, so scroll its
+        // citation chip into the viewport before injecting the tap.
+        composeRule.onNodeWithTag("citation_${top.chunkId}")
+            .performScrollTo()
+            .performClick()
         composeRule.waitUntil(30_000) {
             composeRule.onAllNodesWithText("المقطع الكامل").fetchSemanticsNodes().isNotEmpty()
         }

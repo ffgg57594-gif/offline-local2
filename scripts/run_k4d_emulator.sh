@@ -81,14 +81,40 @@ IME_ID=com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinI
 adb shell settings put secure show_ime_with_hard_keyboard 1 || true
 adb shell settings put secure default_input_method "$IME_ID" || true
 adb shell am force-stop com.google.android.inputmethod.latin || true
+adb shell ime disable "$IME_ID" || true
 adb shell ime enable "$IME_ID" || true
-adb shell ime set "$IME_ID" || true
+# The emulator is a Pixel profile, whose screen timeout is short; synthetic
+# instrumentation touches do not reset it, so the display can sleep mid-suite
+# (no focused window, no IME). Keep it on for the whole run.
+adb shell settings put system screen_off_timeout 2147483647 || true
+adb shell svc power stayon true || true
+# `ime set` after a force-stop can leave Gboard in the stopped state; retry
+# until its process really exists so the first showSoftInput() does not race a
+# failed service start.
+IME_PID=""
+for _ in $(seq 1 30); do
+  adb shell ime set "$IME_ID" >/dev/null 2>&1 || true
+  IME_PID=$(adb shell pidof com.google.android.inputmethod.latin | tr -d '\r')
+  [ -n "$IME_PID" ] && break
+  sleep 1
+done
+if [ -z "$IME_PID" ]; then
+  # Last resort: launch Gboard's own activity to create the process, then
+  # return to the home screen.
+  adb shell monkey -p com.google.android.inputmethod.latin \
+    -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1 || true
+  sleep 3
+  adb shell input keyevent KEYCODE_HOME || true
+  IME_PID=$(adb shell pidof com.google.android.inputmethod.latin | tr -d '\r')
+fi
 # Let the IME process come back and read show_ime_with_hard_keyboard before the
 # first field is focused; otherwise the first showSoftInput() can race startup.
 sleep 5
 adb shell wm dismiss-keyguard || true
 adb shell input keyevent KEYCODE_WAKEUP || true
 {
+  echo "ime_pid=${IME_PID:-none}"
+  echo "screen_off_timeout=$(adb shell settings get system screen_off_timeout | tr -d '\r')"
   echo "imes=$(adb shell ime list -s | tr -d '\r' | tr '\n' ' ')"
   echo "default_input_method=$(adb shell settings get secure default_input_method | tr -d '\r')"
   echo "show_ime_with_hard_keyboard=$(adb shell settings get secure show_ime_with_hard_keyboard | tr -d '\r')"

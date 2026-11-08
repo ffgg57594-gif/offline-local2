@@ -55,6 +55,7 @@ abstract class K5bUiTestBase {
         composeRule.waitForIdle()
         awaitModelReady()
         resetToBalanced()
+        ensureScreenAwakeAndFocused()
     }
 
     @After
@@ -98,6 +99,30 @@ abstract class K5bUiTestBase {
             viewModel().settings.value.preset == "balanced" &&
                 !viewModel().settings.value.showTimings
         }
+    }
+
+    /**
+     * A sleeping display (Pixel profile default) leaves the activity resumed
+     * but without window focus, so InputMethodManager refuses to show the IME
+     * with "view is not served". Wake the device and wait for real focus.
+     */
+    private fun ensureScreenAwakeAndFocused() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        fun shell(command: String) {
+            instrumentation.uiAutomation.executeShellCommand(command).close()
+        }
+        val deadline = System.currentTimeMillis() + 30_000
+        while (System.currentTimeMillis() < deadline) {
+            var focused = false
+            composeRule.activityRule.scenario.onActivity { activity ->
+                focused = activity.window.decorView.hasWindowFocus()
+            }
+            if (focused) return
+            shell("input keyevent KEYCODE_WAKEUP")
+            shell("wm dismiss-keyguard")
+            Thread.sleep(500)
+        }
+        throw AssertionError("the activity window never gained focus; the IME cannot be shown")
     }
 
     protected fun waitForUiText(text: String, timeoutMs: Long = 180_000) {
@@ -245,6 +270,7 @@ abstract class K5bUiTestBase {
 
     protected fun showKeyboard() {
         composeRule.waitForIdle()
+        ensureScreenAwakeAndFocused()
         composeRule.activityRule.scenario.onActivity { activity ->
             val imm = activity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
             activity.window.decorView.requestFocus()
