@@ -11,6 +11,13 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sqrt
 
+/** One embedding plus its tokenize/inference split for the benchmark screen. */
+data class TimedEmbedding(
+    val vector: FloatArray,
+    val tokenizeMs: Long,
+    val inferenceMs: Long
+)
+
 /**
  * ONNX Query Embedder for multilingual-e5-small quantized model.
  * Performs Mean Pooling over attention mask and L2 Normalization.
@@ -121,7 +128,11 @@ class OnnxEmbedder(
      * Prepend "query: ", truncate at 384 tokens, run ONNX inference,
      * apply mean pooling over attention mask, and L2 normalize.
      */
-    fun embedQuery(question: String): FloatArray = embedWithPrefix(QUERY_PREFIX, question)
+    fun embedQuery(question: String): FloatArray = embedQueryTimed(question).vector
+
+    /** Same query path, but keeps the tokenize and inference timings separate. */
+    fun embedQueryTimed(question: String): TimedEmbedding =
+        embedWithPrefixTimed(QUERY_PREFIX, question)
 
     /**
      * Embeds a passage. Only used by parity tests and future indexing tools;
@@ -129,9 +140,14 @@ class OnnxEmbedder(
      */
     fun embedPassage(passage: String): FloatArray = embedWithPrefix(PASSAGE_PREFIX, passage)
 
-    private fun embedWithPrefix(prefix: String, question: String): FloatArray {
+    private fun embedWithPrefix(prefix: String, question: String): FloatArray =
+        embedWithPrefixTimed(prefix, question).vector
+
+    private fun embedWithPrefixTimed(prefix: String, question: String): TimedEmbedding {
+        val start = System.nanoTime()
         val text = prefix + question
         val encoded = tokenizer.encode(text, MAX_LENGTH)
+        val tokenized = System.nanoTime()
 
         val seqLen = encoded.ids.size
         val shape = longArrayOf(1L, seqLen.toLong())
@@ -166,7 +182,13 @@ class OnnxEmbedder(
                 floatBuffer.get(lastHiddenState)
 
                 val pooled = meanPool(lastHiddenState, attentionMaskLong, seqLen, EMBED_DIM)
-                return l2Normalize(pooled)
+                val vector = l2Normalize(pooled)
+                val finished = System.nanoTime()
+                return TimedEmbedding(
+                    vector = vector,
+                    tokenizeMs = (tokenized - start) / 1_000_000,
+                    inferenceMs = (finished - tokenized) / 1_000_000
+                )
             } finally {
                 result.close()
             }

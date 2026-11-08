@@ -38,7 +38,62 @@ adb shell df -h /data | tee -a "$REPORT_DIR/device_info.txt"
 free -h | tee -a "$REPORT_DIR/device_info.txt"
 df -h . | tee -a "$REPORT_DIR/device_info.txt"
 
+K5B_DIR=build/reports/k5b
+DEVICE_FILES=/sdcard/Android/data/com.medai.assistant/files
+mkdir -p "$K5B_DIR"
+
+# Copy a device directory into a host directory without nesting an extra
+# level. adb pull changes shape depending on whether the destination exists,
+# so always pull into a clean staging directory and copy its contents.
+pull_device_dir() {
+  local remote="$1"
+  local dest="$2"
+  local base
+  local staging="${dest}.staging"
+  base=$(basename "$remote")
+  rm -rf "$staging" "$dest"
+  mkdir -p "$staging" "$dest"
+  if adb shell "ls '$remote'" >/dev/null 2>&1; then
+    adb pull "$remote" "$staging" >/dev/null 2>&1 || true
+    # adb pull may keep the remote basename or copy the contents directly,
+    # depending on adb version and whether the destination existed.
+    if [ -d "$staging/$base" ]; then
+      cp -a "$staging/$base/." "$dest/" 2>/dev/null || true
+    else
+      cp -a "$staging/." "$dest/" 2>/dev/null || true
+    fi
+  else
+    echo "WARNING: device directory missing: $remote" >&2
+  fi
+  rm -rf "$staging"
+}
+
+# AVDs expose a hardware keyboard, which suppresses the soft IME. K5b case 10
+# asserts that the input sits above a real IME inset, so force the IME on.
+adb shell settings put secure show_ime_with_hard_keyboard 1 || true
+{
+  echo "imes=$(adb shell ime list -s | tr -d '\r' | tr '\n' ' ')"
+  echo "show_ime_with_hard_keyboard=$(adb shell settings get secure show_ime_with_hard_keyboard | tr -d '\r')"
+} | tee -a "$REPORT_DIR/device_info.txt"
+
 TEST_START=$(date +%s)
+set +e
 ./gradlew connectedDebugAndroidTest --no-daemon --stacktrace
+TEST_STATUS=$?
+set -e
 TEST_END=$(date +%s)
 echo "connected_test_seconds=$((TEST_END - TEST_START))" | tee -a "$REPORT_DIR/device_info.txt"
+echo "connected_test_exit_code=$TEST_STATUS" | tee -a "$REPORT_DIR/device_info.txt"
+
+# Pull K5b-A/B reports and K5b-C screenshots even when a test failed: the
+# report explains the failure and the screenshots still prove what rendered.
+pull_device_dir "$DEVICE_FILES/reports" "$K5B_DIR"
+pull_device_dir "$DEVICE_FILES/ui-screenshots" "$K5B_DIR/ui-screenshots"
+
+{
+  echo "pulled_k5b_report_files=$(find "$K5B_DIR" -maxdepth 1 -type f | wc -l)"
+  echo "pulled_screenshots=$(find "$K5B_DIR/ui-screenshots" -type f -name '*.png' 2>/dev/null | wc -l)"
+  echo "pulled_screenshot_bytes=$(du -sb "$K5B_DIR/ui-screenshots" 2>/dev/null | awk '{print $1}')"
+} | tee -a "$REPORT_DIR/device_info.txt"
+
+exit "$TEST_STATUS"

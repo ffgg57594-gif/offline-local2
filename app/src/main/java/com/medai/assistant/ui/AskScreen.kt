@@ -51,6 +51,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -119,7 +120,9 @@ fun AskScreen(
                 actions = {
                     TextButton(
                         onClick = { showSettings = true },
-                        modifier = Modifier.heightIn(min = 48.dp)
+                        modifier = Modifier
+                            .heightIn(min = 48.dp)
+                            .testTag("settings_button")
                     ) {
                         Text("الإعدادات")
                     }
@@ -178,6 +181,7 @@ fun AskScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .heightIn(min = 48.dp)
+                                .testTag("show_nearest_button")
                         ) {
                             Text("عرض أقرب النتائج")
                         }
@@ -296,12 +300,13 @@ private fun EmptyState(onExample: (String) -> Unit) {
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
-        EXAMPLE_QUESTIONS.forEach { question ->
+        EXAMPLE_QUESTIONS.forEachIndexed { index, question ->
             OutlinedButton(
                 onClick = { onExample(question) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 48.dp)
+                    .testTag("example_$index")
             ) {
                 Text(
                     question,
@@ -372,7 +377,9 @@ private fun RefusalCard(refusal: String) {
     ) {
         Text(
             refusal,
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .padding(16.dp)
+                .testTag("refusal_text"),
             style = MaterialTheme.typography.bodyLarge.copy(
                 textDirection = TextDirection.Rtl
             ),
@@ -423,7 +430,11 @@ private fun ResultCard(
         passage.highlightRanges.filter { it.first >= 0 && it.last < shown.length }
     }
 
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("result_card_${passage.chunkId}")
+    ) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -444,6 +455,7 @@ private fun ResultCard(
                         .weight(1f)
                         .clickable { onCitationClick(passage) }
                         .heightIn(min = 48.dp)
+                        .testTag("citation_${passage.chunkId}")
                         .padding(vertical = 12.dp),
                     style = MaterialTheme.typography.labelLarge.copy(
                         textDirection = TextDirection.Content
@@ -451,7 +463,7 @@ private fun ResultCard(
                     color = MaterialTheme.colorScheme.primary
                 )
             }
-            PassageBody(shown, ranges)
+            PassageBody(shown, ranges, "passage_body_${passage.chunkId}")
             if (preview.truncated) {
                 TextButton(
                     onClick = { expanded = !expanded },
@@ -472,7 +484,7 @@ private fun ResultCard(
 }
 
 @Composable
-private fun PassageBody(text: String, ranges: List<IntRange>) {
+private fun PassageBody(text: String, ranges: List<IntRange>, tagPrefix: String) {
     val background = MaterialTheme.colorScheme.tertiaryContainer
     val foreground = MaterialTheme.colorScheme.onTertiaryContainer
     val annotated = remember(text, ranges, background, foreground) {
@@ -498,6 +510,7 @@ private fun PassageBody(text: String, ranges: List<IntRange>) {
     val ltr = PassageText.isMostlyLatin(text)
     Text(
         text = annotated,
+        modifier = Modifier.testTag("${tagPrefix}_${if (ltr) "ltr" else "rtl"}"),
         style = MaterialTheme.typography.bodyMedium.copy(
             textDirection = if (ltr) TextDirection.Ltr else TextDirection.Rtl
         ),
@@ -525,7 +538,9 @@ private fun AskInputBar(
             OutlinedTextField(
                 value = value,
                 onValueChange = onValueChange,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag("ask_input"),
                 placeholder = { Text("اكتب سؤالك الطبي...") },
                 minLines = 1,
                 maxLines = 4,
@@ -541,6 +556,7 @@ private fun AskInputBar(
                 modifier = Modifier
                     .heightIn(min = 48.dp)
                     .widthIn(min = 48.dp)
+                    .testTag("send_button")
             ) {
                 Text("إرسال")
             }
@@ -586,17 +602,19 @@ private fun PassageSheet(
         ) {
             Text(
                 "المقطع الكامل",
+                modifier = Modifier.testTag("sheet_title"),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
             Text(
                 PassageText.citation(current.bookName, current.page),
+                modifier = Modifier.testTag("sheet_citation"),
                 style = MaterialTheme.typography.labelLarge.copy(
                     textDirection = TextDirection.Content
                 ),
                 color = MaterialTheme.colorScheme.primary
             )
-            PassageBody(current.text, emptyList())
+            PassageBody(current.text, emptyList(), "sheet_body_${current.chunkId}")
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -607,6 +625,7 @@ private fun PassageSheet(
                     modifier = Modifier
                         .weight(1f)
                         .heightIn(min = 48.dp)
+                        .testTag("sheet_prev")
                 ) {
                     Text("السابق")
                 }
@@ -616,6 +635,7 @@ private fun PassageSheet(
                     modifier = Modifier
                         .weight(1f)
                         .heightIn(min = 48.dp)
+                        .testTag("sheet_next")
                 ) {
                     Text("التالي")
                 }
@@ -627,6 +647,14 @@ private fun PassageSheet(
                     .heightIn(min = 48.dp)
             ) {
                 Text("نسخ النص")
+            }
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .heightIn(min = 48.dp)
+                    .testTag("sheet_close")
+            ) {
+                Text("إغلاق")
             }
         }
     }

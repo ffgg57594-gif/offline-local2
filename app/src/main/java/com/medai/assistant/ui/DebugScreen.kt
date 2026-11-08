@@ -51,6 +51,7 @@ import com.medai.assistant.search.SearchResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.util.Locale
 
 private data class DebugHit(
@@ -69,11 +70,17 @@ private data class DebugSearchState(
     val timings: SearchTiming
 )
 
-private data class DebugBenchmark(
-    val runs: Int,
+private data class StageStats(
+    val name: String,
     val p50Ms: Long,
     val p95Ms: Long,
-    val maxMs: Long,
+    val maxMs: Long
+)
+
+private data class DebugBenchmark(
+    val runs: Int,
+    val stages: List<StageStats>,
+    val total: StageStats,
     val warmupMs: Long
 )
 
@@ -351,6 +358,11 @@ fun DebugScreen(onBack: () -> Unit) {
                         "1 warmup + 10 questions × 3 runs.",
                         style = MaterialTheme.typography.bodySmall
                     )
+                    Text(
+                        "Stages: tokenize · embed · search · gate signals · gate decision · total",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
                     Button(
                         onClick = {
                             if (!ready || benchmarking) return@Button
@@ -362,11 +374,21 @@ fun DebugScreen(onBack: () -> Unit) {
                                 try {
                                     val result = withContext(Dispatchers.Default) {
                                         val warmupStart = System.nanoTime()
-                                        val warmupVector = loaded.embedder.embedQuery("warmup")
-                                        loaded.denseSearch.search(warmupVector, k = 5)
+                                        val warmupEmbedding =
+                                            loaded.embedder.embedQueryTimed("warmup")
+                                        val warmupHits = loaded.denseSearch.search(
+                                            warmupEmbedding.vector,
+                                            k = 5
+                                        )
                                         val warmupMs =
                                             (System.nanoTime() - warmupStart) / 1_000_000
-                                        val latencies = ArrayList<Long>()
+                                        val tokenize = ArrayList<Long>()
+                                        val embed = ArrayList<Long>()
+                                        val search = ArrayList<Long>()
+                                        val gateSignals = ArrayList<Long>()
+                                        val gateDecision = ArrayList<Long>()
+                                        val total = ArrayList<Long>()
+                                        var runs = 0
                                         for (repeat in 1..3) {
                                             for ((index, item) in DEBUG_QUESTIONS.withIndex()) {
                                                 val run = (repeat - 1) * DEBUG_QUESTIONS.size +
@@ -376,29 +398,71 @@ fun DebugScreen(onBack: () -> Unit) {
                                                         "Query $run/30 (round $repeat)"
                                                 }
                                                 val start = System.nanoTime()
-                                                val vector = loaded.embedder.embedQuery(item)
-                                                loaded.denseSearch.search(vector, k = 5)
-                                                latencies.add(
-                                                    (System.nanoTime() - start) / 1_000_000
+                                                val embedding =
+                                                    loaded.embedder.embedQueryTimed(item)
+                                                val embedded = System.nanoTime()
+                                                val hits = loaded.denseSearch.search(
+                                                    embedding.vector,
+                                                    k = 5
                                                 )
+                                                val searched = System.nanoTime()
+                                                val top3 = hits.take(3)
+                                                val vocab = loaded.gateVocab
+                                                val config = loaded.gateConfig
+                                                val database = loaded.gateDatabase
+                                                if (vocab != null && config != null &&
+                                                    database != null
+                                                ) {
+                                                    val signals = GateSignals.compute(
+                                                        question = item,
+                                                        top3ChunkIds = top3.map { it.chunkId },
+                                                        database = database,
+                                                        vocab = vocab
+                                                    )
+                                                    val gated = System.nanoTime()
+                                                    GateDecision.accept(
+                                                        hits.firstOrNull()?.score?.toDouble()
+                                                            ?: 0.0,
+                                                        signals.s3CovTop3,
+                                                        signals.s4Unknown,
+                                                        config.preset(preset)
+                                                    )
+                                                    val decided = System.nanoTime()
+                                                    gateSignals.add(
+                                                        (gated - searched) / 1_000_000
+                                                    )
+                                                    gateDecision.add(
+                                                        (decided - gated) / 1_000_000
+                                                    )
+                                                    total.add(
+                                                        (decided - start) / 1_000_000
+                                                    )
+                                                } else {
+                                                    gateSignals.add(0)
+                                                    gateDecision.add(0)
+                                                    total.add((searched - start) / 1_000_000)
+                                                }
+                                                tokenize.add(embedding.tokenizeMs)
+                                                embed.add(embedding.inferenceMs)
+                                                search.add((searched - embedded) / 1_000_000)
+                                                runs++
                                             }
                                         }
-                                        latencies.sort()
                                         DebugBenchmark(
-                                            runs = latencies.size,
-                                            p50Ms = latencies[
-                                                (latencies.size * 0.50).toInt()
-                                                    .coerceAtMost(latencies.size - 1)
-                                            ],
-                                            p95Ms = latencies[
-                                                (latencies.size * 0.95).toInt()
-                                                    .coerceAtMost(latencies.size - 1)
-                                            ],
-                                            maxMs = latencies.maxOrNull() ?: 0L,
+                                            runs = runs,
+                                            stages = listOf(
+                                                stats("tokenize", tokenize),
+                                                stats("embed", embed),
+                                                stats("search", search),
+                                                stats("gate signals", gateSignals),
+                                                stats("gate decision", gateDecision)
+                                            ),
+                                            total = stats("total", total),
                                             warmupMs = warmupMs
                                         )
                                     }
                                     benchmark = result
+                                    writeBenchmarkCsv(context, result)
                                     benchmarkStatus = "Complete (${result.runs} runs)."
                                 } catch (failure: Throwable) {
                                     Diagnostics.recordException(failure)
@@ -419,9 +483,28 @@ fun DebugScreen(onBack: () -> Unit) {
                     }
                     benchmark?.let {
                         Text("Warmup: ${it.warmupMs} ms")
-                        Text("p50: ${it.p50Ms} ms")
-                        Text("p95: ${it.p95Ms} ms")
-                        Text("max: ${it.maxMs} ms")
+                        Text(
+                            "| stage | p50 ms | p95 ms | max ms |",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        it.stages.forEach { stage ->
+                            Text(
+                                "| ${stage.name} | ${stage.p50Ms} | ${stage.p95Ms} | " +
+                                    "${stage.maxMs} |",
+                                modifier = Modifier.testTag(
+                                    "benchmark_stage_${stage.name.replace(' ', '_')}"
+                                ),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                        Text(
+                            "| total | ${it.total.p50Ms} | ${it.total.p95Ms} | " +
+                                "${it.total.maxMs} |",
+                            modifier = Modifier.testTag("benchmark_stage_total"),
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
@@ -483,6 +566,44 @@ private fun runDebugSearch(
             gateSignalsMs = (gated - searched) / 1_000_000
         )
     )
+}
+
+private fun stats(name: String, values: List<Long>): StageStats {
+    if (values.isEmpty()) return StageStats(name, 0, 0, 0)
+    val sorted = values.sorted()
+    fun percentile(fraction: Double): Long {
+        val index = (sorted.size * fraction).toInt().coerceIn(0, sorted.size - 1)
+        return sorted[index]
+    }
+    return StageStats(
+        name = name,
+        p50Ms = percentile(0.50),
+        p95Ms = percentile(0.95),
+        maxMs = sorted.last()
+    )
+}
+
+private fun writeBenchmarkCsv(context: android.content.Context, benchmark: DebugBenchmark) {
+    try {
+        val dir = context.getExternalFilesDir("reports") ?: context.filesDir
+        dir.mkdirs()
+        val rows = ArrayList<String>()
+        rows.add("stage,p50_ms,p95_ms,max_ms,runs")
+        benchmark.stages.forEach { stage ->
+            rows.add(
+                "${stage.name},${stage.p50Ms},${stage.p95Ms},${stage.maxMs},${benchmark.runs}"
+            )
+        }
+        rows.add(
+            "total,${benchmark.total.p50Ms},${benchmark.total.p95Ms}," +
+                "${benchmark.total.maxMs},${benchmark.runs}"
+        )
+        rows.add("warmup,${benchmark.warmupMs},${benchmark.warmupMs}," +
+            "${benchmark.warmupMs},1")
+        File(dir, "benchmark.csv").writeText(rows.joinToString("\n") + "\n", Charsets.UTF_8)
+    } catch (failure: Throwable) {
+        Diagnostics.recordException(failure)
+    }
 }
 
 private fun fmt(value: Double): String = String.format(Locale.ROOT, "%.6f", value)

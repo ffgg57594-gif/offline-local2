@@ -13,12 +13,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.lifecycle.ViewModelProvider
 import com.medai.assistant.ask.AskViewModel
 import com.medai.assistant.ui.AskScreen
 import com.medai.assistant.ui.DebugScreen
+import com.medai.assistant.ui.UiOverrides
 
 class MainActivity : ComponentActivity() {
 
@@ -31,9 +34,16 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            val dark = isSystemInDarkTheme()
+            val dark = UiOverrides.forceDark ?: isSystemInDarkTheme()
+            val systemDensity = LocalDensity.current
+            val density = UiOverrides.fontScale?.let { scale ->
+                Density(systemDensity.density, scale)
+            } ?: systemDensity
             MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) {
-                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                CompositionLocalProvider(
+                    LocalLayoutDirection provides LayoutDirection.Rtl,
+                    LocalDensity provides density
+                ) {
                     var showDebug by rememberSaveable { mutableStateOf(false) }
                     if (showDebug) {
                         DebugScreen(onBack = { showDebug = false })

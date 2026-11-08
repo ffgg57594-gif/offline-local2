@@ -31,6 +31,18 @@ object Diagnostics {
     @Volatile
     var modelLoadMs: Long = -1L
 
+    /** Process start (Process.getStartUptimeMillis) to the first Ready state. */
+    @Volatile
+    var coldStartMs: Long = -1L
+
+    /** Number of ONNX sessions opened by AppGraph in this process. */
+    @Volatile
+    var modelLoadCount: Int = 0
+
+    /** Number of real questions submitted to the on-device pipeline. */
+    @Volatile
+    var searchCount: Int = 0
+
     @Volatile
     var lastTimings: SearchTiming? = null
 
@@ -97,7 +109,10 @@ object Diagnostics {
         sb.appendLine("onnxruntime=${onnxRuntimeVersion()}")
         sb.appendLine("install_status=$installStatus")
         sb.appendLine("asset_hash_check=$assetHashCheck")
+        sb.appendLine("cold_start_ms=$coldStartMs")
         sb.appendLine("model_load_ms=$modelLoadMs")
+        sb.appendLine("model_load_count=$modelLoadCount")
+        sb.appendLine("search_count=$searchCount")
 
         val timings = lastTimings
         if (timings == null) {

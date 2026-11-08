@@ -1,6 +1,8 @@
 package com.medai.assistant.runtime
 
 import android.content.Context
+import android.os.Process
+import android.os.SystemClock
 import com.medai.assistant.data.AndroidChunkRepository
 import com.medai.assistant.data.AssetInstaller
 import com.medai.assistant.data.ChunkRepository
@@ -91,6 +93,8 @@ object AppGraph {
                 _runtimeState.value = AppRuntimeState.LoadingModel
                 val loaded = loadResources(app, installedDir, assetSource)
                 loadedResources = loaded
+                Diagnostics.coldStartMs =
+                    SystemClock.uptimeMillis() - Process.getStartUptimeMillis()
                 _runtimeState.value = AppRuntimeState.Ready(loaded)
             } catch (failure: Throwable) {
                 Diagnostics.recordException(failure)
@@ -142,6 +146,7 @@ object AppGraph {
         require(modelFile.exists()) { "model_quantized.onnx is missing" }
         val embedder = OnnxEmbedder(modelFile, tokenizer)
         Diagnostics.modelLoadMs = embedder.loadTimeMs
+        Diagnostics.modelLoadCount += 1
 
         val embeddingsFile = File(installedDir, "embeddings.bin")
         require(embeddingsFile.exists()) { "embeddings.bin is missing" }

@@ -13,9 +13,11 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -42,6 +44,7 @@ fun SettingsSheet(
         ) {
             Text(
                 "الإعدادات",
+                modifier = Modifier.testTag("settings_sheet_title"),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -55,13 +58,15 @@ fun SettingsSheet(
                 label = "متوازن",
                 description = "يقبل أسئلة أكثر مع الحفاظ على رفض ما ليس في الكتب.",
                 selected = settings.preset == AppSettings.BALANCED,
-                onSelect = { onPreset(AppSettings.BALANCED) }
+                onSelect = { onPreset(AppSettings.BALANCED) },
+                testTag = "preset_balanced"
             )
             PresetRow(
                 label = "صارم",
                 description = "يرفض أكثر عندما لا تكون الإجابة واضحة في الكتب.",
                 selected = settings.preset == AppSettings.STRICT,
-                onSelect = { onPreset(AppSettings.STRICT) }
+                onSelect = { onPreset(AppSettings.STRICT) },
+                testTag = "preset_strict"
             )
 
             Row(
@@ -87,6 +92,14 @@ fun SettingsSheet(
                     onCheckedChange = onShowTimings
                 )
             }
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .heightIn(min = 48.dp)
+                    .testTag("settings_close")
+            ) {
+                Text("إغلاق")
+            }
         }
     }
 }
@@ -96,12 +109,14 @@ private fun PresetRow(
     label: String,
     description: String,
     selected: Boolean,
-    onSelect: () -> Unit
+    onSelect: () -> Unit,
+    testTag: String
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
+            .testTag(testTag)
             .selectable(
                 selected = selected,
                 onClick = onSelect,

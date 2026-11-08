@@ -95,6 +95,7 @@ class AskViewModel(application: Application) : AndroidViewModel(application) {
 
     private inner class AppGraphEngine : AskEngine {
         override suspend fun answer(question: String, preset: String): AskAnswer {
+            Diagnostics.searchCount += 1
             val resources = AppGraph.requireResources()
             val answer = resources.toEngine().answer(question, preset)
             Diagnostics.recordTimings(

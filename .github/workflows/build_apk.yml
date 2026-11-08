@@ -312,6 +312,39 @@ jobs:
           done
           echo "| Total APK | $TOTAL |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+      - name: Assemble K5b report
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p build/reports/k5b
+          python3 scripts/make_k5b_report.py \
+            --repo "$GITHUB_REPOSITORY" \
+            --run-url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --commit "$GITHUB_SHA" \
+            --previous-release-tag build-156 \
+            --job-start-epoch "${K4D_JOB_START:-0}" | tee build/reports/k5b/k5b_report.log
+          cat build/reports/k5b/k5b_report.md >> $GITHUB_STEP_SUMMARY
+      - name: Upload K5b reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k5b-reports
+          path: |
+            build/reports/k5b/*.md
+            build/reports/k5b/*.json
+            build/reports/k5b/*.csv
+            build/reports/k5b/*.txt
+            build/reports/k5b/*.log
+            build/reports/k4d/android_test_results.csv
+          if-no-files-found: warn
+      - name: Upload K5b UI screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-screenshots
+          path: build/reports/k5b/ui-screenshots/
+          if-no-files-found: warn
       - name: Assemble K5a report
         if: always()
         env:
@@ -396,5 +429,9 @@ jobs:
             build/reports/k5a/k5a_report.md
             build/reports/k5a/k5a_summary.json
             build/reports/k5a/e2e_10.csv
+            build/reports/k5b/k5b_report.md
+            build/reports/k5b/k5b_summary.json
+            build/reports/k5b/k5b_pipeline_120_summary.json
+            build/reports/k5b/benchmark.csv
             eval/batch_padding.csv
             eval/batch_padding_summary.json
