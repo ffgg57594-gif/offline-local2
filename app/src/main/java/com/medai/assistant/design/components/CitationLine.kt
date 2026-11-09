@@ -110,14 +110,10 @@ fun CitationLine(
             )
             Text(
                 text = page.toString(), // Western digits
-                modifier = Modifier
-                    .clearAndSetSemantics {}
-                    .clip(RoundedCornerShape(extendedTokens.chipRadius))
-                    .background(extendedTokens.chipBackground)
-                    .padding(horizontal = DesignSpacing.space4, vertical = 1.dp),
+                modifier = Modifier.clearAndSetSemantics {},
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
-                color = extendedTokens.chipText,
+                color = extendedTokens.bookmarkTabText,
                 softWrap = false
             )
         }
