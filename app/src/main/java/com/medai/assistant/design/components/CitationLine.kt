@@ -19,8 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.onClick
-import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.text
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -47,6 +46,7 @@ fun CitationLine(
     val citationText = PassageText.citation(bookTitle, page)
 
     val containerModifier = modifier
+        .testTag(testTag)
         .clip(RoundedCornerShape(extendedTokens.chipRadius))
         .background(extendedTokens.bookmarkTabBackground)
         .border(
@@ -61,17 +61,9 @@ fun CitationLine(
                 Modifier
             }
         )
-        .clearAndSetSemantics {
+        .semantics {
             this.text = AnnotatedString(citationText)
-            if (onClick != null) {
-                this.role = Role.Button
-                this.onClick {
-                    onClick()
-                    true
-                }
-            }
         }
-        .testTag(testTag)
         .padding(horizontal = DesignSpacing.space8, vertical = DesignSpacing.space4)
 
     FlowRow(
@@ -81,6 +73,7 @@ fun CitationLine(
     ) {
         Text(
             text = "المصدر:",
+            modifier = Modifier.clearAndSetSemantics {},
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
             color = extendedTokens.bookmarkTabText,
@@ -89,16 +82,19 @@ fun CitationLine(
         )
         Text(
             text = bookTitle,
+            modifier = Modifier.clearAndSetSemantics {},
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Medium,
             color = extendedTokens.bookmarkTabText
         )
         Row(
+            modifier = Modifier.clearAndSetSemantics {},
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(DesignSpacing.space4)
         ) {
             Text(
                 text = "·",
+                modifier = Modifier.clearAndSetSemantics {},
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = extendedTokens.bookmarkTabText,
@@ -106,6 +102,7 @@ fun CitationLine(
             )
             Text(
                 text = "صفحة",
+                modifier = Modifier.clearAndSetSemantics {},
                 style = MaterialTheme.typography.labelSmall,
                 color = extendedTokens.bookmarkTabText,
                 fontFamily = DesignFonts.ArabicUiFamily,
@@ -113,9 +110,14 @@ fun CitationLine(
             )
             Text(
                 text = page.toString(), // Western digits
+                modifier = Modifier
+                    .clearAndSetSemantics {}
+                    .clip(RoundedCornerShape(extendedTokens.chipRadius))
+                    .background(extendedTokens.chipBackground)
+                    .padding(horizontal = DesignSpacing.space4, vertical = 1.dp),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
-                color = extendedTokens.bookmarkTabText,
+                color = extendedTokens.chipText,
                 softWrap = false
             )
         }
