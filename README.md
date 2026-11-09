@@ -1,144 +1,182 @@
-# المساعد الطبي / MedAI Assistant
+# المساعد الطبي المحلي / MedAI Offline Assistant
 
-Android app that answers only from medical PDF textbooks baked in at build time. Stage 1 green: signed APK builds on GitHub Actions.
+[![CI Build](https://github.com/ffgg57594-gif/offline-local2/actions/workflows/build_apk.yml/badge.svg)](https://github.com/ffgg57594-gif/offline-local2/actions/workflows/build_apk.yml)
+[![Latest Release](https://img.shields.io/github/v/release/ffgg57594-gif/offline-local2?color=0F5C5C&label=Release)](https://github.com/ffgg57594-gif/offline-local2/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Android%2014%20(API%2034)-green.svg)](https://developer.android.com)
+[![Privacy](https://img.shields.io/badge/Internet-NONE%20(100%25%20Offline)-brightgreen.svg)]()
 
-## Where to put PDFs
-Place PDF textbooks in `app/src/main/assets/books/`. They are NOT packaged in the APK (ignored via `ignoreAssetsPattern = "!books"`).
+تطبيق أندرويد طبي يعمل بالكامل محلياً وبدون اتصال بالإنترنت (100% Offline)؛ يجيب عن الأسئلة الطبية في تخصص أمراض النساء والتوليد (Obstetrics & Gynaecology) **حصرياً** من كتاب المرجع الطبي المدمج أثناء البناء (`425_OBG_clean_single_pages.pdf`).
 
-## How the book database is built
-CI runs `scripts/build_knowledge_db.py` (Python, PyMuPDF) before the Gradle build: extracts text per page, cleans headers/footers, de-hyphenates, chunks into 100–180 word windows (never crossing a page boundary), skips TOC/index/short pages and drops low-quality chunks, writes `app/src/main/assets/books_knowledge.db` (SQLite + FTS5) — gitignored, never committed. The APK contains `assets/books_knowledge.db` but no `.pdf`.
+An offline-first, privacy-respecting Android application (Kotlin, Jetpack Compose, ONNX Runtime Mobile, SQLite FTS5) that answers clinical Obstetrics & Gynaecology questions **strictly** from one embedded medical textbook baked into the app at build time.
 
-Optional manual skip: `scripts/skip_pages.json` maps book name to page numbers to skip, e.g. `{"425_OBG_clean_single_pages": [1, 2]}`. Create it with `{}` and edit as needed.
+---
 
-تجاوز صفحات يدوياً: ملف `scripts/skip_pages.json` يربط اسم الكتاب بأرقام الصفحات للتجاوز، مثلاً `{"425_OBG_clean_single_pages": [1, 2]}`. أنشئه بـ `{}` وعدل حسب الحاجة.
+## المزايا الأساسية / Core Features
 
-## Build from a phone
-1. Upload PDFs to `app/src/main/assets/books/` via GitHub web UI.
-2. Open the Actions tab → "Build APK" → Run workflow.
-3. Download the APK from the Releases page (tagged build-<run_number>).
-4. Install on device (enable unknown sources).
+- **خصوصية مطلقة (Zero Internet Permission):** لا يحتوي ملف `AndroidManifest.xml` على إذن الإنترنت نهائياً. تجري كافة عمليات التجزئة (Tokenization)، وتوليد المتجهات (Embedding)، والبحث الدلالي (Dense Search)، وقرارات بوابة الرفض (Refusal Gate) محلياً على عتاد الجهاز.
+- **نظام تصميم "ورق وحبر" (Paper & Ink Design System):** مستوحى من الكتب والمراجع الطبية العريقة:
+  - ألوان متناسقة: تركواز داكن (`#0F5C5C`)، تيراكوتا للرفض والتحذير (`#BA3D2A`)، ورق دافئ (`#F7F4EE`)، وفحم داكن (`#1B1D1E`).
+  - خطوط مفتوحة المصدر (OFL): خط **Source Serif 4** للمقاطع الطبية، وخط **IBM Plex Sans Arabic** لواجهات التحكم.
+  - مطابقة تامة لمعايير التباين **WCAG AA** لجميع أزواج الألوان الـ 36 في الوضعين الفاتح والداكن.
+  - عزل نصوص المصادر ثنائية الاتجاه (Explicit Bidi Isolation) بأحرف `\u2068` و `\u2069` لمنع تداخل أرقام الصفحات مع العناوين الإنجليزية.
+- **محرك بحث متطابق ومُعاير (Calibrated On-Device AI Engine):**
+  - نموذج تضمين مضغوط: `multilingual-e5-small` (ONNX Quantized) بحجم متجهات 384 بعداً.
+  - بوابة رفض طبية مُعايرة بنمطين: **متوازن (Balanced)** و **صارم (Strict)** ترفض بدقة الأسئلة الخارجة عن النطاق (مثل الاستفسارات العامة أو التخصصات الطبية الأخرى).
+  - مطابقة 120/120 سؤالاً بالنمط المتوازن و 119/120 بالنمط الصارم مقارنة بمرجع بايثون على المحاكي.
+- **سرعة استجابة فائقة:** زمن بحث إجمالي يبلغ **72 مللي ثانية** فقط (p50) على محاكي أندرويد.
+- **اختبارات آلية شاملة في CI:** 69 اختبار أجهزة على محاكي API 34، و14 لقطة شاشة موثقة ومعتمدة تلقائياً.
 
-## GitHub upload limits
-- Web UI: 25 MB per file.
-- Git: 100 MB per file.
-- Use Git LFS for larger files.
+---
 
-كيف تُبنى قاعدة بيانات الكتب (Arabic)
-يُشغل CI سكريبت `scripts/build_knowledge_db.py` (بايثون، PyMuPDF) قبل البناء:
-- يستخرج نص كل صفحة من كل ملف `*.pdf` في `app/src/main/assets/books/`.
-- ينظف العناوين المتكررة، ويصلح الكلمات المنقوطة، ويقسّم إلى مقاطع 100–180 كلمة بدون تجاوز حدود الصفحة.
-- يكتب `app/src/main/assets/books_knowledge.db` (SQLite + FTS5) — هذا الملف غيرمراقب في git ولا يتم تضمينه في git.
-- يحتوي APK على `assets/books_knowledge.db` ولا يحتوي على أي `.pdf`.
+## بنية النظام ومسار المعالجة / Pipeline Architecture
 
-## How embeddings are built (Stage 3)
-CI downloads the quantized ONNX model `Xenova/multilingual-e5-small` from Hugging Face Hub into `app/src/main/assets/models/embedder/`, then runs `scripts/build_embeddings.py` to embed every chunk from `books_knowledge.db` into `assets/embeddings.bin` (float32 matrix [N, 384], L2-normalized, mean-pooled). Reference vectors are written to `assets/embedder_reference.json` for Kotlin parity tests. All generated assets are gitignored and never committed.
+```mermaid
+flowchart TD
+    subgraph Offline_Build_CI["مرحلة البناء والتحضير (CI Build)"]
+        PDF["كتاب المرجع الطبي (PDF)"] --> Extract["استخراج النصوص والمقاطع<br/>scripts/build_knowledge_db.py"]
+        Extract --> DB["قاعدة بيانات SQLite FTS5<br/>books_knowledge.db (1185 Chunks)"]
+        Extract --> ONNX_Model["نموذج التضمين<br/>multilingual-e5-small.onnx"]
+        ONNX_Model --> Embed["توليد المتجهات<br/>scripts/build_embeddings.py"]
+        Embed --> Bin["مصفوفة التضمينات<br/>embeddings.bin (1185x384 float32)"]
+        Extract --> GateFit["معايرة بوابة الرفض<br/>scripts/calibrate_gate.py"]
+        GateFit --> GateConfig["إعدادات البوابة المجمدة<br/>gate_config.json"]
+    end
 
-كيف تُبنى التضمينات (Arabic)
-يُحصل CI على نموذج Xenova/multilingual-e5-small المضغوط بصيغة ONNX من منصة Hugging Face إلى `app/src/main/assets/models/embedder/`، ثم يشغل `scripts/build_embeddings.py` لتضمين كل مقطع من `books_knowledge.db` في `assets/embeddings.bin` (مصفوفة float32 [N, 384]، مبرمعة L2، متوسطة التجميع). تُكتب مراجع المتجهات إلى `assets/embedder_reference.json` لاختبارات المطابقة بلغة Kotlin. كل الأصول المولدة غير مراقبة في git ولا تُكرمَّت.
+    subgraph Android_App["تطبيق أندرويد على الجهاز (On-Device Runtime)"]
+        Query["سؤال المستخدم الطبي"] --> Tokenizer["المُجزّئ المحلّي (Kotlin Trie)<br/>tokenizer.bin"]
+        Tokenizer --> OnnxRuntime["مكتبة ONNX Runtime Android"]
+        OnnxRuntime --> QueryVector["متجه السؤال (384d)"]
+        QueryVector --> DenseSearch["البحث الدلالي السريع<br/>Dense Cosine Search"]
+        Bin -.-> DenseSearch
+        DenseSearch --> Gate["بوابة الرفض الطبية (Kotlin Gate)"]
+        GateConfig -.-> Gate
+        Gate -->|مقبول In-Scope| Results["عرض أفضل 3 مقاطع موثقة<br/>مع رقم الصفحة والمصدر"]
+        Gate -->|مرفوض Out-of-Scope| Refusal["بطاقة الرفض الذكية<br/>مع خيار عرض أقرب النتائج"]
+    end
+```
 
-## Retrieval evaluation audit and fusion re-tuning (Stage 3.6b)
-CI runs `scripts/evaluate_audit.py` for a per-question audit with explicit hit definitions:
-  - **Answer-term hit**: chunk contains ALL terms of at least one answer_terms group.
-  - **Page hit**: chunk page number is in expected_pages.
-It flags "weak label" questions (>15 matching chunks) and reports recall under both
-definitions for all questions and strong-label questions only.
+---
 
-CI runs `scripts/keyword_builder.py` (v2 builder: stopword-only + short non-content
-list of max 40 words; document-frequency removal removed) and compares keyword
-variants v1-v4. CI runs `scripts/fusion_tuning.py` for weighted RRF re-tuning
-(k in {10, 60}, w_kw in {0, 0.25, 0.5, 1.0}, 5-fold CV, answer-term metric).
-w_kw > 0 is chosen only if mean hit@3 beats w_kw=0 by >= 0.03; otherwise w_kw=0.
-The result is written to `assets/fusion_config.json` (gitignored, never committed).
+## نظام التصميم: "ورق وحبر" / Paper & Ink Design System
 
-### Hit definitions (explicit)
-A chunk is a HIT if it contains ALL terms of at least one answer_terms group,
-checked with the same normalization and tokenizer as the FTS5 index.
-A result list is a hit at k if any of its top-k chunks is a HIT.
-Page-based hit (expected_pages) is reported separately.
+تم اعتماد نظام التصميم **الاتجاه أ: "ورق وحبر"** ليعكس هوية المراجع الطبية المطبوعة مع مراعاة راحة العين في القراءة الطويلة:
 
-### Keyword builder v2
-- Normalization: lowercase, hyphen unification, spelling variants (normalize_map.json)
-- Stopword removal: 150+ English words including question words
-- Non-content word list (max 40): patient, patients, case, cases, type, types,
-  following, used, include, including, ... (printed in full in CI log)
-- Document-frequency based removal is REMOVED — in a single-specialty book,
-  words like "pregnancy", "hemorrhage", "uterine" are content words.
-- Variants: v1 (stopwords + DF removal), v2 (stopword-only unigrams + bm25),
-  v3 (v2 + adjacent-word phrases), v4 (v3 + column weights).
+### 1. لوحة الألوان المعتمدة (WCAG AA Certified)
 
-## How the book database is built (schema v2)
-CI runs `scripts/build_knowledge_db.py` with schema_version=2: adds a
-`search_text` column (normalized text) indexed by FTS5 with
-`tokenize='porter unicode61 remove_diacritics 2'`. `chunks.text` stays verbatim.
-Chunk ids and texts are unchanged from Stage 3; `embeddings_meta.json` includes
-`chunk_texts_sha256` and the build fails if the DB and matrix disagree.
+| الفئة / العنصر | الوضع الفاتح (Light) | الوضع الداكن (Dark) | نسبة التباين الفاتح | نسبة التباين الداكن |
+|---|:---:|:---:|:---:|:---:|
+| **الخلفية (Background)** | `#F7F4EE` (ورق دافئ) | `#1B1D1E` (فحم دافئ) | — | — |
+| **النص الأساسي (Body Ink)** | `#1B2024` (حبر داكن) | `#F3EFE7` (ورق فاتح) | **14.96:1** | **14.75:1** |
+| **النص الثانوي (Secondary Text)** | `#424D53` | `#B8B3A7` | **7.91:1** | **8.09:1** |
+| **بطاقة النتائج (Surface)** | `#EFECE4` | `#2B2E2F` | **13.91:1** | **11.93:1** |
+| **اللون الأساسي (Primary Teal)** | `#0F5C5C` (تركواز ديب) | `#62B8B8` (تركواز مشرق) | **7.76:1** | **5.66:1** |
+| **تنبيه الرفض (Terracotta Alert)** | `#BA3D2A` | `#FFB4A9` | **5.54:1** | **7.71:1** |
+| **قلم التحديد (Amber Highlight)** | `#F8E4B3` (كهرماني) | `#4E3E18` (كهرماني داكن) | **13.09:1** | **8.61:1** |
+| **تبويب علامة الصفحة (Bookmark Tab)** | `#DDEBE9` | `#194545` | **8.07:1** | **8.02:1** |
 
-## Embeddings integrity
-`scripts/build_embeddings.py` computes sha256 over all chunk texts and stores it
-in `embeddings_meta.json`. The CI verifies both hashes match.
+### 2. الطباعة والخطوط (Typography)
+- **المقاطع الطبية:** خط **Source Serif 4** يمنح المقاطع الطبية والفقاعات مظهراً يشبه كتب ومجلات أكسفورد الطبية.
+- **واجهة المستخدم والأزرار:** خط **IBM Plex Sans Arabic** يوفر وضوحاً هندسياً مريحاً للقراءة باللغتين العربية والإنجليزية.
 
-## Generated assets (gitignored, never committed)
-- `app/src/main/assets/books_knowledge.db` (SQLite + FTS5)
-- `app/src/main/assets/embeddings.bin` (float32 matrix [N, 384])
-- `app/src/main/assets/embeddings_meta.json`
-- `app/src/main/assets/embedder_reference.json` (24 reference vectors)
-- `app/src/main/assets/models/embedder/model_quantized.onnx`
-- `app/src/main/assets/models/embedder/tokenizer.json`
-- `app/src/main/assets/models/embedder/config.json`
-- `app/src/main/assets/normalize_map.json` (37 spelling variants kept)
-- `app/src/main/assets/fusion_config.json` (weighted RRF config)
-- `app/src/main/assets/medical_aliases.json` (150+ OB/GYN terms, not used in Stage 3.6b)
+---
 
-## Build from a phone
-1. Upload PDFs to `app/src/main/assets/books/` via GitHub web UI.
-2. Open the Actions tab → "Build APK" → Run workflow.
-3. Download the APK from the Releases page (tagged build-<run_number>).
-4. Install on device (enable unknown sources).
+## لقطات الشاشة الـ 14 الرسمية / Official UI Screenshots
 
-## GitHub upload limits
-- Web UI: 25 MB per file.
-- Git: 100 MB per file.
-- Use Git LFS for larger files.
+تتضمن حزمة الفحص الآلي `ui-screenshots-v2` (بحجم إجمالي 11.35 ميجابايت) 14 حالة معتمدة ومحققة برمز SHA-256 فريد لكل صورة:
 
-كيف تُبنى قاعدة البيانات وتُجرى التقييم (Arabic Stage 3.6b)
-يشغل CI `scripts/evaluate_audit.py` لمراجعة كل سؤال بتعريفات hit واضحة:
-  - **hit بالنص الإجابي**: المقتطف يحتوي على جميع مصطلحات مجموعة answer_terms واحدة على الأقل.
-  - **hit بالصفحة**: رقم صفحة المقتطف موجود في expected_pages.
-يُسئل "العلامة الضعيفة" (>15 مقتطف مطابق) ويُبلغ عن الاستدعاء تحت كلا التعريفين
-لكل الأسئلة والأسئلة ذات العلامة القوية فقط.
+| الرقم | الملف | الوصف | SHA-256 Hash |
+|---|---|---|---|
+| 01 | `01_empty_light.png` | الحالة الفارغة (فاتح): رسم المتجه لكتاب وعدسة، سطر المرجع المدمج، 4 بطاقات أسئلة استرشادية | `8f87ab2d613506d488d918d3788587d0be10edae42bb01d7ec32723f276dfb90` |
+| 02 | `02_empty_dark.png` | الحالة الفارغة (داكن): على خلفية الفحم الدافئ المتناسقة | `a7c5b94f10100ce2f9f86d8448cf8e308a015010aecc8566e08676c0d4566f69` |
+| 03 | `03_results_light_keyboard_closed.png` | عرض النتائج (فاتح): البطاقات الـ 3 مع شريط الهامش الرأسي، وتبويب "ص 261" | `a7a23d892d7aea2ce1808c2a78a216e47e6b67b46c05052430ea9356941a4d91` |
+| 04 | `04_results_dark_keyboard_closed.png` | عرض النتائج (داكن): إبرازات قلم التمييز الكهرماني الداكن | `e0335a1ce07ce4c8932bdc532141d2450cc852db5f91104e5ab8fe6ba15982c2` |
+| 05 | `05_results_font13_dark.png` | عرض النتائج عند تكبير الخط 1.3x (داكن): ثبات تام وتناسق الأسطر دون اقتطاع | `c0ea9375f0fb3880a0da4e48a6860f9bf26d3b8d9a3d31dd2786b7c71a5f610e` |
+| 06 | `06_sheet_top_light.png` | قمة ورقة المقطع الكامل (فاتح): الترويسة المثبتة ومؤشر "فقرة X من Y في الكتاب" | `a40d8f1452e91c840ae6032f25679966157213633a125d7d55141416a5747d79` |
+| 07 | `07_sheet_bottom_light.png` | أسفل ورقة المقطع (فاتح): أزرار التنقل (السابق، التالي، نسخ النص) | `da8b39f5278f9d7087022a1bb1832209e2453037aaade13a19915e35d9908363` |
+| 08 | `08_sheet_top_font13_light.png` | قمة ورقة المقطع عند خط 1.3x (فاتح): قراءة مريحة مع ثبات الترويسة | `359940ebf0be5116d3798ac8c4cf79342613f7419b7540af492dff84bff7886c` |
+| 09 | `09_sheet_bottom_font13_light.png` | أسفل ورقة المقطع عند خط 1.3x (فاتح): أزرار مرتفعة بهوامش لمس $\ge 48\text{dp}$ | `897c3935a07d32ec1253ab6b05dadb593b714eb78cd30b16ae2dcd413c9e8685` |
+| 10 | `10_refusal_collapsed_light.png` | بطاقة الرفض (فاتح): أيقونة التيراكوتا التحذيرية وزر "عرض أقرب النتائج" | `7697eb086339189b414c488ed1603f41bbe663682671d258e364093b980b703d` |
+| 11 | `11_refusal_expanded_light.png` | بطاقة الرفض الموسعة: عرض أقرب النتائج بعد النقر على الزر | `c5b39f1fd46b2580b127a5632f2cac9575704fb5a2080e969529eeafdc8d8a8f` |
+| 12 | `12_loading_searching_light.png` | بطاقة البحث الجاري (فاتح): مؤشر البحث الدائري وزر الإلغاء | `b963d7d0f0382e567733454ae511b683f7d57cd212df33e1723fbb738c7e1d9a` |
+| 13 | `13_settings_strict_light.png` | لوحة الإعدادات: اختيار النمط الصارم Strict ومفاتيح التحكم بالتشخيصات | `7ea107b5c0ac285649a3d817398117ecb9e093b91b0dd05032d8daac1cce51cc` |
+| 14 | `14_long_english_passage_light.png` | مقطع إنجليزي طويل: الحفاظ على اتجاه LTR داخل غلاف واجهة RTL العربية | `276bbdd2e7ff4713910405a9dab64fdadf2ea4fd92f2d33a0adf44fd8916a0b0` |
 
-يشغل CI `scripts/keyword_builder.py` (باني الاستعلام v2: توقف فقط + قائمة غير محتوى قصيرة
-بحد أقصى 40 كلمة؛ إزالة التكرار حسب تكرار الوثيقة حُذفت). يقارن CI بين متغيرات
-الكلمات المفتاحية v1-v4. يشغل CI `scripts/fusion_tuning.py\) لإعادة ضبط الدمج المرجحي
-(k في {10, 60}, w_kw في {0, 0.25, 0.5, 1.0}, تحقق متقاطع 5 أضعاف، مقياس مصطلح الإجابة).
-يُختار w_kw > 0 فقط إذا تجاوز متوسط hit@3 قيمة w_kw=0 بمقدار >= 0.03؛ وإلا يُبقي w_kw=0.
-تُكتب النتيجة إلى `assets/fusion_config.json` (غير مراقب في git ولا يُكرمَّت).
+---
 
-## تعريفات hit (واضحة)
-المقتطف هو HIT إذا كان يحتوي على جميع مصطلحات مجموعة answer_terms واحدة على الأقل،
-يتم التحقق من خلال نفس التطبيع والمُرمّز لمؤشر FTS5.
-قائمة النتائج هي hit عند k إذا كان أي من أفضل k مقتطفات هو HIT.
-يتم الإبلاغ عن hit بناءً على الصفحة (expected_pages) بشكل منفصل.
+## قياسات الأداء المعتمدة على المحاكي (Benchmark & Latency)
 
-## باني الاستعلام v2
-- التطبيع: أحرف صغيرة، توحيد الفواصل،renuants إملائية (normalize_map.json)
-- إزالة كلمات التوقف: 150+ كلمةإنجليزية بما في ذلك كلمات الأسئلة
-- قائمة الكلمات غير المحتوى (بحد أقصى 40): patient, patients, case, cases, type, types,
-  following, used, include, including, ... (تُطبع بالكامل في سجل CI)
-- الإزالة بناءً على تكرار الوثيقة حُذفت — في كتاب تخصص واحد، كلمات مثل "pregnancy",
-  "hemorrhage", "uterine" هي كلمات محتوى.
-- المتغيرات: v1 (توقف + إزالة DF)، v2 (توقف فقط + أحرف فردية + bm25)،
-  v3 (v2 + عبارات الكلمات المتجاورة)، v4 (v3 + أوزان الأعمدة).
+تم قياس الأزمنة الفعلية لكل مرحلة عبر الاختبار الآلي `K5bBenchmarkUiTest` على محاكي API 34 (30 تكرار لكل مرحلة):
 
-## Signal measurements: eval/gate_signals.csv (Stage 3.7b)
-- Measures refusal-gate signals (s1-s5) for 60 in-scope (golden_v3) and 60 balanced out-of-scope questions (golden_oos_v3: 24 other-specialty medical Class A, 24 unaddressed Ob/Gyn passing mentions Class B, and 12 distinct non-medical Class N). Measurement only: no thresholds chosen, not bundled in APK.
-- Ambiguous questions answered by the book (hypertension, diabetes, heart/liver disease in pregnancy) are moved to eval/ambiguous.jsonl.
-- قياس إشارات بوابة الرفض (s1-s5) لـ 60 سؤالاً ضمن النطاق و60 سؤالاً خارج النطاق متوازنة (golden_oos_v3: 24 تخصص طبي آخر فئة A، 24 سؤال نساء وتوليد غير مجاب فئة B، و12 غير طبي متنوع فئة N). قياس فقط: بدون اختيار عتبات ولا يُشحن مع APK.
-- الأسئلة الملتبسة المجابة في الكتاب (الضغط، السكري، أمراض القلب والكبد أثناء الحمل) نُقلت إلى eval/ambiguous.jsonl.
+| المرحلة (Stage) | الوسيط p50 (ms) | الشريحة p95 (ms) | الحد الأقصى Max (ms) |
+|---|:---:|:---:|:---:|
+| **التجزئة (Tokenize)** | **0** | 5 | 8 |
+| **التضمين (Embed Query)** | **55** | 79 | 155 |
+| **البحث في المتجهات (Dense Search)** | **7** | 17 | 24 |
+| **حساب إشارات البوابة (Gate Signals)** | **5** | 29 | 33 |
+| **قرار البوابة (Gate Decision)** | **0** | 0 | 3 |
+| **زمن المعالجة الكلي (Total Pipeline)** | **72** | **90** | **175** |
+| **التشغيل البارد لأول مرة (Cold Start)** | — | — | 128,749 (التهيئة الأولى واستخراج الأصول) |
+| **تحميل نموذج ONNX في الذاكرة (Model Load)** | — | — | **268** |
 
-## Refusal Gate Frozen Presets (Stage 3.7c)
-- Refusal gate parameters fitted from real signals: balanced (t1=0.84, t3=0.5714, k=0) and strict (t1=0.8525, t3=0.5714, k=0).
-- Label fixes applied in eval/label_fixes.json (B 26, 29, 48 answered by book); hyphen compound tokenization unified bidirectionally.
-- Bundled in assets/gate_config.json and assets/gate_reference.json (120 questions decisions); no Kotlin or retrieval changes.
-- معايير بوابة الرفض المجمدة من الإشارات الحقيقية: الإعداد المتوازن (t1=0.84, t3=0.5714, k=0) والصارم (t1=0.8525, t3=0.5714, k=0).
-- تطبيق تصحيحات التصنيف في eval/label_fixes.json ومعالجة الكلمات المركبة ذات الوصلات ثنائية الاتجاه، وتضمين ملفات التهيئة والمرجع في الحزمة.
+---
+
+## البناء والتطوير / How to Build and Run
+
+### 1. البناء التلقائي عبر GitHub Actions (الطريقة الموصى بها)
+نظراً لأن تطوير التطبيق يُدار بالكامل عبر بيئة هاتفية خفيفة، يتم بناء وتوقيع حزم APK واختبارها عبر خط أنابيب GitHub Actions:
+1. ضع ملف المرجع الطبي `*.pdf` في مجلد `app/src/main/assets/books/`.
+2. ادخل إلى تبويب **Actions** في مستودع GitHub واختر **Build APK** ثم انقر **Run workflow**.
+3. يقوم الـ CI باستخراج النصوص وتوليد التضمينات وتشغيل 69 اختباراً على محاكي أندرويد ثم بناء وتوقيع حزمة `app-release-unsigned.apk`.
+4. نزّل الحزمة من صفحة [Releases](https://github.com/ffgg57594-gif/offline-local2/releases).
+
+### 2. البناء المحلي (Local Debug Build)
+داخل بيئة PocketDev أو بيئة Linux المحلية:
+```bash
+# بناء حزمة الـ Debug السريعة (بدون تشغيل Gradle daemon):
+gradle -Dorg.gradle.jvmargs= --no-daemon --max-workers=2 \
+  --init-script /root/.gradle/init.d/pocketdev-android.gradle \
+  -Pandroid.aapt2FromMavenOverride=/root/android-sdk/build-tools/35.0.0/aapt2 \
+  assembleDebug --console=plain
+```
+
+### 3. تدقيق التباين ومعرض التصميم محلياً
+```bash
+# فحص مطابقة التباين WCAG AA لكافة الأزواج:
+python3 scripts/check_contrast.py
+
+# التحقق من خلو حزمة الإصدار من كود المعرض التجريبي:
+python3 scripts/verify_release_no_gallery.py app/build/outputs/apk/release/app-release.apk
+```
+
+---
+
+## هيكل المستودع / Project Structure
+
+```
+├── app/
+│   ├── src/
+│   │   ├── main/
+│   │   │   ├── java/com/medai/assistant/
+│   │   │   │   ├── MainActivity.kt        # النشاط الرئيسي والثيم العام
+│   │   │   │   ├── ask/                   # آلة الحالات (AskStateMachine) ومنطق البحث
+│   │   │   │   ├── design/                # نظام التصميم (Tokens, Typography, Spacing, Themes)
+│   │   │   │   │   ├── components/        # المكونات الأساسية (Cards, InputBar, TopBar, EmptyState)
+│   │   │   │   │   └── motion/            # حركات الدخول التدريجي المهدأة (Reduced Motion)
+│   │   │   │   ├── repository/            # مستودع النصوص وقاعدة بيانات SQLite FTS5
+│   │   │   │   └── ui/                    # الشاشات الحقيقية (AskScreen, SettingsSheet)
+│   │   │   ├── assets/                    # أصول المعرفة (مستخرجة أثناء البناء)
+│   │   │   │   ├── books/                 # مجلد ملفات الـ PDF الأصلية (لا تُشحن في الـ APK)
+│   │   │   │   └── fonts/                 # خطوط OFL (Source Serif 4, IBM Plex Sans Arabic)
+│   │   ├── debug/                         # معرض التصميم التجريبي (DesignGallery) معزول تماماً
+│   │   └── androidTest/                   # 69 اختبار أجهزة على المحاكي (K4d, K5b, K5c)
+├── eval/                                  # أسئلة التقييم الذهبية (Golden 120 questions) وإشارات البوابة
+├── scripts/                               # سكريبتات البايثون لبناء الأصول وتدقيق التباين وفحص الجودة
+└── .github/workflows/build_apk.yml        # مسار التكامل المستمر الشامل (Build, Test, Release)
+```
+
+---
+
+## ترخيص المشروع / License
+
+هذا المشروع مرخص تحت رخصة **MIT**. الخطوط المدمجة (`Source Serif 4`, `IBM Plex Sans Arabic`) تخضع لرخصة الخطوط المفتوحة **SIL Open Font License (OFL)**.
