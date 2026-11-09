@@ -30,6 +30,20 @@ def test_short_queries_dataset_format():
 
 def test_short_queries_evaluation_results():
     if not REPORT_JSON_PATH.exists():
+        # The evaluation needs generated assets (DB, embeddings, ONNX model)
+        # that CI only builds AFTER the pytest step. Skip in that environment;
+        # the CI "K5d short-query study" workflow step runs the same script
+        # once the assets exist and uploads the report artifacts.
+        required = [
+            ROOT / "app/src/main/assets/books_knowledge.db",
+            ROOT / "app/src/main/assets/embeddings.bin",
+            ROOT / "app/src/main/assets/embeddings_meta.json",
+            ROOT / "app/src/main/assets/models/embedder/model_quantized.onnx",
+            ROOT / "app/src/main/assets/models/embedder/tokenizer.json",
+        ]
+        missing = [str(p.relative_to(ROOT)) for p in required if not p.exists()]
+        if missing:
+            pytest.skip(f"generated assets missing, run scripts/evaluate_short_queries.py in CI: {missing}")
         import sys
         sys.path.insert(0, str(ROOT / "scripts"))
         import evaluate_short_queries

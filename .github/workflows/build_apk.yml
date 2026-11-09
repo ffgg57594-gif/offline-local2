@@ -125,6 +125,17 @@ jobs:
         with:
           name: gate-signals-csv
           path: eval/gate_signals.csv
+      - name: K5d short-query study (measurement only)
+        run: python scripts/evaluate_short_queries.py
+      - name: Upload K5d short-query study
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k5d-reports
+          path: |
+            build/reports/k5d/short_queries_report.md
+            build/reports/k5d/short_queries_report.json
+          if-no-files-found: warn
       - name: K4d regex guard (Android ICU)
         run: |
           mkdir -p build/reports/k4d
@@ -352,6 +363,13 @@ jobs:
         with:
           name: ui-screenshots-v2
           path: build/reports/k5b/ui-screenshots/
+          if-no-files-found: warn
+      - name: Upload K5d real-keyboard screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-screenshots-v3
+          path: build/reports/k5d/ui-screenshots-v3/
           if-no-files-found: warn
       - name: Assemble K5a report
         if: always()
