@@ -34,8 +34,8 @@ import com.medai.assistant.design.DesignSpacing
 import com.medai.assistant.design.LocalExtendedDesignTokens
 
 /**
- * TopBar according to STAGE UI-A item 4:
- * App title, subtitle ("يجيب من الكتاب المدمج فقط · بدون إنترنت"), settings icon, and small offline badge.
+ * TopBar according to STAGE UI-A item 4 and K5d:
+ * App title, subtitle ("يجيب من الكتاب المدمج فقط"), settings icon, and small offline badge ("بدون إنترنت").
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,7 +43,7 @@ fun MedAiTopBar(
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
     title: String = "المساعد الطبي",
-    subtitle: String = "يجيب من الكتاب المدمج فقط · بدون إنترنت",
+    subtitle: String = "يجيب من الكتاب المدمج فقط",
     testTag: String = "medai_top_bar",
     onLongPressDebug: (() -> Unit)? = null
 ) {

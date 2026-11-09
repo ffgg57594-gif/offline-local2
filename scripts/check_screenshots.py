@@ -111,7 +111,15 @@ def main() -> int:
         gallery_code = check_gallery_screenshots.main()
         gallery_ok = (gallery_code == 0)
 
-    return 0 if (ok and gallery_ok) else 1
+    # STAGE K5d: Real-keyboard screenshots verification (ui-screenshots-v3)
+    v3_script = ROOT / "scripts/check_screenshots_v3.py"
+    v3_ok = True
+    if v3_script.exists():
+        import check_screenshots_v3
+        v3_code = check_screenshots_v3.main()
+        v3_ok = (v3_code == 0)
+
+    return 0 if (ok and gallery_ok and v3_ok) else 1
 
 
 if __name__ == "__main__":

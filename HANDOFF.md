@@ -59,6 +59,23 @@ As of commit `533ce0448ba7caa732bf2664b35453e3dcb9ad11` (Tag `build-177`), all s
   - **No Gallery in Release:** `DesignGallery` and debug composables are isolated to the `debug` source set. The release APK contains **zero** gallery classes or strings (verified via `scripts/verify_release_no_gallery.py`).
 - **Real Screen Migration (Stage UI-B):** `MainActivity.kt`, `AskScreen.kt`, and `SettingsSheet.kt` fully migrated to `MedAiDesignTheme`.
 
+### 5. Stage K5d (Real-Phone Insets, Real Keyboard Screenshots, Short-Query Study)
+- **Part A (UI Fixes):**
+  - **Window Insets & Keyboard:** Added `android:windowSoftInputMode="adjustResize"` in `AndroidManifest.xml` preventing Android WindowManager from panning window decor into status bar. In `AskScreen.kt`, set `Scaffold(contentWindowInsets = WindowInsets(0, 0, 0, 0))` and on `InputBar` applied `Modifier.windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime))`, eliminating the floating gap above the soft keyboard. TopBar remains pinned at the top. On submission/results, the list scrolls to show the first card fully and keyboard is dismissed.
+  - **Header Deduplication:** Subtitle set to `"يجيب من الكتاب المدمج فقط"` while retaining the separate `"بدون إنترنت"` badge.
+  - **Card Citation vs Page:** Card citation chip displays only `"المصدر: " + bookTitle` (page number omitted from this chip), while the prominent page chip (`"ص 261"`) is kept. Full citation string (`PassageText.citation(bookName, page)`) is preserved in `PassageSheet` (`sheet_citation`) and copy action.
+- **Part B (Real-Keyboard Full Display Screenshots):**
+  - UiAutomator captures full SurfaceFlinger display (status bar, navigation bar, and IME window):
+    - `01_empty_keyboard_open.png`: Empty state with real IME keyboard open.
+    - `02_results_keyboard_closed.png`: Results state with keyboard closed.
+    - `03_long_question_keyboard_open.png`: 3-line long medical question with real IME open.
+  - Artifact `ui-screenshots-v3` uploaded and validated by `scripts/check_screenshots_v3.py` (fails on duplicates or missing files).
+- **Part C (Short-Query Study — Measurement Only):**
+  - Dataset: `eval/short_queries.jsonl` containing 60 in-scope queries (1–4 words each, derived from book section headings / key terms with target chunk IDs and pages) and 30 short out-of-scope queries (other specialties, non-medical, passing mentions).
+  - Retrieval evaluated across Dense, BM25 (FTS5), and RRF fusion ($k \in \{10, 60\}$, $w_{\text{kw}} \in \{0.0, 0.25, 0.5, 1.0\}$) on target-only and same-page metrics.
+  - Gate evaluation: Balanced preset accepts **58/60** (96.7%) and rejects **30/30** OOS (100.0%); Strict preset accepts **54/60** (90.0%) and rejects **30/30** OOS (100.0%).
+  - Full distributions of $s_1, s_3, s_4$ and rejected query listings generated in `build/reports/k5d/short_queries_report.md`.
+
 ---
 
 ### 5. Latest Release Evidence (Build 177)

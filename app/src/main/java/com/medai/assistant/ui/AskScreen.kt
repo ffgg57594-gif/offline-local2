@@ -18,13 +18,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
@@ -180,6 +181,7 @@ fun AskScreen(
     }
     LaunchedEffect(resultQuestion) {
         if (resultQuestion != null) {
+            runCatching { scrollState.animateScrollTo(0) }
             delay(350)
             runCatching { firstCardRequester.bringIntoView() }
             delay(500)
@@ -190,7 +192,7 @@ fun AskScreen(
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets.safeDrawing,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             MedAiTopBar(
                 onSettingsClick = { showSettings = true },
@@ -205,8 +207,7 @@ fun AskScreen(
                 enabled = canSubmit,
                 inputTestTag = "ask_input",
                 modifier = Modifier
-                    .navigationBarsPadding()
-                    .imePadding()
+                    .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime))
             )
         },
         snackbarHost = { SnackbarHost(snackbar) }
@@ -844,7 +845,8 @@ private fun ResultCard(
                     bookTitle = BookTitles.display(passage.bookName),
                     page = passage.page,
                     onClick = { onCitationClick(passage) },
-                    testTag = "citation_${passage.chunkId}"
+                    testTag = "citation_${passage.chunkId}",
+                    showPage = false
                 )
 
                 // Hairline divider
@@ -1048,7 +1050,8 @@ private fun PassageSheet(
                 CitationLine(
                     bookTitle = BookTitles.display(current.bookName),
                     page = current.page,
-                    testTag = "sheet_citation"
+                    testTag = "sheet_citation",
+                    showPage = true
                 )
                 Text(
                     positionLine(current),

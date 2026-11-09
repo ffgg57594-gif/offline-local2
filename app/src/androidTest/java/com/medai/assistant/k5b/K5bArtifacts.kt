@@ -24,8 +24,33 @@ object K5bArtifacts {
         return dir
     }
 
+    fun screenshotsV3Dir(context: Context): File {
+        val dir = File(context.filesDir, "ui-screenshots-v3")
+        dir.mkdirs()
+        return dir
+    }
+
     fun writeText(context: Context, name: String, text: String) {
         File(reportsDir(context), name).writeText(text, Charsets.UTF_8)
+    }
+
+    fun screenshotV3(context: Context, name: String) {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        instrumentation.waitForIdleSync()
+        Thread.sleep(600)
+        val raw: Bitmap = instrumentation.uiAutomation.takeScreenshot()
+        try {
+            val fileV3 = File(screenshotsV3Dir(context), "$name.png")
+            FileOutputStream(fileV3).use { output ->
+                raw.compress(Bitmap.CompressFormat.PNG, 100, output)
+            }
+            val fileV2 = File(screenshotsDir(context), "$name.png")
+            FileOutputStream(fileV2).use { output ->
+                raw.compress(Bitmap.CompressFormat.PNG, 100, output)
+            }
+        } finally {
+            raw.recycle()
+        }
     }
 
     /**

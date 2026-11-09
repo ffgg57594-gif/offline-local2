@@ -206,7 +206,8 @@ fun PassageCard(
                 CitationLine(
                     bookTitle = bookTitle,
                     page = page,
-                    onClick = onCitationClick
+                    onClick = onCitationClick,
+                    showPage = false
                 )
 
                 // Subtle hairline divider

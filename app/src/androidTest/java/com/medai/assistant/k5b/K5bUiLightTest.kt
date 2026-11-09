@@ -15,6 +15,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.requestFocus
+import com.medai.assistant.BookTitles
 import com.medai.assistant.ask.AskState
 import com.medai.assistant.ask.GATE_REFUSAL_SENTENCE
 import com.medai.assistant.ask.Passage
@@ -152,10 +153,9 @@ class K5bUiLightTest : K5bUiTestBase() {
             referencePage,
             top.page
         )
-        val citation = PassageText.citation(top.bookName, top.page)
-        composeRule.onNodeWithTag("citation_${top.chunkId}").assertTextEquals(citation)
-        assertTrue("citation must contain page 261: $citation", citation.contains("صفحة 261"))
-        assertTrue("citation must isolate the Latin title", citation.contains("\u2068"))
+        val cardCitation = "المصدر: " + BookTitles.display(top.bookName)
+        composeRule.onNodeWithTag("citation_${top.chunkId}").assertTextEquals(cardCitation)
+        assertTrue("card citation must cite textbook", cardCitation.contains("Obstetrics and Gynecology Textbook"))
         waitForImeHidden()
         composeRule.waitUntil(30_000) {
             try {

@@ -156,6 +156,7 @@ echo "connected_test_exit_code=$TEST_STATUS" | tee -a "$REPORT_DIR/device_info.t
 # report explains the failure and the screenshots still prove what rendered.
 pull_internal_dir reports "$K5B_DIR"
 pull_internal_dir ui-screenshots "$K5B_DIR/ui-screenshots"
+pull_internal_dir ui-screenshots-v3 "build/reports/k5d/ui-screenshots-v3"
 pull_internal_dir design-gallery "build/reports/design-gallery"
 if [ -d "build/reports/design-gallery" ]; then
   cp -a build/reports/design-gallery/*.png "$K5B_DIR/ui-screenshots/" 2>/dev/null || true

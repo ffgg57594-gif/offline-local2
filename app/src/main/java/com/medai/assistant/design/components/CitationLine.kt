@@ -37,13 +37,18 @@ import com.medai.assistant.design.LocalExtendedDesignTokens
 @Composable
 fun CitationLine(
     bookTitle: String,
-    page: Int,
+    page: Int? = null,
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
-    testTag: String = "citation_line"
+    testTag: String = "citation_line",
+    showPage: Boolean = true
 ) {
     val extendedTokens = LocalExtendedDesignTokens.current
-    val citationText = PassageText.citation(bookTitle, page)
+    val citationText = if (showPage && page != null) {
+        PassageText.citation(bookTitle, page)
+    } else {
+        "المصدر: $bookTitle"
+    }
 
     val containerModifier = modifier
         .testTag(testTag)
@@ -87,35 +92,37 @@ fun CitationLine(
             fontWeight = FontWeight.Medium,
             color = extendedTokens.bookmarkTabText
         )
-        Row(
-            modifier = Modifier.clearAndSetSemantics {},
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(DesignSpacing.space4)
-        ) {
-            Text(
-                text = "·",
+        if (showPage && page != null) {
+            Row(
                 modifier = Modifier.clearAndSetSemantics {},
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = extendedTokens.bookmarkTabText,
-                softWrap = false
-            )
-            Text(
-                text = "صفحة",
-                modifier = Modifier.clearAndSetSemantics {},
-                style = MaterialTheme.typography.labelSmall,
-                color = extendedTokens.bookmarkTabText,
-                fontFamily = DesignFonts.ArabicUiFamily,
-                softWrap = false
-            )
-            Text(
-                text = page.toString(), // Western digits
-                modifier = Modifier.clearAndSetSemantics {},
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = extendedTokens.bookmarkTabText,
-                softWrap = false
-            )
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(DesignSpacing.space4)
+            ) {
+                Text(
+                    text = "·",
+                    modifier = Modifier.clearAndSetSemantics {},
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = extendedTokens.bookmarkTabText,
+                    softWrap = false
+                )
+                Text(
+                    text = "صفحة",
+                    modifier = Modifier.clearAndSetSemantics {},
+                    style = MaterialTheme.typography.labelSmall,
+                    color = extendedTokens.bookmarkTabText,
+                    fontFamily = DesignFonts.ArabicUiFamily,
+                    softWrap = false
+                )
+                Text(
+                    text = page.toString(), // Western digits
+                    modifier = Modifier.clearAndSetSemantics {},
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = extendedTokens.bookmarkTabText,
+                    softWrap = false
+                )
+            }
         }
     }
 }
