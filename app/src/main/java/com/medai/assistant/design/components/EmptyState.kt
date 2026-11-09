@@ -230,7 +230,7 @@ fun EmptyState(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 48.dp) // Touch target >= 48dp
-                        .testTag("example_card_$index")
+                        .testTag("example_$index")
                         .clip(RoundedCornerShape(extendedTokens.cardRadius))
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                         .border(

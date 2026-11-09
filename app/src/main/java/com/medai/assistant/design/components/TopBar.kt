@@ -2,6 +2,7 @@ package com.medai.assistant.design.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -42,7 +44,8 @@ fun MedAiTopBar(
     modifier: Modifier = Modifier,
     title: String = "المساعد الطبي",
     subtitle: String = "يجيب من الكتاب المدمج فقط · بدون إنترنت",
-    testTag: String = "medai_top_bar"
+    testTag: String = "medai_top_bar",
+    onLongPressDebug: (() -> Unit)? = null
 ) {
     val extendedTokens = LocalExtendedDesignTokens.current
 
@@ -59,7 +62,12 @@ fun MedAiTopBar(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
-                        fontFamily = DesignFonts.ArabicUiFamily
+                        fontFamily = DesignFonts.ArabicUiFamily,
+                        modifier = if (onLongPressDebug != null) {
+                            Modifier.pointerInput(Unit) {
+                                detectTapGestures(onLongPress = { onLongPressDebug() })
+                            }
+                        } else Modifier
                     )
 
                     // Small offline badge

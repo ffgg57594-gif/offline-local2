@@ -88,6 +88,7 @@ fun RefusalCard(
 
             Text(
                 text = "هذه المعلومة غير مذكورة في الكتب الطبية المدمجة في التطبيق.",
+                modifier = Modifier.testTag("refusal_text"),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontFamily = DesignFonts.ArabicUiFamily

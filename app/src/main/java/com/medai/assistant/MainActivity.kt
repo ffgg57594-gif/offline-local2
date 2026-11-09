@@ -5,24 +5,21 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.lifecycle.ViewModelProvider
 import com.medai.assistant.ask.AskViewModel
+import com.medai.assistant.design.DesignConfig
+import com.medai.assistant.design.MedAiDesignTheme
 import com.medai.assistant.ui.AskScreen
 import com.medai.assistant.ui.DebugScreen
-import com.medai.assistant.ui.UiColors
 import com.medai.assistant.ui.UiOverrides
 
 class MainActivity : ComponentActivity() {
@@ -41,17 +38,11 @@ class MainActivity : ComponentActivity() {
             val density = UiOverrides.fontScale?.let { scale ->
                 Density(systemDensity.density, scale)
             } ?: systemDensity
-            val colors = if (dark) {
-                darkColorScheme(
-                    primaryContainer = Color(UiColors.CITATION_CHIP_BACKGROUND_DARK),
-                    onPrimaryContainer = Color(UiColors.CITATION_CHIP_TEXT_DARK),
-                    tertiaryContainer = Color(UiColors.HIGHLIGHT_BACKGROUND_DARK),
-                    onTertiaryContainer = Color(UiColors.HIGHLIGHT_TEXT_DARK)
-                )
-            } else {
-                lightColorScheme()
-            }
-            MaterialTheme(colorScheme = colors) {
+
+            MedAiDesignTheme(
+                direction = DesignConfig.activeDirection,
+                darkTheme = dark
+            ) {
                 CompositionLocalProvider(
                     LocalLayoutDirection provides LayoutDirection.Rtl,
                     LocalDensity provides density

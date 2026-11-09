@@ -46,7 +46,8 @@ fun InputBar(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     placeholder: String = "اكتب سؤالك الطبي...",
-    testTag: String = "input_bar"
+    testTag: String = "input_bar",
+    inputTestTag: String = "ask_input"
 ) {
     val extendedTokens = LocalExtendedDesignTokens.current
     val canSend = enabled && value.trim().isNotEmpty()
@@ -92,7 +93,7 @@ fun InputBar(
                     enabled = enabled,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .testTag("input_field"),
+                        .testTag(inputTestTag),
                     textStyle = MaterialTheme.typography.bodyMedium.copy(
                         color = MaterialTheme.colorScheme.onSurface,
                         fontFamily = DesignFonts.ArabicUiFamily,

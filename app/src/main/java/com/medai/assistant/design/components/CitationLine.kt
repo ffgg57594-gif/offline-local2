@@ -18,8 +18,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.text
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.medai.assistant.ask.PassageText
 import com.medai.assistant.design.DesignFonts
 import com.medai.assistant.design.DesignSpacing
 import com.medai.assistant.design.LocalExtendedDesignTokens
@@ -38,6 +42,7 @@ fun CitationLine(
     testTag: String = "citation_line"
 ) {
     val extendedTokens = LocalExtendedDesignTokens.current
+    val citationText = PassageText.citation(bookTitle, page)
 
     val containerModifier = modifier
         .testTag(testTag)
@@ -55,6 +60,9 @@ fun CitationLine(
                 Modifier
             }
         )
+        .semantics {
+            this.text = AnnotatedString(citationText)
+        }
         .padding(horizontal = DesignSpacing.space8, vertical = DesignSpacing.space4)
 
     FlowRow(

@@ -92,6 +92,10 @@ object DesignTokens {
         onSecondary = Color(0xFFFFFFFF),
         secondaryContainer = Color(0xFFE2E9EC),
         onSecondaryContainer = Color(0xFF1B2024),
+        tertiary = Color(0xFFB58014),
+        onTertiary = Color(0xFFFFFFFF),
+        tertiaryContainer = Color(0xFFF8E4B3),
+        onTertiaryContainer = Color(0xFF1B2024),
         background = Color(0xFFF7F4EE),       // Warm textbook paper
         onBackground = Color(0xFF1B2024),     // Ink text
         surface = Color(0xFFFAF8F3),          // Reading surface
@@ -134,6 +138,10 @@ object DesignTokens {
         onSecondary = Color(0xFF222526),
         secondaryContainer = Color(0xFF34383A),
         onSecondaryContainer = Color(0xFFF3EFE7),
+        tertiary = Color(0xFFFFE8B3),
+        onTertiary = Color(0xFF3D2E00),
+        tertiaryContainer = Color(0xFF4E3E18),
+        onTertiaryContainer = Color(0xFFFFE8B3),
         background = Color(0xFF1B1D1E),       // Warm charcoal, not pure black
         onBackground = Color(0xFFF3EFE7),
         surface = Color(0xFF232627),          // Warm dark card

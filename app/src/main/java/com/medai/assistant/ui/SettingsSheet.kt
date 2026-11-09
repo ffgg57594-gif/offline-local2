@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,6 +31,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.medai.assistant.design.DesignFonts
+import com.medai.assistant.design.LocalExtendedDesignTokens
 import com.medai.assistant.settings.AppSettings
 import kotlinx.coroutines.delay
 
@@ -46,6 +49,7 @@ fun SettingsSheet(
     onCopyReport: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val extendedTokens = LocalExtendedDesignTokens.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var copied by remember { mutableStateOf(false) }
     LaunchedEffect(copied) {
@@ -55,7 +59,15 @@ fun SettingsSheet(
         }
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        shape = RoundedCornerShape(
+            topStart = extendedTokens.sheetRadius,
+            topEnd = extendedTokens.sheetRadius
+        ),
+        containerColor = MaterialTheme.colorScheme.surface
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -67,13 +79,17 @@ fun SettingsSheet(
                 "الإعدادات",
                 modifier = Modifier.testTag("settings_sheet_title"),
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                fontFamily = DesignFonts.ArabicUiFamily,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Text(
                 "درجة التشدد في فلتر الرفض",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                fontFamily = DesignFonts.ArabicUiFamily,
+                color = MaterialTheme.colorScheme.onSurface
             )
             PresetRow(
                 label = "متوازن",
@@ -101,11 +117,15 @@ fun SettingsSheet(
                     Text(
                         "إظهار التوقيتات",
                         style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = DesignFonts.ArabicUiFamily,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         "وضع التشخيص: يعرض زمن البحث ودرجة التشابه.",
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = DesignFonts.ArabicUiFamily,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 Switch(
@@ -125,7 +145,11 @@ fun SettingsSheet(
                     .heightIn(min = 48.dp)
                     .testTag("copy_diagnostics")
             ) {
-                Text(if (copied) "تم النسخ" else "نسخ تقرير التشخيص")
+                Text(
+                    if (copied) "تم النسخ" else "نسخ تقرير التشخيص",
+                    fontFamily = DesignFonts.ArabicUiFamily,
+                    fontWeight = FontWeight.Bold
+                )
             }
             TextButton(
                 onClick = onDismiss,
@@ -133,7 +157,11 @@ fun SettingsSheet(
                     .heightIn(min = 48.dp)
                     .testTag("settings_close")
             ) {
-                Text("إغلاق")
+                Text(
+                    "إغلاق",
+                    fontFamily = DesignFonts.ArabicUiFamily,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
@@ -161,8 +189,19 @@ private fun PresetRow(
     ) {
         RadioButton(selected = selected, onClick = null)
         Column(modifier = Modifier.padding(start = 12.dp)) {
-            Text(label, style = MaterialTheme.typography.bodyLarge)
-            Text(description, style = MaterialTheme.typography.bodySmall)
+            Text(
+                label,
+                style = MaterialTheme.typography.bodyLarge,
+                fontFamily = DesignFonts.ArabicUiFamily,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                description,
+                style = MaterialTheme.typography.bodySmall,
+                fontFamily = DesignFonts.ArabicUiFamily,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
