@@ -216,7 +216,7 @@ fun EmptyState(
         }
 
         Text(
-            text = "أسئلة استرشادية",
+            text = "أسئلة أمثلة",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,

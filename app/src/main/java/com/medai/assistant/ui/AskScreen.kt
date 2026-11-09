@@ -450,7 +450,7 @@ private fun EmptyState(bookInfo: BookInfo?, onExample: (String) -> Unit) {
         }
 
         Text(
-            "أسئلة استرشادية",
+            "أسئلة أمثلة",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,
