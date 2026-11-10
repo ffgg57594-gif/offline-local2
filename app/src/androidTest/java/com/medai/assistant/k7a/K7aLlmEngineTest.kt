@@ -18,12 +18,13 @@ import java.io.File
 /**
  * K7a: on-device engine tests.
  *
- * The tiny public GGUF (karpathy/tinyllamas mirror, MIT) is downloaded
- * through the production ModelManager + DownloadManager path and its pinned
- * sha256 is re-verified in the test. Then: greedy determinism (20 tokens
- * twice must match byte for byte), mid-generation cancel, free/reload, a
- * corrupted file must be rejected without crashing, and 10 load/generate/
- * free cycles must not grow the native heap.
+ * The tiny public GGUF (ggml-org/test-model-stories260K, GGUF v3
+ * re-export of karpathy/tinyllamas, MIT) is downloaded through the
+ * production ModelManager + DownloadManager path and its pinned sha256
+ * is re-verified in the test. Then: greedy determinism (20 tokens
+ * twice must match byte for byte), mid-generation cancel, free/reload,
+ * a corrupted file must be rejected without crashing, and 10
+ * load/generate/free cycles must not grow the native heap.
  */
 @RunWith(AndroidJUnit4::class)
 class K7aLlmEngineTest {
@@ -54,7 +55,7 @@ class K7aLlmEngineTest {
     }
 
     @Test
-    fun greedyGenerationIsDeterministic() = runBlocking {
+    fun greedyGenerationIsDeterministic(): Unit = runBlocking {
         val engine = LlamaEngine.load(
             path = modelFile().absolutePath,
             nCtx = 256,
@@ -84,7 +85,7 @@ class K7aLlmEngineTest {
     }
 
     @Test
-    fun cancelStopsGenerationAfterFirstToken() = runBlocking {
+    fun cancelStopsGenerationAfterFirstToken(): Unit = runBlocking {
         val engine = LlamaEngine.load(
             path = modelFile().absolutePath,
             nCtx = 256,
@@ -113,7 +114,7 @@ class K7aLlmEngineTest {
     }
 
     @Test
-    fun freeThenReloadWorks() = runBlocking {
+    fun freeThenReloadWorks(): Unit = runBlocking {
         val first = LlamaEngine.load(
             path = modelFile().absolutePath,
             nCtx = 256,
@@ -139,7 +140,7 @@ class K7aLlmEngineTest {
     }
 
     @Test
-    fun corruptedModelIsRejectedGracefully() = runBlocking {
+    fun corruptedModelIsRejectedGracefully(): Unit = runBlocking {
         val corrupted = File(context.cacheDir, "k7a-corrupted.gguf")
         modelFile().copyTo(corrupted, overwrite = true)
         // Flip one byte in the header (the version field at offset 4) while
@@ -164,7 +165,7 @@ class K7aLlmEngineTest {
     }
 
     @Test
-    fun tenLoadGenerateFreeCyclesDoNotLeakNativeMemory() = runBlocking {
+    fun tenLoadGenerateFreeCyclesDoNotLeakNativeMemory(): Unit = runBlocking {
         val infoBefore = android.os.Debug.MemoryInfo()
         android.os.Debug.getMemoryInfo(infoBefore)
         val nativeBefore = infoBefore.nativePss
@@ -214,7 +215,7 @@ class K7aLlmEngineTest {
     }
 
     @Test
-    fun writesEngineStatsReportForTheReport() = runBlocking {
+    fun writesEngineStatsReportForTheReport(): Unit = runBlocking {
         val engine = LlamaEngine.load(
             path = modelFile().absolutePath,
             nCtx = 256,
@@ -230,7 +231,7 @@ class K7aLlmEngineTest {
                 maxTokens = 20
             ) { }
             val report = buildString {
-                appendLine("K7a emulator engine stats (tinyllamas-stories-260k-f32)")
+                appendLine("K7a emulator engine stats (stories260K-f32)")
                 appendLine("loadMs=${engine.loadMs}")
                 appendLine("desc=${engine.modelInfo.desc}")
                 appendLine("nCtx=${engine.modelInfo.nCtx} nCtxTrain=${engine.modelInfo.nCtxTrain}")

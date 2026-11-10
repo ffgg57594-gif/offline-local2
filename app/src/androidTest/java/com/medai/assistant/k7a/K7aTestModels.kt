@@ -13,19 +13,22 @@ import java.io.File
 /**
  * K7a: the few-MB public test GGUF used by the on-device tests.
  *
- * `klosax/tinyllamas-stories-gguf` mirrors karpathy/tinyllamas (MIT);
- * the file is downloaded through the production [ModelManager] +
- * DownloadManager path and its pinned sha256 is verified before use.
- * The test model is never bundled inside the APK.
+ * `ggml-org/test-model-stories260K` is llama.cpp's own CI re-export of
+ * karpathy/tinyllamas stories260K (MIT) in GGUF v3 — the pinned submodule
+ * (b12236) rejects GGUF v1 files ("GGUFv1 is no longer supported"), so the
+ * original klosax mirror of the v1 file cannot be loaded. The file is
+ * downloaded through the production [ModelManager] + DownloadManager path
+ * and its pinned sha256 is verified before use. The test model is never
+ * bundled inside the APK.
  */
 object K7aTestModels {
 
     const val TINY_URL =
-        "https://huggingface.co/klosax/tinyllamas-stories-gguf/resolve/main/" +
-            "tinyllamas-stories-260k-f32.gguf"
+        "https://huggingface.co/ggml-org/test-model-stories260K/resolve/main/" +
+            "stories260K-f32.gguf"
     const val TINY_SHA256 =
-        "c14806920629b6c217445c69d7ac61bd0e4047289f8ab824c3f0b4f827a5d1cb"
-    const val TINY_SIZE_BYTES = 1_182_656L
+        "270cba1bd5109f42d03350f60406024560464db173c0e387d91f0426d3bd256d"
+    const val TINY_SIZE_BYTES = 1_185_376L
 
     @Volatile
     private var managerRef: ModelManager? = null
@@ -34,18 +37,18 @@ object K7aTestModels {
     private var fileRef: File? = null
 
     fun catalogEntry(): CatalogModel = CatalogModel(
-        id = "tinyllamas-stories-260k-f32",
+        id = "stories260k-f32",
         displayName = "TinyLlama stories 260K (test)",
-        fileName = "tinyllamas-stories-260k-f32.gguf",
-        repo = "klosax/tinyllamas-stories-gguf",
+        fileName = "stories260K-f32.gguf",
+        repo = "ggml-org/test-model-stories260K",
         url = TINY_URL,
         sizeBytes = TINY_SIZE_BYTES,
         sha256 = TINY_SHA256,
         license = "mit",
-        licenseLine = "license: mit (source: karpathy/tinyllamas)",
+        licenseLine = "license: mit (source: karpathy/tinyllamas, re-exported by ggml-org)",
         licenseUrl = "https://huggingface.co/karpathy/tinyllamas",
         ramEstimateMb = 64,
-        ramEstimateCalc = "test model: 1.1 MB f32 base model, ctx 256",
+        ramEstimateCalc = "test model: 1.13 MB f32 stories260K (292.8K params), ctx 256",
         isDefault = true
     )
 

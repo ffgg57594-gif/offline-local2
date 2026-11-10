@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -386,15 +387,20 @@ class ModelManager(
 
     /** Screenshot support: clean slate for the "not installed" state. */
     fun resetForUiTest() {
-        scope.launch {
-            mutex.withLock {
-                for (model in catalog) {
-                    cancelDownloadImmediateLocked(model)
-                    storage.deleteInstalled(model)
+        // Synchronous on purpose: callers inject a UI-test state right after
+        // this returns, so the reset must have fully completed (files
+        // deleted, states set, polling jobs cancelled) before they do.
+        runBlocking {
+            scope.launch {
+                mutex.withLock {
+                    for (model in catalog) {
+                        cancelDownloadImmediateLocked(model)
+                        storage.deleteInstalled(model)
+                    }
+                    _states.value =
+                        catalog.associate { it.id to ModelState.NotInstalled as ModelState }
                 }
-                _states.value =
-                    catalog.associate { it.id to ModelState.NotInstalled as ModelState }
-            }
+            }.join()
         }
     }
 
