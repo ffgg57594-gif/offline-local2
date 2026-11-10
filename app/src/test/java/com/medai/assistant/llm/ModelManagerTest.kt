@@ -2,6 +2,7 @@ package com.medai.assistant.llm
 
 import com.medai.assistant.llm.download.DownloadStatus
 import com.medai.assistant.llm.download.ModelDownloader
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -202,6 +203,13 @@ class ModelManagerTest {
                     DownloadStatus.Running(smallModel.sizeBytes / 2, smallModel.sizeBytes)
                 )
             )
+            // Keep the download "alive" after the script drains so the
+            // reattached Downloading state (with real progress) persists
+            // for the subscriber no matter the scheduling order.
+            it.sticky = DownloadStatus.Running(
+                smallModel.sizeBytes / 2,
+                smallModel.sizeBytes
+            )
         }
         val second = ModelManager(
             catalog = listOf(smallModel, tinyModel),
@@ -211,9 +219,17 @@ class ModelManagerTest {
             spaceProvider = { 10_000_000_000L },
             pollMs = 5L
         )
+        // Subscribe before resumeOnStart so no emission is missed
+        // (StateFlow conflates; the whole scripted sequence can finish
+        // in ~2 polls).
+        val downloadingDeferred = async {
+            awaitState(second, smallModel.id) {
+                it is ModelState.Downloading && it.bytesSoFar > 0
+            }
+        }
         second.resumeOnStart()
-        val downloading = awaitState(second, smallModel.id) { it is ModelState.Downloading }
-        assertTrue((downloading as ModelState.Downloading).bytesSoFar > 0)
+        val downloading = downloadingDeferred.await() as ModelState.Downloading
+        assertTrue(downloading.bytesSoFar > 0)
     }
 
     @Test

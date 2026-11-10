@@ -85,8 +85,25 @@ class ModelManager(
                         is DownloadStatus.Successful -> finalizeLocked(model, status.file)
                         is DownloadStatus.Failed -> cleanupLocked(model, downloadId)
                         is DownloadStatus.Unknown -> cleanupLocked(model, downloadId)
+                        is DownloadStatus.Running -> {
+                            // Re-attach with the real progress instead of a
+                            // fake 0 so the UI does not flash an empty bar.
+                            setStateLocked(
+                                model,
+                                ModelState.Downloading(
+                                    model.id,
+                                    status.bytesSoFar,
+                                    model.sizeBytes
+                                )
+                            )
+                            startPollingLocked(model, downloadId)
+                        }
                         else -> {
-                            setStateLocked(model, ModelState.Downloading(model.id, 0L, model.sizeBytes))
+                            // Pending/Paused: still alive, start polling.
+                            setStateLocked(
+                                model,
+                                ModelState.Downloading(model.id, 0L, model.sizeBytes)
+                            )
                             startPollingLocked(model, downloadId)
                         }
                     }
