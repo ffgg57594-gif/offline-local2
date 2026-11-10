@@ -3,6 +3,7 @@ package com.medai.assistant.k7a
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -153,25 +154,25 @@ class K7aModelScreenshotsTest : K5bUiTestBase() {
         // Enter through the real debug path: long-press on the app title.
         composeRule.onNodeWithTag("app_title").performTouchInput { longClick() }
         composeRule.waitUntil(30_000) {
-            composeRule.onNodeWithTag("llm_test_entry")
+            composeRule.onAllNodesWithTag("llm_test_entry")
                 .fetchSemanticsNodes()
                 .isNotEmpty()
         }
         composeRule.onNodeWithTag("llm_test_entry").performScrollTo().performClick()
         composeRule.waitUntil(30_000) {
-            composeRule.onNodeWithTag("llm_test_model_status")
+            composeRule.onAllNodesWithTag("llm_test_model_status")
                 .fetchSemanticsNodes()
                 .isNotEmpty()
         }
         composeRule.waitUntil(30_000) {
-            composeRule.onNodeWithTag("llm_test_load").fetchSemanticsNodes().isNotEmpty()
+            composeRule.onAllNodesWithTag("llm_test_load").fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithTag("llm_test_load").performClick()
 
         // Real load of the real verified file through the real engine.
         composeRule.waitUntil(120_000) {
-            composeRule.onNodeWithTag("llm_test_model_info").fetchSemanticsNodes().isNotEmpty() ||
-                composeRule.onNodeWithTag("llm_test_load_error").fetchSemanticsNodes().isNotEmpty()
+            composeRule.onAllNodesWithTag("llm_test_model_info").fetchSemanticsNodes().isNotEmpty() ||
+                composeRule.onAllNodesWithTag("llm_test_load_error").fetchSemanticsNodes().isNotEmpty()
         }
         composeRule
             .onAllNodesWithText("فشل التحميل", substring = true)
@@ -186,18 +187,18 @@ class K7aModelScreenshotsTest : K5bUiTestBase() {
 
         // 05: streamed output while the generation is still running.
         composeRule.waitUntil(120_000) {
-            composeRule.onNodeWithTag("llm_test_output").fetchSemanticsNodes().isNotEmpty()
+            composeRule.onAllNodesWithTag("llm_test_output").fetchSemanticsNodes().isNotEmpty()
         }
         screenshotV4("05_llm_test_streamed_output")
 
         // 06: completed run with stats + peak PSS + thermal + copy report.
         composeRule.waitUntil(180_000) {
-            composeRule.onNodeWithTag("llm_test_stats").fetchSemanticsNodes().isNotEmpty()
+            composeRule.onAllNodesWithTag("llm_test_stats").fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithTag("llm_test_copy_report").performScrollTo()
         screenshotV4("06_llm_test_stats")
 
         // Sanity: exactly one stats node (the run finished, buttons reset).
-        composeRule.onNodeWithTag("llm_test_stats").assertCountEquals(1)
+        composeRule.onAllNodesWithTag("llm_test_stats").assertCountEquals(1)
     }
 }
