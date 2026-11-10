@@ -21,6 +21,15 @@ android {
         versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk { abiFilters += "arm64-v8a" }
+        // K7a: llama.cpp JNI bridge. arm64-v8a is built for release
+        // (ARMv8.2-A + dotprod flags live in the CMake file); debug also
+        // builds x86_64 for the emulator via the debug abiFilters below.
+        externalNativeBuild {
+            cmake {
+                path = file("src/main/cpp/CMakeLists.txt")
+                version = "3.22.1"
+            }
+        }
         val buildTimeUtc = SimpleDateFormat(
             "yyyy-MM-dd'T'HH:mm:ss'Z'",
             Locale.ROOT

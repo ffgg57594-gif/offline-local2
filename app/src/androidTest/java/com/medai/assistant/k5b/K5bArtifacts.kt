@@ -30,6 +30,23 @@ object K5bArtifacts {
         return dir
     }
 
+    fun screenshotsV4Dir(context: Context): File {
+        val dir = File(context.filesDir, "ui-screenshots-v4")
+        dir.mkdirs()
+        return dir
+    }
+
+    /** K7a on-device reports (engine stats, native heap growth, downloads). */
+    fun k7aReportsDir(context: Context): File {
+        val dir = File(context.filesDir, "k7a-reports")
+        dir.mkdirs()
+        return dir
+    }
+
+    fun writeK7aText(context: Context, name: String, text: String) {
+        File(k7aReportsDir(context), name).writeText(text, Charsets.UTF_8)
+    }
+
     fun writeText(context: Context, name: String, text: String) {
         File(reportsDir(context), name).writeText(text, Charsets.UTF_8)
     }
@@ -50,6 +67,33 @@ object K5bArtifacts {
             }
         } finally {
             raw.recycle()
+        }
+    }
+
+    /**
+     * K7a: full-resolution device screenshot (real system bars) written only
+     * into files/ui-screenshots-v4. Not copied into the v2 dir so the legacy
+     * artifact keeps its fixed 14-file inventory.
+     */
+    fun screenshotV4(context: Context, name: String) {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        instrumentation.waitForIdleSync()
+        Thread.sleep(600)
+        val raw: Bitmap = instrumentation.uiAutomation.takeScreenshot()
+        val bitmap = if (raw.width > MAX_WIDTH) {
+            val height = (raw.height.toLong() * MAX_WIDTH / raw.width).toInt().coerceAtLeast(1)
+            Bitmap.createScaledBitmap(raw, MAX_WIDTH, height, true)
+        } else {
+            raw
+        }
+        try {
+            val file = File(screenshotsV4Dir(context), "$name.png")
+            FileOutputStream(file).use { output ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
+            }
+        } finally {
+            bitmap.recycle()
+            if (bitmap !== raw) raw.recycle()
         }
     }
 

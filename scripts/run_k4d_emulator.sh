@@ -157,6 +157,8 @@ echo "connected_test_exit_code=$TEST_STATUS" | tee -a "$REPORT_DIR/device_info.t
 pull_internal_dir reports "$K5B_DIR"
 pull_internal_dir ui-screenshots "$K5B_DIR/ui-screenshots"
 pull_internal_dir ui-screenshots-v3 "build/reports/k5d/ui-screenshots-v3"
+pull_internal_dir ui-screenshots-v4 "build/reports/k7a/ui-screenshots-v4"
+pull_internal_dir k7a-reports "build/reports/k7a/device"
 pull_internal_dir design-gallery "build/reports/design-gallery"
 if [ -d "build/reports/design-gallery" ]; then
   cp -a build/reports/design-gallery/*.png "$K5B_DIR/ui-screenshots/" 2>/dev/null || true

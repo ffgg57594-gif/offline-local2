@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "note": "GGUF chat models downloaded inside the app (never bundled in the APK). All URLs are pinned HTTPS Hugging Face resolve links with a pinned sha256; the download is verified before the file is moved into filesDir/models.",
+  "models": [
+    {
+      "id": "qwen2.5-1.5b-instruct-q4km",
+      "display_name": "Qwen2.5 1.5B Instruct (Q4_K_M)",
+      "file_name": "qwen2.5-1.5b-instruct-q4_k_m.gguf",
+      "repo": "Qwen/Qwen2.5-1.5B-Instruct-GGUF",
+      "url": "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf",
+      "size_bytes": 1117320736,
+      "sha256": "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e",
+      "license": "apache-2.0",
+      "license_line": "license: apache-2.0",
+      "license_url": "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/blob/main/LICENSE",
+      "ram_estimate_mb": 1600,
+      "ram_estimate_calc": "weights 1117320736 B (~1066 MiB, Q4_K_M) + KV cache f16 2048 ctx: 28 layers * 2 (K,V) * 2 kv_heads * 128 head_dim * 2 B * 2048 = 58720256 B (~56 MiB) + compute/graph buffers ~400 MiB estimate -> ~1.5 GiB, recommend 1600 MB",
+      "default": true
+    },
+    {
+      "id": "qwen2.5-0.5b-instruct-q4km",
+      "display_name": "Qwen2.5 0.5B Instruct (Q4_K_M) - fast fallback",
+      "file_name": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+      "repo": "Qwen/Qwen2.5-0.5B-Instruct-GGUF",
+      "url": "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf",
+      "size_bytes": 491400032,
+      "sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+      "license": "apache-2.0",
+      "license_line": "license: apache-2.0",
+      "license_url": "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/blob/main/LICENSE",
+      "ram_estimate_mb": 800,
+      "ram_estimate_calc": "weights 491400032 B (~469 MiB, Q4_K_M) + KV cache f16 2048 ctx: 24 layers * 2 (K,V) * 2 kv_heads * 64 head_dim * 2 B * 2048 = 25165824 B (~24 MiB) + compute/graph buffers ~250 MiB estimate -> ~0.7 GiB, recommend 800 MB",
+      "default": false
+    }
+  ]
+}

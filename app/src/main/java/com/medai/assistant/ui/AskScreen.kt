@@ -1,5 +1,7 @@
 package com.medai.assistant.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -102,6 +104,7 @@ import com.medai.assistant.design.components.MedAiTopBar
 import com.medai.assistant.design.components.QuestionBubble
 import com.medai.assistant.design.motion.StaggeredCardEnter
 import com.medai.assistant.diagnostics.Diagnostics
+import com.medai.assistant.runtime.AppGraph
 import com.medai.assistant.settings.AppSettings
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -149,6 +152,25 @@ fun AskScreen(
     val keyboard = LocalSoftwareKeyboardController.current
     val scrollState = rememberScrollState()
     val firstCardRequester = remember { BringIntoViewRequester() }
+
+    // K7a: in-app LLM model download/import wiring for the settings sheet.
+    val modelManager = AppGraph.modelManager(appContext)
+    val modelStates by modelManager.states.collectAsState()
+    val catalogModels = remember { modelManager.models() }
+    val modelImportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                // Accepts only a file whose sha256 equals a catalog entry;
+                // anything else becomes the "الملف غير مطابق للمتوقع" error state.
+                modelManager.importFrom {
+                    appContext.contentResolver.openInputStream(uri)
+                        ?: error("تعذر فتح الملف المحدد")
+                }
+            }
+        }
+    }
 
     val copy: (String) -> Unit = { text ->
         clipboard.setText(AnnotatedString(text))
@@ -286,6 +308,12 @@ fun AskScreen(
     if (showSettings) {
         SettingsSheet(
             settings = settings,
+            modelStates = modelStates,
+            catalogModels = catalogModels,
+            onDownload = { model -> modelManager.download(model) },
+            onCancelDownload = { id -> modelManager.cancelDownload(id) },
+            onDeleteModel = { id -> modelManager.delete(id) },
+            onImportModel = { modelImportLauncher.launch(arrayOf("*/*")) },
             onPreset = viewModel::setPreset,
             onShowTimings = viewModel::setShowTimings,
             onCopyReport = {

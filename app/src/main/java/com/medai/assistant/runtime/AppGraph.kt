@@ -14,6 +14,12 @@ import com.medai.assistant.gate.AndroidGateDatabase
 import com.medai.assistant.gate.GateConfig
 import com.medai.assistant.gate.GateDatabase
 import com.medai.assistant.gate.GateVocab
+import com.medai.assistant.llm.CatalogModel
+import com.medai.assistant.llm.ModelCatalog
+import com.medai.assistant.llm.ModelManager
+import com.medai.assistant.llm.ModelStorage
+import com.medai.assistant.llm.SharedPrefsStore
+import com.medai.assistant.llm.download.AndroidModelDownloader
 import com.medai.assistant.search.DenseSearch
 import com.medai.assistant.tokenizer.Tokenizer
 import kotlinx.coroutines.CoroutineScope
@@ -113,6 +119,44 @@ object AppGraph {
     }
 
     fun currentResources(): LoadedResources? = loadedResources
+
+    // ------------------------------------------------------------------
+    // K7a: in-app LLM model download + llama.cpp engine ownership.
+    // ------------------------------------------------------------------
+
+    @Volatile
+    private var modelManagerRef: ModelManager? = null
+
+    /**
+     * Process-wide model manager. The state flow survives rotation and is
+     * re-attached to DownloadManager on app restart (resumeOnStart).
+     */
+    fun modelManager(context: Context): ModelManager = synchronized(this) {
+        modelManagerRef ?: createModelManager(context.applicationContext).also {
+            modelManagerRef = it
+        }
+    }
+
+    fun modelCatalog(context: Context): List<CatalogModel> =
+        modelManager(context).models()
+
+    private fun createModelManager(app: Context): ModelManager {
+        val catalogText = app.assets.open("model_catalog.json")
+            .bufferedReader(Charsets.UTF_8).use { it.readText() }
+        val catalog = ModelCatalog.parse(catalogText)
+        val storage = ModelStorage(
+            filesDir = app.filesDir,
+            downloadDir = app.getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS)
+        )
+        val manager = ModelManager(
+            catalog = catalog,
+            storage = storage,
+            downloader = AndroidModelDownloader(app),
+            store = SharedPrefsStore(app, "llm_models")
+        )
+        manager.resumeOnStart()
+        return manager
+    }
 
     private fun loadResources(
         app: Context,

@@ -3,7 +3,7 @@
 ## Project Overview
 
 - **App:** Offline Android medical reference assistant (Kotlin, Jetpack Compose, ONNX Runtime Mobile, SQLite FTS5) that answers English Obstetrics & Gynaecology medical questions **strictly** from one embedded textbook: `app/src/main/assets/books/425_OBG_clean_single_pages.pdf` (375 pages, 1,185 chunks).
-- **Core Security & Privacy Boundary:** Zero `INTERNET` permission in `AndroidManifest.xml`. All tokenization, vector embedding, similarity search, and gate decisions run 100% locally on-device.
+- **Core Security & Privacy Boundary:** All retrieval (tokenization, vector embedding, similarity search, gate decisions) still runs 100% locally on-device. Since K7a the app requests exactly two permissions: `INTERNET` + `POST_NOTIFICATIONS` — the network is used **only** by the in-app model downloader (`app/src/main/java/com/medai/assistant/llm/download/`) to fetch the GGUF chat model the user explicitly chooses in Settings → الموديل. `scripts/check_network_usage.py` fails CI when any code outside that package references `java.net`/`okhttp`/`HttpURLConnection`/`openConnection`/`WebView`/`DownloadManager`, the network security config forbids cleartext, and "Verify APK contents" asserts the APK permission set is exactly `INTERNET` + `POST_NOTIFICATIONS`.
 - **Target Architecture:** `arm64-v8a` only for release APK; R8 full minification enabled. Debug and test APKs support both `arm64-v8a` and `x86_64` (for API 34 emulator testing).
 - **Repository:** `https://github.com/ffgg57594-gif/offline-local2` — branch `main`.
 - **CI / Build Harness:** GitHub Actions workflow (`Build APK` in `.github/workflows/build_apk.yml`). The project is developed and maintained via an automated phone-friendly harness; all releases are built, tested on an emulator, signed, and published automatically on GitHub Actions.
@@ -113,7 +113,7 @@ As of commit `533ce0448ba7caa732bf2664b35453e3dcb9ad11` (Tag `build-177`), all s
 
 1. **Retrieval is Dense Only:** All passages come from `DenseSearch` against `assets/embeddings.bin`. Exact chunk top-1 accuracy is ~43%, top-3 accuracy is ~78%. The application always presents the top 3 passages with citation to book title and page number.
 2. **Deterministic Parity Across Runners:** `embeddings.bin` SHA-256 can vary slightly between CPU architectures (e.g. AVX-512 vs AVX2); always generate and test reference parity within the same CI workflow run.
-3. **No INTERNET Permission:** The application must never request `android.permission.INTERNET`. Any network feature request must be rejected.
+3. **Restricted INTERNET Permission (K7a):** The app requests exactly `android.permission.INTERNET` + `android.permission.POST_NOTIFICATIONS`. The network is used **only** inside `app/src/main/java/com/medai/assistant/llm/download/` to download the user-selected GGUF model. `scripts/check_network_usage.py` fails CI on any network-API reference outside that package; any other network feature request must be rejected.
 4. **arm64-v8a Only for Release:** The release APK ABI is strictly restricted to `arm64-v8a` (`ndk { abiFilters "arm64-v8a" }`).
 5. **Release APK Has No Gallery Code:** Keep all gallery composables in `app/src/debug/`. The release task automatically runs `verify_release_no_gallery.py`.
 6. **Local Development Container (Proot):** The local container runs in proot on an Android phone. Never start background Gradle daemons or run unconstrained builds locally. Rely on GitHub Actions for full compilation, emulator testing, and APK signing.

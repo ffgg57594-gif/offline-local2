@@ -17,6 +17,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -29,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import com.medai.assistant.SearchTiming
 import com.medai.assistant.data.Chunk
 import com.medai.assistant.data.InstallState
+import com.medai.assistant.design.DesignFonts
 import com.medai.assistant.diagnostics.Diagnostics
 import com.medai.assistant.embedder.OnnxEmbedder
 import com.medai.assistant.gate.GateDecision
@@ -120,6 +123,7 @@ fun DebugScreen(onBack: () -> Unit) {
     var benchmarking by remember { mutableStateOf(false) }
     var benchmark by remember { mutableStateOf<DebugBenchmark?>(null) }
     var benchmarkStatus by remember { mutableStateOf<String?>(null) }
+    var showLlmTest by rememberSaveable { mutableStateOf(false) }
 
     val resources = (runtime as? AppRuntimeState.Ready)?.resources
     val ready = resources != null
@@ -157,6 +161,10 @@ fun DebugScreen(onBack: () -> Unit) {
             )
         }
     ) { innerPadding ->
+        if (showLlmTest) {
+            LlmTestScreen(onBack = { showLlmTest = false })
+            return@Scaffold
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -175,6 +183,19 @@ fun DebugScreen(onBack: () -> Unit) {
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
+                    OutlinedButton(
+                        onClick = { showLlmTest = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 48.dp)
+                            .testTag("llm_test_entry")
+                    ) {
+                        Text(
+                            "اختبار الموديل (LLM) — K7a",
+                            fontFamily = DesignFonts.ArabicUiFamily,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                     Text("CPU cores: ${Runtime.getRuntime().availableProcessors()}")
                     when (val state = install) {
                         is InstallState.Idle -> Text("Install: idle")

@@ -63,11 +63,11 @@ fun MedAiTopBar(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
                         fontFamily = DesignFonts.ArabicUiFamily,
-                        modifier = if (onLongPressDebug != null) {
+                        modifier = (if (onLongPressDebug != null) {
                             Modifier.pointerInput(Unit) {
                                 detectTapGestures(onLongPress = { onLongPressDebug() })
                             }
-                        } else Modifier
+                        } else Modifier).testTag("app_title")
                     )
 
                     // Small offline badge

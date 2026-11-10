@@ -13,6 +13,24 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 2
+      - name: Fetch llama.cpp submodule at pinned tag (K7a)
+        run: |
+          set -e
+          EXPECTED_GITLINK=$(git ls-tree HEAD external/llama.cpp | awk '{print $3}')
+          echo "recorded_gitlink=$EXPECTED_GITLINK"
+          cd external/llama.cpp
+          git init -q
+          git remote add origin https://github.com/ggml-org/llama.cpp.git
+          git fetch --depth 1 -q origin tag b12236
+          git checkout -q b12236
+          ACTUAL=$(git rev-parse HEAD)
+          echo "llama_cpp_tag=b12236"
+          echo "llama_cpp_commit=$ACTUAL"
+          if [ "$ACTUAL" != "$EXPECTED_GITLINK" ]; then
+            echo "FAIL: llama.cpp checkout $ACTUAL does not match the recorded gitlink $EXPECTED_GITLINK"
+            exit 1
+          fi
+          echo "llama_cpp_top_level_files=$(ls | wc -l)"
       - name: K4d job start timestamp
         run: echo "K4D_JOB_START=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/setup-java@v5
@@ -28,6 +46,8 @@ jobs:
           cache: 'pip'
       - name: Install Python deps
         run: pip install -r scripts/requirements.txt
+      - name: Verify model catalog against Hugging Face (K7a)
+        run: python scripts/verify_model_catalog.py
       - name: Run unit tests (Python)
         run: pytest tests
       - name: Build knowledge DB
@@ -173,6 +193,8 @@ jobs:
           cp eval/retrieval_top5.csv app/src/androidTest/assets/retrieval_top5.csv
           cp eval/gate_query_vectors.csv app/src/androidTest/assets/gate_query_vectors.csv
           ls -l app/src/androidTest/assets
+      - name: Network usage policy (K7a)
+        run: python scripts/check_network_usage.py
       - name: K4d compile debug + androidTest APKs
         run: ./gradlew assembleDebug assembleDebugAndroidTest --stacktrace
       - name: Print kotlin-parity sha256 (K4c)
@@ -294,10 +316,13 @@ jobs:
         run: |
           APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
           if unzip -l "$APK" | grep -i '\.pdf$'; then echo "PDF found in APK - FAIL"; exit 1; fi
-          for f in assets/books_knowledge.db assets/embeddings.bin assets/embeddings_meta.json assets/embedder_reference.json assets/models/embedder/model_quantized.onnx assets/models/embedder/tokenizer.json assets/normalize_map.json assets/fusion_config.json assets/medical_aliases.json assets/gate_vocab.json assets/gate_config.json; do
+          for f in assets/books_knowledge.db assets/embeddings.bin assets/embeddings_meta.json assets/embedder_reference.json assets/models/embedder/model_quantized.onnx assets/models/embedder/tokenizer.json assets/normalize_map.json assets/fusion_config.json assets/medical_aliases.json assets/gate_vocab.json assets/gate_config.json assets/model_catalog.json; do
             if ! unzip -l "$APK" | grep -q "$f"; then echo "Missing $f in APK - FAIL"; exit 1; fi
           done
           if unzip -l "$APK" | grep -q 'assets/config_calibrated.json'; then echo "config_calibrated.json found in APK - FAIL"; exit 1; fi
+          # K7a: no GGUF model file may ship inside the APK
+          if unzip -l "$APK" | grep -q '\.gguf'; then echo "GGUF model found inside APK - FAIL"; exit 1; fi
+          echo "no .gguf inside APK - OK"
           # K4: arm64-v8a only
           LIBS=$(unzip -l "$APK" | awk '{print $4}' | grep '^lib/' | cut -d/ -f2 | sort -u | tr '\n' ' ')
           echo "APK ABI directories: $LIBS"
@@ -307,14 +332,42 @@ jobs:
             echo "release_apk_abi_directories=$LIBS"
           } >> build/reports/k4d/abi.txt
           if [ "$LIBS" != "arm64-v8a " ]; then echo "APK is not arm64-v8a only - FAIL"; exit 1; fi
-          # K4: no INTERNET permission
+          # K7a: permissions must be exactly INTERNET + POST_NOTIFICATIONS
           AAPT=$(ls "$ANDROID_HOME"/build-tools/*/aapt | sort -V | tail -1)
           "$AAPT" dump permissions "$APK" > /tmp/apk_permissions.txt
-          cat /tmp/apk_permissions.txt
-          if grep -q 'android.permission.INTERNET' /tmp/apk_permissions.txt; then echo "INTERNET permission found - FAIL"; exit 1; fi
+          cat /tmp/apk_permissions.txt | tee build/reports/k7a/apk_permissions.txt 2>/dev/null || cat /tmp/apk_permissions.txt
+          mkdir -p build/reports/k7a
+          cat /tmp/apk_permissions.txt > build/reports/k7a/apk_permissions.txt
+          grep 'uses-permission' /tmp/apk_permissions.txt | tr -d ' ' | sort > /tmp/apk_actual_permissions.txt
+          {
+            echo "uses-permission:android.permission.INTERNET"
+            echo "uses-permission:android.permission.POST_NOTIFICATIONS"
+          } > /tmp/apk_expected_permissions.txt
+          if ! diff -u /tmp/apk_expected_permissions.txt /tmp/apk_actual_permissions.txt; then
+            echo "APK permissions are not exactly INTERNET + POST_NOTIFICATIONS - FAIL"
+            exit 1
+          fi
+          echo "APK permissions are exactly INTERNET + POST_NOTIFICATIONS - OK"
+          # K7a: network security config must exist and forbid cleartext
+          AAPT2=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -1)
+          "$AAPT2" dump xmltree "$APK" --file res/xml/network_security_config.xml > /tmp/nsc_tree.txt || {
+            echo "network_security_config.xml missing from APK - FAIL"; exit 1;
+          }
+          cat /tmp/nsc_tree.txt
+          cp /tmp/nsc_tree.txt build/reports/k7a/network_security_config_xmltree.txt
+          if ! grep -q 'cleartextTrafficPermitted' /tmp/nsc_tree.txt; then
+            echo "cleartextTrafficPermitted missing from network security config - FAIL"; exit 1
+          fi
+          if grep 'cleartextTrafficPermitted' /tmp/nsc_tree.txt | grep -qv 'false'; then
+            echo "cleartextTrafficPermitted is not false everywhere - FAIL"; exit 1
+          fi
+          echo "network security config forbids cleartext - OK"
+          # K7a: print the native library sizes
+          echo "native libraries in release APK:" | tee build/reports/k7a/apk_native_libs.txt
+          unzip -l "$APK" | grep '\.so$' | tee -a build/reports/k7a/apk_native_libs.txt
           # K4: R8 mapping present for release minification
           if [ ! -f app/build/outputs/mapping/release/mapping.txt ]; then echo "R8 mapping.txt missing - FAIL"; exit 1; fi
-          echo "APK contains all required assets, gate assets, arm64-v8a only, no INTERNET, R8 mapping present, no .pdf and no config_calibrated.json - OK"
+          echo "APK contains all required assets (incl. model_catalog.json), arm64-v8a only, exactly INTERNET + POST_NOTIFICATIONS, no .gguf, cleartext forbidden, R8 mapping present, no .pdf and no config_calibrated.json - OK"
       - name: APK file sizes
         run: |
           APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
@@ -370,6 +423,22 @@ jobs:
         with:
           name: ui-screenshots-v3
           path: build/reports/k5d/ui-screenshots-v3/
+          if-no-files-found: warn
+      - name: Upload K7a model + LLM screenshots (ui-screenshots-v4)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-screenshots-v4
+          path: build/reports/k7a/ui-screenshots-v4/
+          if-no-files-found: warn
+      - name: Upload K7a reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k7a-reports
+          path: |
+            build/reports/k7a/
+            !build/reports/k7a/ui-screenshots-v4/
           if-no-files-found: warn
       - name: Assemble K5a report
         if: always()

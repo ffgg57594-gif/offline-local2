@@ -14,7 +14,7 @@ An offline-first, privacy-respecting Android application (Kotlin, Jetpack Compos
 
 ## المزايا الأساسية / Core Features
 
-- **خصوصية مطلقة (Zero Internet Permission):** لا يحتوي ملف `AndroidManifest.xml` على إذن الإنترنت نهائياً. تجري كافة عمليات التجزئة (Tokenization)، وتوليد المتجهات (Embedding)، والبحث الدلالي (Dense Search)، وقرارات بوابة الرفض (Refusal Gate) محلياً على عتاد الجهاز.
+- **خصوصية مطلقة مع استثناء واحد مقيد (الإذنان INTERNET + POST_NOTIFICATIONS فقط):** يستخدم التطبيق الشبكة **فقط** لتنزيل موديل المحادثة GGUF الذي يختاره المستخدم من الإعدادات (قسم «الموديل») عبر حزمة `llm/download` وحدها؛ يفشل CI لو أشار أي كود خارجها إلى أي واجهة شبكة (`scripts/check_network_usage.py`)، والشبكة ممنوعة عن النص الصريح (cleartext). تجري كافة عمليات التجزئة (Tokenization)، وتوليد المتجهات (Embedding)، والبحث الدلالي (Dense Search)، وقرارات بوابة الرفض (Refusal Gate)، وتوليد نصوص الموديل (llama.cpp) محلياً على عتاد الجهاز.
 - **نظام تصميم "ورق وحبر" (Paper & Ink Design System):** مستوحى من الكتب والمراجع الطبية العريقة:
   - ألوان متناسقة: تركواز داكن (`#0F5C5C`)، تيراكوتا للرفض والتحذير (`#BA3D2A`)، ورق دافئ (`#F7F4EE`)، وفحم داكن (`#1B1D1E`).
   - خطوط مفتوحة المصدر (OFL): خط **Source Serif 4** للمقاطع الطبية، وخط **IBM Plex Sans Arabic** لواجهات التحكم.

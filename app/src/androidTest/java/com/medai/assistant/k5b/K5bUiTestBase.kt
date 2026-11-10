@@ -217,6 +217,12 @@ abstract class K5bUiTestBase {
         K5bArtifacts.screenshotV3(context, name)
     }
 
+    protected fun screenshotV4(name: String) {
+        composeRule.waitForIdle()
+        awaitNoSystemErrorDialog(name)
+        K5bArtifacts.screenshotV4(context, name)
+    }
+
     /**
      * Refuses to save a PNG that shows a system "isn't responding" dialog. If
      * one is up, close it and fail with the window title instead of shipping a

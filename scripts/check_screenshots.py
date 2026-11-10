@@ -119,7 +119,15 @@ def main() -> int:
         v3_code = check_screenshots_v3.main()
         v3_ok = (v3_code == 0)
 
-    return 0 if (ok and gallery_ok and v3_ok) else 1
+    # STAGE K7a: model settings + LLM test screenshots (ui-screenshots-v4)
+    v4_script = ROOT / "scripts/check_screenshots_v4.py"
+    v4_ok = True
+    if v4_script.exists():
+        import check_screenshots_v4
+        v4_code = check_screenshots_v4.main()
+        v4_ok = (v4_code == 0)
+
+    return 0 if (ok and gallery_ok and v3_ok and v4_ok) else 1
 
 
 if __name__ == "__main__":
