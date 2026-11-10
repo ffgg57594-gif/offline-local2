@@ -185,7 +185,7 @@ class ModelManagerTest {
     fun resumeOnStartReattachesToPersistedDownload() = runBlocking {
         // First manager "dies" mid-download after persisting the id.
         val first = newManager()
-        fake.script(DownloadStatus.Running(0L, smallModel.sizeBytes))
+        fake.sticky = DownloadStatus.Running(0L, smallModel.sizeBytes)
         first.download(smallModel)
         awaitState(first, smallModel.id) { it is ModelState.Downloading }
         val persistedId = store.getString("download_id_${smallModel.id}")
@@ -219,7 +219,7 @@ class ModelManagerTest {
     @Test
     fun resumeOnStartFinalizesCompletedDownload() = runBlocking {
         val first = newManager()
-        fake.script(DownloadStatus.Running(0L, smallModel.sizeBytes))
+        fake.sticky = DownloadStatus.Running(0L, smallModel.sizeBytes)
         first.download(smallModel)
         awaitState(first, smallModel.id) { it is ModelState.Downloading }
         val persistedId = store.getString("download_id_${smallModel.id}")!!
@@ -245,7 +245,7 @@ class ModelManagerTest {
     @Test
     fun resumeOnStartDropsUnknownDownloads() = runBlocking {
         val first = newManager()
-        fake.script(DownloadStatus.Running(0L, smallModel.sizeBytes))
+        fake.sticky = DownloadStatus.Running(0L, smallModel.sizeBytes)
         first.download(smallModel)
         awaitState(first, smallModel.id) { it is ModelState.Downloading }
         val persistedId = store.getString("download_id_${smallModel.id}")!!
@@ -343,6 +343,14 @@ class ModelManagerTest {
 
         var onSuccessful: (id: Long, destination: File) -> Unit = { _, _ -> }
 
+        /**
+         * Returned once the scripted queue drains so the polled download
+         * never turns Unknown mid-test (Unknown triggers the manager's
+         * cleanup, which removes the persisted download id the resume
+         * tests need to read).
+         */
+        var sticky: DownloadStatus? = null
+
         override fun enqueue(
             url: String,
             destination: File,
@@ -360,8 +368,7 @@ class ModelManagerTest {
         }
 
         override fun query(id: Long, destination: File): DownloadStatus {
-            val queue = statuses[id] ?: return DownloadStatus.Unknown
-            val next = queue.pollFirst() ?: return DownloadStatus.Unknown
+            val next = statuses[id]?.pollFirst() ?: sticky ?: return DownloadStatus.Unknown
             if (next is DownloadStatus.Successful) {
                 onSuccessful(id, next.file)
             }

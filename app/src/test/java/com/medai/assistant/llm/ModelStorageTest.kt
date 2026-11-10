@@ -36,7 +36,7 @@ class ModelStorageTest {
     @Test
     fun requiredBytesUsesOnePointThreeFactor() {
         assertEquals(1_300_000L, ModelStorage.requiredBytes(1_000_000L))
-        assertEquals(1_451_516L, ModelStorage.requiredBytes(1_116_550L))
+        assertEquals(1_451_515L, ModelStorage.requiredBytes(1_116_550L))
         assertTrue(ModelStorage.hasEnoughSpace(usableBytes = 1_300_000L, sizeBytes = 1_000_000L))
         assertFalse(ModelStorage.hasEnoughSpace(usableBytes = 1_299_999L, sizeBytes = 1_000_000L))
     }
