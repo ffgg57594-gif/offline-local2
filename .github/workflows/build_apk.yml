@@ -342,16 +342,22 @@ jobs:
             echo "release_apk_abi_directories=$LIBS"
           } >> build/reports/k4d/abi.txt
           if [ "$LIBS" != "arm64-v8a " ]; then echo "APK is not arm64-v8a only - FAIL"; exit 1; fi
-          # K7a: permissions must be exactly INTERNET + POST_NOTIFICATIONS
+          # K7a: permissions must be exactly INTERNET + POST_NOTIFICATIONS.
           AAPT=$(ls "$ANDROID_HOME"/build-tools/*/aapt | sort -V | tail -1)
           "$AAPT" dump permissions "$APK" > /tmp/apk_permissions.txt
           cat /tmp/apk_permissions.txt | tee build/reports/k7a/apk_permissions.txt 2>/dev/null || cat /tmp/apk_permissions.txt
           mkdir -p build/reports/k7a
           cat /tmp/apk_permissions.txt > build/reports/k7a/apk_permissions.txt
-          grep 'uses-permission' /tmp/apk_permissions.txt | tr -d ' ' | sort > /tmp/apk_actual_permissions.txt
+          # aapt prints "uses-permission: name='X'"; normalise both sides to
+          # bare permission names so the diff compares permissions, not
+          # aapt's quoting style.
+          grep 'uses-permission' /tmp/apk_permissions.txt \
+            | sed -e "s/^[[:space:]]*uses-permission:[[:space:]]*//" \
+                  -e "s/^name='//" -e "s/'$//" \
+            | sort > /tmp/apk_actual_permissions.txt
           {
-            echo "uses-permission:android.permission.INTERNET"
-            echo "uses-permission:android.permission.POST_NOTIFICATIONS"
+            echo "android.permission.INTERNET"
+            echo "android.permission.POST_NOTIFICATIONS"
           } > /tmp/apk_expected_permissions.txt
           if ! diff -u /tmp/apk_expected_permissions.txt /tmp/apk_actual_permissions.txt; then
             echo "APK permissions are not exactly INTERNET + POST_NOTIFICATIONS - FAIL"

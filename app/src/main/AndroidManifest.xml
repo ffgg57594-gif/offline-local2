@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- K7a: the only two permissions the app has ever requested.
          INTERNET: the user downloads the chat model inside the app
@@ -10,6 +11,21 @@
          notification while the model downloads (API 33+). -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- androidx.core 1.13 injects DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+         into every merged manifest (it only exists to protect
+         ContextCompat.registerReceiver(RECEIVER_NOT_EXPORTED) on API < 33).
+         This app never registers a dynamic receiver, and androidx.core
+         itself falls back to an unpermissioned registration when the
+         permission is missing, so strip it here: the release APK must
+         request exactly INTERNET + POST_NOTIFICATIONS, and the CI
+         "Verify APK contents" gate fails on anything else. -->
+    <uses-permission
+        android:name="com.medai.assistant.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+        tools:node="remove" />
+    <permission
+        android:name="com.medai.assistant.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+        tools:node="remove" />
 
     <application
         android:label="@string/app_name"
