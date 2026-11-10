@@ -82,7 +82,7 @@ std::string json_escape(const std::string & in) {
 }
 
 bool progress_thunk(float progress, void * user_data) {
-    auto * data = static_cast<std::pair<jNIEnv *, jobject> *>(user_data);
+    auto * data = static_cast<std::pair<JNIEnv *, jobject> *>(user_data);
     JNIEnv * env = data->first;
     jobject listener = data->second;
     jmethodID method = env->GetMethodID(
@@ -125,7 +125,7 @@ Java_com_medai_assistant_llm_LlamaBridge_nativeLoad(
     llama_model_params mparams = llama_model_default_params();
     mparams.load_mode = LLAMA_LOAD_MODE_MMAP; // use_mmap = true
     mparams.n_gpu_layers = 0;                  // CPU only
-    std::pair<jNIEnv *, jobject> progress_data{env, j_progress};
+    std::pair<JNIEnv *, jobject> progress_data{env, j_progress};
     if (j_progress != nullptr) {
         mparams.progress_callback = &progress_thunk;
         mparams.progress_callback_user_data = &progress_data;
@@ -315,7 +315,7 @@ Java_com_medai_assistant_llm_LlamaBridge_nativeGenerate(
             if (handle->cancelled) {
                 break;
             }
-            const llama_token token = llama_sampler_sample(chain, handle->ctx, -1);
+            llama_token token = llama_sampler_sample(chain, handle->ctx, -1);
             if (llama_vocab_is_eog(vocab, token)) {
                 break;
             }
