@@ -42,4 +42,5 @@ add_subdirectory("${LLAMA_CPP_DIR}" llama-cpp-build EXCLUDE_FROM_ALL)
 
 add_library(llama_jni SHARED llama_jni.cpp)
 target_compile_features(llama_jni PRIVATE cxx_std_17)
-target_link_libraries(llama_jni PRIVATE llama)
+# 'log' provides __android_log_print (NDK system library).
+target_link_libraries(llama_jni PRIVATE llama log)
