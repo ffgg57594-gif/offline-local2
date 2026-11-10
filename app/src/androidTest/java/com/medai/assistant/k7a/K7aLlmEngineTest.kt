@@ -5,6 +5,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.medai.assistant.k5b.K5bArtifacts
 import com.medai.assistant.llm.LlamaEngine
 import com.medai.assistant.llm.Sha256Util
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -53,7 +54,7 @@ class K7aLlmEngineTest {
     }
 
     @Test
-    fun greedyGenerationIsDeterministic() {
+    fun greedyGenerationIsDeterministic() = runBlocking {
         val engine = LlamaEngine.load(
             path = modelFile().absolutePath,
             nCtx = 256,
@@ -83,7 +84,7 @@ class K7aLlmEngineTest {
     }
 
     @Test
-    fun cancelStopsGenerationAfterFirstToken() {
+    fun cancelStopsGenerationAfterFirstToken() = runBlocking {
         val engine = LlamaEngine.load(
             path = modelFile().absolutePath,
             nCtx = 256,
@@ -112,7 +113,7 @@ class K7aLlmEngineTest {
     }
 
     @Test
-    fun freeThenReloadWorks() {
+    fun freeThenReloadWorks() = runBlocking {
         val first = LlamaEngine.load(
             path = modelFile().absolutePath,
             nCtx = 256,
@@ -138,7 +139,7 @@ class K7aLlmEngineTest {
     }
 
     @Test
-    fun corruptedModelIsRejectedGracefully() {
+    fun corruptedModelIsRejectedGracefully() = runBlocking {
         val corrupted = File(context.cacheDir, "k7a-corrupted.gguf")
         modelFile().copyTo(corrupted, overwrite = true)
         // Flip one byte in the header (the version field at offset 4) while
@@ -163,7 +164,7 @@ class K7aLlmEngineTest {
     }
 
     @Test
-    fun tenLoadGenerateFreeCyclesDoNotLeakNativeMemory() {
+    fun tenLoadGenerateFreeCyclesDoNotLeakNativeMemory() = runBlocking {
         val infoBefore = android.os.Debug.MemoryInfo()
         android.os.Debug.getMemoryInfo(infoBefore)
         val nativeBefore = infoBefore.nativePss
@@ -193,7 +194,7 @@ class K7aLlmEngineTest {
                 )
                 val info = android.os.Debug.MemoryInfo()
                 android.os.Debug.getMemoryInfo(info)
-                maxTotalPss = maxOf(maxTotalPss, info.totalPss)
+                maxTotalPss = maxOf(maxTotalPss, info.totalPss.toLong())
             } finally {
                 engine.free()
             }
@@ -213,7 +214,7 @@ class K7aLlmEngineTest {
     }
 
     @Test
-    fun writesEngineStatsReportForTheReport() {
+    fun writesEngineStatsReportForTheReport() = runBlocking {
         val engine = LlamaEngine.load(
             path = modelFile().absolutePath,
             nCtx = 256,
@@ -251,7 +252,11 @@ class K7aLlmEngineTest {
         }
     }
 
-    private fun runEngine(engine: LlamaEngine, prompt: String, maxTokens: Int): String {
+    private suspend fun runEngine(
+        engine: LlamaEngine,
+        prompt: String,
+        maxTokens: Int
+    ): String {
         val builder = StringBuilder()
         val result = engine.generate(prompt = prompt, maxTokens = maxTokens) { piece ->
             builder.append(piece)
