@@ -15,8 +15,10 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <limits>
 #include <mutex>
 #include <string>
 #include <utility>
@@ -220,6 +222,13 @@ Java_com_medai_assistant_llm_LlamaBridge_nativeGenerate(
     }
     handle->cancelled = false;
 
+    // Reset last-run stats so a bailed-out run never reports stale values.
+    handle->prompt_tokens = 0;
+    handle->output_tokens = 0;
+    handle->ttft_ms = 0.0;
+    handle->total_ms = 0.0;
+    handle->tokens_per_second = 0.0;
+
     const double start = now_ms();
 
     const char * prompt_raw = env->GetStringUTFChars(j_prompt, nullptr);
@@ -253,19 +262,27 @@ Java_com_medai_assistant_llm_LlamaBridge_nativeGenerate(
     }
 
     // Tokenize (specials like <|im_start|> must parse as single tokens).
-    const int32_t needed_tokens = llama_tokenize(
+    // llama_tokenize's buffer contract in b12236 (common.cpp uses the
+    // same idiom): a too-small buffer returns the NEGATED required token
+    // count, never the positive one. So start with a generous buffer and
+    // retry once at the exact count if it comes back short.
+    std::vector<llama_token> tokens(prompt_text.size() + 16);
+    int32_t n_prompt = llama_tokenize(
         vocab, prompt_text.c_str(), (int32_t) prompt_text.size(),
-        nullptr, 0, false, true);
-    if (needed_tokens <= 0) {
-        return JNI_TRUE;
+        tokens.data(), (int32_t) tokens.size(), false, true);
+    if (n_prompt < 0 && n_prompt != std::numeric_limits<int32_t>::min()) {
+        tokens.resize((size_t) (-(int64_t) n_prompt));
+        n_prompt = llama_tokenize(
+            vocab, prompt_text.c_str(), (int32_t) prompt_text.size(),
+            tokens.data(), (int32_t) tokens.size(), false, true);
     }
-    std::vector<llama_token> tokens((size_t) needed_tokens);
-    const int32_t n_prompt = llama_tokenize(
-        vocab, prompt_text.c_str(), (int32_t) prompt_text.size(),
-        tokens.data(), needed_tokens, false, true);
     if (n_prompt <= 0) {
-        return JNI_TRUE;
+        LOGE("tokenize failed for a %zu-byte prompt (ret=%d)",
+             prompt_text.size(), n_prompt);
+        return JNI_FALSE;
     }
+    LOGI("generate: %d prompt tokens, up to %d output tokens",
+         n_prompt, j_max_tokens);
     handle->prompt_tokens = n_prompt;
 
     // Fresh KV cache for every run.
