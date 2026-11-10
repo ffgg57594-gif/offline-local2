@@ -1,8 +1,10 @@
 package com.medai.assistant.llm
 
 import com.medai.assistant.gate.Json
+import com.medai.assistant.gate.JsonValue
 import com.medai.assistant.gate.asArray
 import com.medai.assistant.gate.asBoolean
+import com.medai.assistant.gate.asDouble
 import com.medai.assistant.gate.asInt
 import com.medai.assistant.gate.asObject
 import com.medai.assistant.gate.asString

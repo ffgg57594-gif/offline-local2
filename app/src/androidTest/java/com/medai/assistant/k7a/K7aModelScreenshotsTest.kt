@@ -67,7 +67,7 @@ class K7aModelScreenshotsTest : K5bUiTestBase() {
         modelManager().injectStateForUiTest(
             defaultModelId,
             ModelState.Downloading(
-                id = defaultModelId,
+                modelId = defaultModelId,
                 bytesSoFar = 612_000_000L,
                 totalBytes = 1_117_320_736L
             )

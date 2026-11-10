@@ -20,9 +20,8 @@ object Sha256Util {
         return hex(digest.digest())
     }
 
-    fun digestFile(file: File): String {
+    fun digestFile(file: File): String =
         file.inputStream().use { digestStream(it) }
-    }
 
     fun digestBytes(bytes: ByteArray): String {
         val digest = MessageDigest.getInstance("SHA-256")
