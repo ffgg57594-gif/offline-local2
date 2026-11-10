@@ -351,7 +351,11 @@ class ModelManagerTest {
         ): Long {
             val id = nextId++
             enqueued += url
-            statuses[id] = ArrayDeque()
+            // A scripted queue (from script()/scriptFor()) wins over the
+            // default empty one so tests can pre-program this id.
+            if (id !in statuses) {
+                statuses[id] = ArrayDeque()
+            }
             return id
         }
 

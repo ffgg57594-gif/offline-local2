@@ -176,6 +176,16 @@ jobs:
         with:
           path: ~/.gradle/caches
           key: gradle-${{ hashFiles('**/*.gradle*', '**/libs.versions.toml') }}
+      - name: Install Android NDK + CMake for llama.cpp (K7a)
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER=$(ls "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -1)
+          fi
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" --install "ndk;26.1.10909125" "cmake;3.22.1" > /dev/null
+          ls "$ANDROID_HOME/ndk" || true
+          echo "cmake 3.22.1 and ndk 26.1.10909125 ready"
       - name: Unit tests (Android)
         run: ./gradlew testDebugUnitTest
       - name: Report retrieval parity (K3c)
