@@ -325,6 +325,7 @@ jobs:
       - name: Verify APK contents
         run: |
           APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
+          mkdir -p build/reports/k7a build/reports/k4d
           if unzip -l "$APK" | grep -i '\.pdf$'; then echo "PDF found in APK - FAIL"; exit 1; fi
           for f in assets/books_knowledge.db assets/embeddings.bin assets/embeddings_meta.json assets/embedder_reference.json assets/models/embedder/model_quantized.onnx assets/models/embedder/tokenizer.json assets/normalize_map.json assets/fusion_config.json assets/medical_aliases.json assets/gate_vocab.json assets/gate_config.json assets/model_catalog.json; do
             if ! unzip -l "$APK" | grep -q "$f"; then echo "Missing $f in APK - FAIL"; exit 1; fi
@@ -364,17 +365,48 @@ jobs:
             exit 1
           fi
           echo "APK permissions are exactly INTERNET + POST_NOTIFICATIONS - OK"
-          # K7a: network security config must exist and forbid cleartext
+          # K7a: network security config must exist and forbid cleartext.
+          # aapt2 wants `--file` before the APK; aapt v1 wants
+          # `dump xmltree APK res/path`. Run 192 died here after the
+          # permission gate already passed (apk_permissions.txt is
+          # INTERNET + POST_NOTIFICATIONS) because the aapt2 argv order
+          # was reversed, so the xmltree artifact was never written.
+          mkdir -p build/reports/k7a
+          unzip -l "$APK" | grep -E 'res/xml|network_security' \
+            | tee build/reports/k7a/apk_xml_resources.txt || true
           AAPT2=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -1)
-          "$AAPT2" dump xmltree "$APK" --file res/xml/network_security_config.xml > /tmp/nsc_tree.txt || {
-            echo "network_security_config.xml missing from APK - FAIL"; exit 1;
-          }
+          echo "aapt=$AAPT aapt2=$AAPT2"
+          : > /tmp/nsc_tree.txt
+          : > /tmp/nsc_dump.err
+          set +e
+          "$AAPT" dump xmltree "$APK" res/xml/network_security_config.xml \
+            > /tmp/nsc_tree.txt 2>>/tmp/nsc_dump.err
+          NSC_RC=$?
+          if [ "$NSC_RC" -ne 0 ] || [ ! -s /tmp/nsc_tree.txt ]; then
+            "$AAPT2" dump xmltree --file res/xml/network_security_config.xml "$APK" \
+              > /tmp/nsc_tree.txt 2>>/tmp/nsc_dump.err
+            NSC_RC=$?
+          fi
+          if [ "$NSC_RC" -ne 0 ] || [ ! -s /tmp/nsc_tree.txt ]; then
+            "$AAPT2" dump xmltree "$APK" --file res/xml/network_security_config.xml \
+              > /tmp/nsc_tree.txt 2>>/tmp/nsc_dump.err
+            NSC_RC=$?
+          fi
+          set -e
+          cat /tmp/nsc_dump.err || true
           cat /tmp/nsc_tree.txt
           cp /tmp/nsc_tree.txt build/reports/k7a/network_security_config_xmltree.txt
+          cp /tmp/nsc_dump.err build/reports/k7a/network_security_config_dump.err
+          if [ "$NSC_RC" -ne 0 ] || [ ! -s /tmp/nsc_tree.txt ]; then
+            echo "network_security_config.xml missing from APK - FAIL"
+            exit 1
+          fi
           if ! grep -q 'cleartextTrafficPermitted' /tmp/nsc_tree.txt; then
             echo "cleartextTrafficPermitted missing from network security config - FAIL"; exit 1
           fi
-          if grep 'cleartextTrafficPermitted' /tmp/nsc_tree.txt | grep -qv 'false'; then
+          # aapt xmltree prints booleans as the literal false/true or as
+          # (type 0x12)0x0 / 0xffffffff. Reject any true value.
+          if grep 'cleartextTrafficPermitted' /tmp/nsc_tree.txt | grep -Eqi 'true|0xffffffff'; then
             echo "cleartextTrafficPermitted is not false everywhere - FAIL"; exit 1
           fi
           echo "network security config forbids cleartext - OK"

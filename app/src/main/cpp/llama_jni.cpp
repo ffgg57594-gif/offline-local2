@@ -195,14 +195,20 @@ Java_com_medai_assistant_llm_LlamaBridge_nativeFree(
     if (handle == nullptr) {
         return;
     }
-    std::lock_guard<std::mutex> lock(handle->mutex);
-    if (handle->ctx != nullptr) {
-        llama_free(handle->ctx);
+    llama_model * model = nullptr;
+    llama_context * ctx = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(handle->mutex);
+        ctx = handle->ctx;
         handle->ctx = nullptr;
-    }
-    if (handle->model != nullptr) {
-        llama_model_free(handle->model);
+        model = handle->model;
         handle->model = nullptr;
+    }
+    if (ctx != nullptr) {
+        llama_free(ctx);
+    }
+    if (model != nullptr) {
+        llama_model_free(model);
     }
     delete handle;
 }
