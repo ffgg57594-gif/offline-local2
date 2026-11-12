@@ -20,6 +20,12 @@ import pathlib
 import sys
 import urllib.request
 
+try:
+    import certifi
+    os.environ.setdefault("SSL_CERT_FILE", certifi.where())
+except ImportError:
+    pass
+
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "app/src/main/assets/model_catalog.json"
 OUT = ROOT / "build/reports/k7a"
